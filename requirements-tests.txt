@@ -1,0 +1,7 @@
+-r requirements.txt
+-e .
+
+pytest
+webtest
+
+muffin_peewee   >= 0.0.11
