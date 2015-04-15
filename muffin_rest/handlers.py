@@ -9,12 +9,10 @@ class RESTHandlerMeta(type(muffin.Handler)):
 
     """ Check REST handlers. """
 
-    __coros = 'authorize', 'get_many', 'get_one', 'get_form', 'save_form'
-
     def __new__(mcs, name, bases, params):
         """ Prepare handler params. """
-        cls = super(RESTHandlerMeta, mcs).__new__(mcs, name, bases, params)
-        for name in mcs.__coros:
+        cls = super().__new__(mcs, name, bases, params)
+        for name in ('authorize', 'get_many', 'get_one', 'get_form', 'save_form'):
             setattr(cls, name, muffin.to_coroutine(getattr(cls, name)))
 
         return cls

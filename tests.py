@@ -53,11 +53,11 @@ def test_peewee(app, client):
     import peewee as pw
 
     @app.ps.peewee.register
-    class ResourceModel(app.ps.peewee.TModel):
+    class Resource(app.ps.peewee.TModel):
         active = pw.BooleanField(default=True)
         name = pw.CharField(null=False)
 
-    ResourceModel.create_table()
+    Resource.create_table()
 
     class ResourceForm(mr.Form):
         active = mr.BooleanField()
@@ -66,14 +66,16 @@ def test_peewee(app, client):
     from muffin_rest.peewee import PWRESTHandler
 
     @app.register
-    class Resource(PWRESTHandler):
-        model = ResourceModel
+    class ResourceHandler(PWRESTHandler):
+        model = Resource
         form = ResourceForm
+
+    assert ResourceHandler.name == 'resource'
 
     response = client.get('/resource')
     assert response.json == []
 
-    ResourceModel(name='test').save()
+    Resource(name='test').save()
     response = client.get('/resource')
     assert response.json
 
@@ -91,4 +93,4 @@ def test_peewee(app, client):
 
     response = client.delete('/resource/2', {'name': 'new'})
     assert response.text == ''
-    assert not ResourceModel.select().where(ResourceModel.id == 2).exists()
+    assert not Resource.select().where(Resource.id == 2).exists()

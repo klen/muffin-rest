@@ -1,10 +1,21 @@
 """ Support Muffin-Peewee. """
 
 import muffin
-from muffin_rest import RESTHandler
+from muffin_rest import RESTHandler, RESTHandlerMeta
 
 
-class PWRESTHandler(RESTHandler):
+class PWRESTHandlerMeta(RESTHandlerMeta):
+
+    """ Peewee specific. """
+
+    def __new__(mcs, name, bases, params):
+        """ Prepare handler params. """
+        model = params.get('model')
+        params.setdefault('name', model and model._meta.db_table.lower() or name.lower())
+        return super(PWRESTHandlerMeta, mcs).__new__(mcs, name, bases, params)
+
+
+class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
 
     """ Support REST for Peewee. """
 
