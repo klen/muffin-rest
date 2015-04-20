@@ -1,10 +1,10 @@
 """ Support Muffin-Peewee. """
 import muffin
-from muffin_peewee.models import to_simple
 import peewee as pw
-
-from muffin_rest import RESTHandler, RESTHandlerMeta, Form
+from muffin_peewee.models import to_simple
 from wtforms import fields as f
+
+from muffin_rest import RESTHandler, Form
 
 
 try:
@@ -17,7 +17,7 @@ except ImportError:
     model_form = None
 
 
-class PWRESTHandlerMeta(RESTHandlerMeta):
+class PWRESTHandlerMeta(type(RESTHandler)):
 
     """ Peewee specific. """
 

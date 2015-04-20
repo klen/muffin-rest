@@ -1,24 +1,10 @@
 """ REST support. """
-
-import asyncio
-import ujson as json
 import muffin
+import ujson as json
+from muffin.handler import Handler, abcoroutine
 
 
-class RESTHandlerMeta(type(muffin.Handler)):
-
-    """ Check REST handlers. """
-
-    def __new__(mcs, name, bases, params):
-        """ Prepare handler params. """
-        cls = super().__new__(mcs, name, bases, params)
-        for name in ('authorize', 'get_many', 'get_one', 'get_form', 'save_form'):
-            setattr(cls, name, muffin.to_coroutine(getattr(cls, name)))
-
-        return cls
-
-
-class RESTHandler(muffin.Handler, metaclass=RESTHandlerMeta):
+class RESTHandler(Handler):
 
     """ Implement handler for REST operations. """
 
@@ -31,7 +17,7 @@ class RESTHandler(muffin.Handler, metaclass=RESTHandlerMeta):
             paths = [muffin.sre('/%s(/{%s})?/?' % (cls.name, cls.name))]
         return super(RESTHandler, cls).connect(app, *paths, name=name)
 
-    @asyncio.coroutine
+    @abcoroutine
     def dispatch(self, request):
         """ Process REST. """
         self.auth = yield from self.authorize(request)
@@ -42,37 +28,42 @@ class RESTHandler(muffin.Handler, metaclass=RESTHandlerMeta):
             resources[self.name] = resource
         return (yield from super(RESTHandler, self).dispatch(request, **resources))
 
+    @abcoroutine
     def authorize(self, request):
         """ Base point for authorization. """
         return True
 
+    @abcoroutine
     def get_many(self, request):
         """ Base point for collect data. """
         return []
 
+    @abcoroutine
     def get_one(self, request):
         """ Base point load resource. """
         return request.match_info.get(self.name)
 
+    @abcoroutine
     def get_form(self, request, **resources):
         """ Base point load resource. """
         formdata = yield from self.parse(request)
         resource = resources.get(self.name)
 
         if not self.form:
-            raise muffin.MuffinException("%s.form is not defined." % type(self))
+            raise muffin.MuffinException("%s.form is not defined." % type(self).__name__)
 
         return self.form(formdata, obj=resource)
 
-    def populate(self):
-        """ Create object. """
-        return object()
-
+    @abcoroutine
     def save_form(self, form, request, **resources):
         """ Save self form. """
         resource = resources.get(self.name, self.populate())
         form.populate_obj(resource)
         return resource
+
+    def populate(self):
+        """ Create object. """
+        return object()
 
     def to_simple(self, data, many=False):
         """ Convert resource to simple. """
@@ -80,6 +71,7 @@ class RESTHandler(muffin.Handler, metaclass=RESTHandlerMeta):
             return [self.to_simple(r) for r in data]
         return str(data)
 
+    @abcoroutine
     def get(self, request, **resources):
         """ Get collection of resources. """
         resource = resources.get(self.name)
@@ -87,6 +79,7 @@ class RESTHandler(muffin.Handler, metaclass=RESTHandlerMeta):
             return self.to_simple(resource)
         return self.to_simple(self.collection, True)
 
+    @abcoroutine
     def post(self, request):
         """ Create a resource. """
         form = yield from self.get_form(request)
@@ -96,6 +89,7 @@ class RESTHandler(muffin.Handler, metaclass=RESTHandlerMeta):
         resource = yield from self.save_form(form, request)
         return self.to_simple(resource)
 
+    @abcoroutine
     def put(self, request, **resources):
         """ Update a resource. """
         resource = resources.get(self.name)
@@ -111,6 +105,7 @@ class RESTHandler(muffin.Handler, metaclass=RESTHandlerMeta):
 
     patch = put
 
+    @abcoroutine
     def delete(self, request, **resources):
         """ Delete a resource. """
         resource = resources.get(self.name)
