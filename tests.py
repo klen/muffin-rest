@@ -59,17 +59,13 @@ def test_peewee(app, client):
 
     Resource.create_table()
 
-    class ResourceForm(mr.Form):
-        active = mr.BooleanField()
-        name = mr.StringField()
-
     from muffin_rest.peewee import PWRESTHandler
 
     @app.register
     class ResourceHandler(PWRESTHandler):
         model = Resource
-        form = ResourceForm
 
+    assert ResourceHandler.form
     assert ResourceHandler.name == 'resource'
 
     response = client.get('/resource')

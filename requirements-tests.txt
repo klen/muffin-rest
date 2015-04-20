@@ -4,4 +4,5 @@
 pytest
 webtest
 
-muffin_peewee   >= 0.0.11
+muffin_peewee   >= 0.0.14
+wtf-peewee
