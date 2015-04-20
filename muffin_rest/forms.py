@@ -1,4 +1,5 @@
 """ Update WTForms for REST. """
+import datetime as dt
 
 from wtforms import validators, widgets         # noqa
 from wtforms.fields import *                    # noqa
@@ -43,6 +44,12 @@ class Form(WTForm):
                 if hasattr(self, 'process_%s' % name):
                     formdata[name] = getattr(self, 'process_%s' % name)(formdata[name])
             elif obj:
-                formdata[name] = getattr(obj, name, None)
+                value = getattr(obj, name, None)
+                field = self._fields[name]
+                if value is not None:
+                    if isinstance(value, (dt.datetime, dt.date)):
+                        value = value.strftime(field.format)
+
+                    formdata[name] = value
 
         super(Form, self).process(formdata, obj, data, **kwargs)

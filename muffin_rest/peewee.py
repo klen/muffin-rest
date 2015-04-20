@@ -1,12 +1,18 @@
 """ Support Muffin-Peewee. """
 import muffin
 from muffin_peewee.models import to_simple
+import peewee as pw
 
 from muffin_rest import RESTHandler, RESTHandlerMeta, Form
+from wtforms import fields as f
 
 
 try:
-    from wtfpeewee.orm import model_form
+    from wtfpeewee.orm import model_form, ModelConverter
+
+    ModelConverter.defaults[pw.DateField] = f.DateField
+    ModelConverter.defaults[pw.DateTimeField] = f.DateTimeField
+
 except ImportError:
     model_form = None
 
