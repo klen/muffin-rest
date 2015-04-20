@@ -89,4 +89,5 @@ def test_peewee(app, client):
 
     response = client.delete('/resource/2', {'name': 'new'})
     assert response.text == ''
+    assert Resource.select().where(Resource.id == 1).exists()
     assert not Resource.select().where(Resource.id == 2).exists()

@@ -73,4 +73,4 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         resource = resources.get(self.name)
         if not resource:
             raise muffin.HTTPNotFound('Resource not found')
-        resource.delete().execute()
+        resource.delete_instance()
