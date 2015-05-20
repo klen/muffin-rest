@@ -1,6 +1,8 @@
 """ REST support. """
+import datetime as dt
 import muffin
 import ujson as json
+from aiohttp import MultiDict
 from muffin.handler import Handler, abcoroutine
 
 
@@ -46,11 +48,23 @@ class RESTHandler(Handler):
     @abcoroutine
     def get_form(self, request, **resources):
         """ Base point load resource. """
-        formdata = yield from self.parse(request)
         resource = resources.get(self.name)
+        formdata = yield from self.parse(request)
 
         if not self.form:
             raise muffin.MuffinException("%s.form is not defined." % type(self).__name__)
+
+        if resource:
+            data = {}
+            for name, field, *args in self.form._unbound_fields:
+                value = getattr(resource, name, None)
+                if isinstance(value, (dt.datetime, dt.date)):
+                    field = field.bind(None, name, _meta=1)
+                    value = value.strftime(field.format)
+                data[name] = value
+
+            data.update(formdata)
+            formdata = MultiDict(data)
 
         return self.form(formdata, obj=resource)
 

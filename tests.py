@@ -55,7 +55,7 @@ def test_peewee(app, client):
 
     @app.ps.peewee.register
     class Resource(app.ps.peewee.TModel):
-        active = pw.BooleanField(default=True)
+        active = pw.BooleanField(default=False)
         name = pw.CharField(null=False)
 
     Resource.create_table()
@@ -80,15 +80,18 @@ def test_peewee(app, client):
     assert response.json['id'] == 1
     assert response.json['name'] == 'test'
 
-    response = client.post('/resource', {'name': 'test2', 'created': '2010-01-01 00:00:00'})
+    response = client.post('/resource', {
+        'name': 'test2', 'created': '2010-01-01 00:00:00', 'active': True})
     assert response.json['id'] == 2
     assert response.json['name'] == 'test2'
+    assert response.json['active']
     created = dt.datetime.fromtimestamp(response.json['created'])
     assert created.year == 2010
 
     response = client.patch('/resource/2', {'name': 'new'})
     assert response.json['id'] == 2
     assert response.json['name'] == 'new'
+    assert response.json['active']
     created = dt.datetime.fromtimestamp(response.json['created'])
     assert created.year == 2010
 
