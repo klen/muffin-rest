@@ -36,6 +36,14 @@ class RESTHandler(Handler):
         return True
 
     @abcoroutine
+    def parse(self, request):
+        """ Ensure that request.data is multidict. """
+        data = yield from super().parse(request)
+        if not isinstance(data, MultiDict):
+            data = MultiDict(data)
+        return data
+
+    @abcoroutine
     def get_many(self, request):
         """ Base point for collect data. """
         return []

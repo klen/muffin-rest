@@ -20,6 +20,12 @@ def clean_app(app, request):
         m.Handler.handlers = set()
 
 
+def test_api(app, client):
+    api = mr.Api(app, '/api/v1')
+    assert api.prefix == 'api/v1'
+    assert api.prefix_name == 'api-v1'
+
+
 def test_base(app, client):
 
     @app.register
