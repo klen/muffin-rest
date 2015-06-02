@@ -17,6 +17,8 @@ class RESTHandler(Handler):
         """ Connect to the application. """
         if not paths:
             paths = [muffin.sre('/%s(/{%s})?/?' % (cls.name, cls.name))]
+        if name is None:
+            name = "rest-%s" % cls.name
         return super(RESTHandler, cls).connect(app, *paths, name=name)
 
     @abcoroutine

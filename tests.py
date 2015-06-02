@@ -28,7 +28,7 @@ def test_api(app, client):
 
 def test_base(app, client):
 
-    @app.register
+    @app.register(name='api-resource')
     class Resource(mr.RESTHandler):
 
         methods = 'get',
@@ -47,6 +47,7 @@ def test_base(app, client):
         def post(self, request):
             raise Exception('Shouldnt be called')
 
+    assert 'api-resource-get' in app.router
     response = client.get('/resource')
     assert response.json == ['1', '2', '3']
 
@@ -74,6 +75,7 @@ def test_peewee(app, client):
 
     assert ResourceHandler.form
     assert ResourceHandler.name == 'resource'
+    assert 'rest-resource-get' in app.router
 
     response = client.get('/resource')
     assert response.json == []
