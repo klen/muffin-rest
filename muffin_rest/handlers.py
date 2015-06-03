@@ -123,7 +123,7 @@ class RESTHandler(Handler):
         """ Update a resource. """
         resource = resources.get(self.name)
         if not resource:
-            raise muffin.HTTPNotFound('Resource not found')
+            raise muffin.HTTPNotFound(reason='Resource not found')
 
         form = yield from self.get_form(request, **resources)
         if not form.validate():
@@ -139,4 +139,4 @@ class RESTHandler(Handler):
         """ Delete a resource. """
         resource = resources.get(self.name)
         if not resource:
-            raise muffin.HTTPNotFound('Resource not found')
+            raise muffin.HTTPNotFound(reason='Resource not found')

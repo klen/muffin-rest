@@ -56,7 +56,7 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         try:
             return self.collection.where(self.model._meta.primary_key == resource).get()
         except Exception:
-            raise muffin.HTTPNotFound()
+            raise muffin.HTTPNotFound(reason='Resource not found.')
 
     def populate(self):
         """ Create object. """
@@ -78,5 +78,5 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         """ Delete a resource. """
         resource = resources.get(self.name)
         if not resource:
-            raise muffin.HTTPNotFound('Resource not found')
+            raise muffin.HTTPNotFound(reason='Resource not found')
         resource.delete_instance()
