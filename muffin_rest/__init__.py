@@ -11,3 +11,8 @@ __license__ = "MIT"
 from .api import *      # noqa
 from .forms import *    # noqa
 from .handlers import * # noqa
+
+try:
+    from .peewee import PWRESTHandler # noqa
+except ImportError:
+    pass
