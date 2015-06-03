@@ -1,10 +1,9 @@
 """ Support Muffin-Peewee. """
-import muffin
 import peewee as pw
 from muffin_peewee.models import to_simple
 from wtforms import fields as f
 
-from muffin_rest import RESTHandler, Form
+from muffin_rest import RESTHandler, Form, RESTNotFound
 
 
 try:
@@ -56,7 +55,7 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         try:
             return self.collection.where(self.model._meta.primary_key == resource).get()
         except Exception:
-            raise muffin.HTTPNotFound(reason='Resource not found.')
+            raise RESTNotFound(reason='Resource not found.')
 
     def populate(self):
         """ Create object. """
@@ -78,5 +77,5 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         """ Delete a resource. """
         resource = resources.get(self.name)
         if not resource:
-            raise muffin.HTTPNotFound(reason='Resource not found')
+            raise RESTNotFound(reason='Resource not found')
         resource.delete_instance()

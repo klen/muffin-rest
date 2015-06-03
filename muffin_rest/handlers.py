@@ -1,9 +1,12 @@
 """ REST support. """
 import datetime as dt
+
 import muffin
 import ujson as json
 from aiohttp import MultiDict
 from muffin.handler import Handler, abcoroutine
+
+from muffin_rest import RESTNotFound, RESTBadRequest
 
 
 class RESTHandler(Handler):
@@ -113,7 +116,7 @@ class RESTHandler(Handler):
         """ Create a resource. """
         form = yield from self.get_form(request)
         if not form.validate():
-            raise muffin.HTTPBadRequest(
+            raise RESTNotFound(
                 text=json.dumps(form.errors), content_type='application/json')
         resource = yield from self.save_form(form, request)
         return self.to_simple(resource)
@@ -123,11 +126,11 @@ class RESTHandler(Handler):
         """ Update a resource. """
         resource = resources.get(self.name)
         if not resource:
-            raise muffin.HTTPNotFound(reason='Resource not found')
+            raise RESTNotFound(reason='Resource not found')
 
         form = yield from self.get_form(request, **resources)
         if not form.validate():
-            raise muffin.HTTPBadRequest(
+            raise RESTBadRequest(
                 text=json.dumps(form.errors), content_type='application/json')
         resource = yield from self.save_form(form, request, **resources)
         return self.to_simple(resource)
@@ -139,4 +142,4 @@ class RESTHandler(Handler):
         """ Delete a resource. """
         resource = resources.get(self.name)
         if not resource:
-            raise muffin.HTTPNotFound(reason='Resource not found')
+            raise RESTNotFound(reason='Resource not found')
