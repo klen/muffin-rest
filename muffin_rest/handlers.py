@@ -13,13 +13,18 @@ class RESTHandler(Handler):
     form = None
 
     @classmethod
-    def connect(cls, app, *paths, name=None):
+    def connect(cls, app, *paths, methods=None, name=None, **kwargs):
         """ Connect to the application. """
         if not paths:
             paths = [muffin.sre('/%s(/{%s})?/?' % (cls.name, cls.name))]
+
         if name is None:
             name = "rest-%s" % cls.name
-        return super(RESTHandler, cls).connect(app, *paths, name=name)
+
+        if methods is None:
+            methods = ['*']
+
+        return super(RESTHandler, cls).connect(app, *paths, methods=methods, name=name, **kwargs)
 
     @abcoroutine
     def dispatch(self, request):

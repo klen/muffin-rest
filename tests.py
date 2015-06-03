@@ -22,8 +22,17 @@ def clean_app(app, request):
 
 def test_api(app, client):
     api = mr.Api(app, '/api/v1')
-    assert api.prefix == 'api/v1'
+    assert api.prefix == '/api/v1'
     assert api.prefix_name == 'api-v1'
+
+    @api.register
+    class Resource(mr.RESTHandler):
+        methods = 'get',
+
+    assert 'api-v1-resource-*' in api.urls.router
+
+    response = client.get('/api/v1/resource')
+    assert response.json == []
 
 
 def test_base(app, client):
@@ -47,7 +56,7 @@ def test_base(app, client):
         def post(self, request):
             raise Exception('Shouldnt be called')
 
-    assert 'api-resource-get' in app.router
+    assert 'api-resource-*' in app.router
     response = client.get('/resource')
     assert response.json == ['1', '2', '3']
 
@@ -75,7 +84,7 @@ def test_peewee(app, client):
 
     assert ResourceHandler.form
     assert ResourceHandler.name == 'resource'
-    assert 'rest-resource-get' in app.router
+    assert 'rest-resource-*' in app.router
 
     response = client.get('/resource')
     assert response.json == []
