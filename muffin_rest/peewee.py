@@ -24,6 +24,7 @@ class PWRESTHandlerMeta(type(RESTHandler)):
         """ Prepare handler params. """
         model = params.get('model')
         params.setdefault('name', model and model._meta.db_table.lower() or name.lower())
+        params.setdefault('model_pk', model and model._meta.primary_key or None)
         cls = super(PWRESTHandlerMeta, mcs).__new__(mcs, name, bases, params)
         if not cls.form and cls.model and model_form:
             cls.form = model_form(cls.model, base_class=Form, **cls.form_meta)
@@ -35,6 +36,7 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
     """ Support REST for Peewee. """
 
     model = None
+    model_pk = None
 
     # only, exclude, recurse
     simple_meta = {}
@@ -53,7 +55,7 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
             return None
 
         try:
-            return self.collection.where(self.model._meta.primary_key == resource).get()
+            return self.collection.where(self.model_pk == resource).get()
         except Exception:
             raise RESTNotFound(reason='Resource not found.')
 
