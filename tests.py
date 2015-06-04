@@ -35,7 +35,7 @@ def test_api(app, client):
     assert response.json == []
 
     response = client.get('/api/v1/map')
-    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+    assert response.json
 
 
 def test_base(app, client):
