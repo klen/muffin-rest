@@ -148,7 +148,7 @@ class RESTHandler(Handler):
     def scheme(cls):
         """ Return self schema. """
         return {
-            'form': cls.form and cls.form._meta._fields,
+            'form': cls.form and cls.form()._fields,
             'methods': cls.methods,
             'description': cls.__doc__,
         }
