@@ -5,7 +5,7 @@ from muffin import HTTPNotFound, HTTPBadRequest, HTTPForbidden
 # Package information
 # ===================
 
-__version__ = "0.0.16"
+__version__ = "0.0.17"
 __project__ = "muffin-rest"
 __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "MIT"
