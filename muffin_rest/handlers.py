@@ -143,3 +143,12 @@ class RESTHandler(Handler):
         resource = resources.get(self.name)
         if not resource:
             raise RESTNotFound(reason='Resource not found')
+
+    @classmethod
+    def scheme(cls):
+        """ Return self schema. """
+        return {
+            'form': cls.form and cls.form._meta._fields,
+            'methods': cls.methods,
+            'description': cls.__doc__,
+        }

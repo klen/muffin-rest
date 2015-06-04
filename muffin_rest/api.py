@@ -50,7 +50,7 @@ class Api():
 
     """ Support API. """
 
-    def __init__(self, app, prefix='/api'):
+    def __init__(self, app, prefix='/api', scheme=False):
         """ Initialize the API. """
         self.app = app
         self.prefix = prefix.rstrip('/')
@@ -58,6 +58,10 @@ class Api():
         self.handlers = {}
         self.urls = ApiRoute(self)
         self.app.router.register_route(self.urls)
+        if scheme:
+            path = '/'.join((self.prefix, scheme.strip('/')))
+            handler = muffin.Handler.from_view(self.render_scheme, 'GET')
+            app.register(path)(handler)
 
     def register(self, *paths, methods=None, name=None):
         """ Register handler to application. """
@@ -82,3 +86,10 @@ class Api():
             return wrapper(view)
 
         return wrapper
+
+    def render_scheme(self, request):
+        """ Render API Scheme. """
+        return {
+            name: handler.scheme()
+            for name, handler in self.handlers.items()
+        }

@@ -21,7 +21,7 @@ def clean_app(app, request):
 
 
 def test_api(app, client):
-    api = mr.Api(app, '/api/v1')
+    api = mr.Api(app, '/api/v1', scheme='map')
     assert api.prefix == '/api/v1'
     assert api.prefix_name == 'api-v1'
 
@@ -33,6 +33,9 @@ def test_api(app, client):
 
     response = client.get('/api/v1/resource')
     assert response.json == []
+
+    response = client.get('/api/v1/map')
+    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
 
 
 def test_base(app, client):
