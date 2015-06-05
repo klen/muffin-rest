@@ -116,7 +116,7 @@ class RESTHandler(Handler):
         """ Create a resource. """
         form = yield from self.get_form(request)
         if not form.validate():
-            raise RESTNotFound(
+            raise RESTBadRequest(
                 text=json.dumps(form.errors), content_type='application/json')
         resource = yield from self.save_form(form, request)
         return self.to_simple(resource)
