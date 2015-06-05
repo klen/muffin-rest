@@ -7,6 +7,7 @@
 import re
 import muffin
 import asyncio
+from types import FunctionType
 from aiohttp import web
 
 
@@ -30,7 +31,7 @@ class ApiRoute(web.Route):
             path = path[len(self.api.prefix):]
             for name, route in self.router.items():
                 match_info = route.match(path)
-                if match_info:
+                if match_info is not None:
                     match_info['api-name'] = name
                     return match_info
         return None
@@ -69,8 +70,13 @@ class Api():
             methods = [methods]
 
         def wrapper(handler):
+
+            if isinstance(handler, FunctionType):
+                handler = muffin.Handler.from_view(handler, *(methods or ['GET']))
+
             if handler.name in self.handlers:
                 raise muffin.MuffinException('Handler is already registered: %s' % handler.name)
+
             self.handlers[handler.name] = handler
 
             handler.connect(
@@ -89,7 +95,11 @@ class Api():
 
     def render_scheme(self, request):
         """ Render API Scheme. """
-        return {
-            name: handler.scheme()
-            for name, handler in self.handlers.items()
-        }
+        response = {}
+
+        for name, handler in self.handlers.items():
+            scheme = {'methods': handler.methods, 'desc': handler.__doc__}
+            scheme.update(getattr(handler, 'scheme', lambda: {})())
+            response[name] = scheme
+
+        return response

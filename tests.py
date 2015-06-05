@@ -29,12 +29,21 @@ def test_api(app, client):
     class Resource(mr.RESTHandler):
         methods = 'get',
 
+    @api.register('/cfg')
+    def cfg(request):
+        return {'VAR': 'VALUE'}
+
     assert 'api-v1-resource-*' in api.urls.router
+
+    client.get('/api/v1/unknown', status=404)
 
     response = client.get('/api/v1/resource')
     assert response.json == []
 
     response = client.get('/api/v1/map')
+    assert response.json
+
+    response = client.get('/api/v1/cfg')
     assert response.json
 
 
