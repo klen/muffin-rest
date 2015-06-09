@@ -4,7 +4,7 @@ import muffin
 app = muffin.Application(
     'rest',
 
-    PLUGINS=['muffin_rest', 'muffin_peewee']
+    PLUGINS=['muffin_peewee']
 
 )
 
