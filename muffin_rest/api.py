@@ -22,6 +22,7 @@ class ApiRoute(web.Route):
         """ Init router. """
         self.api = api
         self._name = api.prefix_name
+        self._path = api.prefix
         self._method = "*"
         self.router = web.UrlDispatcher()
 
