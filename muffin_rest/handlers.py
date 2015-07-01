@@ -112,7 +112,11 @@ class RESTHandler(Handler):
     @abcoroutine
     def save_form(self, form, request, **resources):
         """ Save self form. """
-        resource = resources.get(self.name, self.populate())
+        if self.name in resources:
+            resource = resources[self.name]
+        else:
+            resource = self.populate()
+
         form.populate_obj(resource)
         return resource
 
