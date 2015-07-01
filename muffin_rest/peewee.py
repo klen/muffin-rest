@@ -3,7 +3,7 @@ import peewee as pw
 from muffin_peewee.models import to_simple
 from wtforms import fields as f
 
-from muffin_rest import RESTHandler, Form, RESTNotFound
+from muffin_rest import RESTHandler, Form, RESTNotFound, Filter
 
 
 try:
@@ -14,6 +14,14 @@ try:
 
 except ImportError:
     model_form = None
+
+
+def pw_converter(handler, flt):
+    """ Convert column name to filter. """
+    if isinstance(flt, Filter):
+        return flt
+
+    return PWFilter(flt)
 
 
 class PWRESTHandlerMeta(type(RESTHandler)):
@@ -34,6 +42,8 @@ class PWRESTHandlerMeta(type(RESTHandler)):
 class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
 
     """ Support REST for Peewee. """
+
+    filters_converter = pw_converter
 
     model = None
     model_pk = None
@@ -81,3 +91,24 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         if not resource:
             raise RESTNotFound(reason='Resource not found')
         resource.delete_instance()
+
+
+class PWFilter(Filter):
+
+    """ Base filter for Peewee handlers. """
+
+    def apply(self, query, value):
+        """ Filter a query. """
+        field = query.model_class._meta.fields.get(self.name)
+        return query.where(field == value)
+
+
+class PWLikeFilter(PWFilter):
+
+    """ Filter query by value. """
+
+    def apply(self, query, value):
+        """ Filter a query. """
+        field = query.model_class._meta.fields.get(self.name)
+        value = "*%s*" % value
+        return query.where(field % value)

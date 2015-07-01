@@ -6,7 +6,7 @@ import ujson as json
 from aiohttp import MultiDict
 from muffin.handler import Handler, abcoroutine
 
-from muffin_rest import RESTNotFound, RESTBadRequest
+from muffin_rest import RESTNotFound, RESTBadRequest, FILTER_PREFIX, default_converter, FilterForm
 
 
 class RESTHandler(Handler):
@@ -14,6 +14,15 @@ class RESTHandler(Handler):
     """ Implement handler for REST operations. """
 
     form = None
+    filters = ()
+    filters_converter = default_converter
+
+    def __init__(self, app):
+        """ Initialize filters. """
+        super(RESTHandler, self).__init__(app)
+        self.filters_form = FilterForm(prefix=FILTER_PREFIX)
+        for flt in self.filters:
+            flt = self.filters_converter(flt).bind(self.filters_form)
 
     @classmethod
     def connect(cls, app, *paths, methods=None, name=None, **kwargs):
@@ -35,9 +44,18 @@ class RESTHandler(Handler):
         self.auth = yield from self.authorize(request)
         self.collection = yield from self.get_many(request)
         resources = {}
-        if request.method != 'POST':
-            resource = yield from self.get_one(request)
-            resources[self.name] = resource
+
+        if request.method == 'POST':
+            return (yield from super(RESTHandler, self).dispatch(request, **resources))
+
+        resource = yield from self.get_one(request)
+        resources[self.name] = resource
+
+        if request.method == 'GET' and not resource:
+
+            # Filter collection
+            self.collection = yield from self.filter(request)
+
         return (yield from super(RESTHandler, self).dispatch(request, **resources))
 
     @abcoroutine
@@ -57,6 +75,11 @@ class RESTHandler(Handler):
     def get_many(self, request):
         """ Base point for collect data. """
         return []
+
+    @abcoroutine
+    def filter(self, request):
+        """ Filter collection. """
+        return self.filters_form.process(self.collection, request.GET)
 
     @abcoroutine
     def get_one(self, request):

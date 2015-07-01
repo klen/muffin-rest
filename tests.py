@@ -49,12 +49,18 @@ def test_api(app, client):
 
 def test_base(app, client):
 
+    class NumFilter(mr.IntegerFilter):
+        def apply(self, collection, value):
+            return [o for o in collection if o == value]
+
     @app.register(name='api-resource')
     class Resource(mr.RESTHandler):
 
         methods = 'get',
 
         collection = [1, 2, 3]
+
+        filters = NumFilter('num'),
 
         def get_many(self, request):
             return self.collection
@@ -71,6 +77,9 @@ def test_base(app, client):
     assert 'api-resource-*' in app.router
     response = client.get('/resource')
     assert response.json == ['1', '2', '3']
+
+    response = client.get('/resource?mr-num=1')
+    assert response.json == ['1']
 
     response = client.get('/resource/2')
     assert response.text == '3'
@@ -93,6 +102,7 @@ def test_peewee(app, client):
     @app.register
     class ResourceHandler(PWRESTHandler):
         model = Resource
+        filters = 'active', 'name'
 
     assert ResourceHandler.form
     assert ResourceHandler.name == 'resource'
@@ -128,3 +138,9 @@ def test_peewee(app, client):
     assert response.text == ''
     assert Resource.select().where(Resource.id == 1).exists()
     assert not Resource.select().where(Resource.id == 2).exists()
+
+    Resource(name='test2').save()
+    Resource(name='test3').save()
+    Resource(name='test4').save()
+    response = client.get('/resource?mr-name=test')
+    assert len(response.json) == 1

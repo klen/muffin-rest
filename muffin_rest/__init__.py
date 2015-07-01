@@ -27,15 +27,17 @@ class RESTBadRequest(HTTPBadRequest):
 
 class RESTForbidden(HTTPForbidden):
 
-    """ Custom excption class for stopping default application error handlers. """
+    """ Custom exception class for stopping default application error handlers. """
 
     pass
 
 from .api import *      # noqa
+from .filters import *  # noqa
 from .forms import *    # noqa
 from .handlers import * # noqa
 
 try:
-    from .peewee import PWRESTHandler # noqa
+    from .peewee import PWRESTHandler           # noqa
+    from .peewee import PWFilter, PWLikeFilter  # noqa
 except ImportError:
     pass
