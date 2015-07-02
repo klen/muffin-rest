@@ -43,20 +43,18 @@ class RESTHandler(Handler):
         """ Process REST. """
         self.auth = yield from self.authorize(request)
         self.collection = yield from self.get_many(request)
-        resources = {}
 
         if request.method == 'POST':
-            return (yield from super(RESTHandler, self).dispatch(request, **resources))
+            return (yield from super(RESTHandler, self).dispatch(request))
 
         resource = yield from self.get_one(request)
-        resources[self.name] = resource
 
-        if request.method == 'GET' and not resource:
+        if request.method == 'GET' and resource is None:
 
             # Filter collection
             self.collection = yield from self.filter(request)
 
-        return (yield from super(RESTHandler, self).dispatch(request, **resources))
+        return (yield from super(RESTHandler, self).dispatch(request, resource=resource))
 
     @abcoroutine
     def authorize(self, request):
@@ -87,9 +85,8 @@ class RESTHandler(Handler):
         return request.match_info.get(self.name)
 
     @abcoroutine
-    def get_form(self, request, **resources):
+    def get_form(self, request, resource=None):
         """ Base point load resource. """
-        resource = resources.get(self.name)
         formdata = yield from self.parse(request)
 
         if not self.form:
@@ -110,11 +107,9 @@ class RESTHandler(Handler):
         return self.form(formdata, obj=resource)
 
     @abcoroutine
-    def save_form(self, form, request, **resources):
+    def save_form(self, form, request, resource=None):
         """ Save self form. """
-        if self.name in resources:
-            resource = resources[self.name]
-        else:
+        if resource is None:
             resource = self.populate()
 
         form.populate_obj(resource)
@@ -131,11 +126,11 @@ class RESTHandler(Handler):
         return str(data)
 
     @abcoroutine
-    def get(self, request, **resources):
+    def get(self, request, resource=None):
         """ Get collection of resources. """
-        resource = resources.get(self.name)
         if resource:
             return self.to_simple(resource)
+
         return self.to_simple(self.collection, True)
 
     @abcoroutine
@@ -149,26 +144,24 @@ class RESTHandler(Handler):
         return self.to_simple(resource)
 
     @abcoroutine
-    def put(self, request, **resources):
+    def put(self, request, resource=None):
         """ Update a resource. """
-        resource = resources.get(self.name)
-        if not resource:
+        if resource is None:
             raise RESTNotFound(reason='Resource not found')
 
-        form = yield from self.get_form(request, **resources)
+        form = yield from self.get_form(request, resource=resource)
         if not form.validate():
             raise RESTBadRequest(
                 text=json.dumps(form.errors), content_type='application/json')
-        resource = yield from self.save_form(form, request, **resources)
+        resource = yield from self.save_form(form, request, resource=resource)
         return self.to_simple(resource)
 
     patch = put
 
     @abcoroutine
-    def delete(self, request, **resources):
+    def delete(self, request, resource=None):
         """ Delete a resource. """
-        resource = resources.get(self.name)
-        if not resource:
+        if resource is None:
             raise RESTNotFound(reason='Resource not found')
 
     @classmethod

@@ -73,9 +73,10 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         """ Create object. """
         return self.model()
 
-    def save_form(self, form, request, **resources):
+    def save_form(self, form, request, resource=None):
         """ Save data. """
-        resource = yield from super(PWRESTHandler, self).save_form(form, request, **resources)
+        resource = yield from super(PWRESTHandler, self).save_form(
+            form, request, resource=resource)
         resource.save()
         return resource
 
@@ -85,10 +86,9 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
             return super(PWRESTHandler, self).to_simple(data, many)
         return to_simple(data, **self.simple_meta)
 
-    def delete(self, request, **resources):
+    def delete(self, request, resource=None):
         """ Delete a resource. """
-        resource = resources.get(self.name)
-        if not resource:
+        if resource is None:
             raise RESTNotFound(reason='Resource not found')
         resource.delete_instance()
 
