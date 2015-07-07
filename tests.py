@@ -144,3 +144,6 @@ def test_peewee(app, client):
     Resource(name='test4').save()
     response = client.get('/resource?mr-name=test')
     assert len(response.json) == 1
+
+    response = client.get('/resource?mr-name=test&mr-name=test2')
+    assert len(response.json) == 2

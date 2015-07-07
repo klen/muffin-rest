@@ -93,14 +93,25 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         resource.delete_instance()
 
 
+class PWMultiField(f.StringField):
+
+    """ Support many values. """
+
+    def process_formdata(self, valuelist):
+        """ Save multivalues. """
+        self.data = valuelist
+
+
 class PWFilter(Filter):
 
     """ Base filter for Peewee handlers. """
 
+    field = PWMultiField
+
     def apply(self, query, value):
         """ Filter a query. """
         field = query.model_class._meta.fields.get(self.name)
-        return query.where(field == value)
+        return query.where(field << value)
 
 
 class PWLikeFilter(PWFilter):
