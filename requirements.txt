@@ -1,2 +1,2 @@
-muffin  >= 0.0.60
+muffin  >= 0.0.94
 wtforms

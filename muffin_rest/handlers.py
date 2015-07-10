@@ -17,9 +17,8 @@ class RESTHandler(Handler):
     filters = ()
     filters_converter = default_converter
 
-    def __init__(self, app):
+    def __init__(self):
         """ Initialize filters. """
-        super(RESTHandler, self).__init__(app)
         self.filters_form = FilterForm(prefix=FILTER_PREFIX)
         for flt in self.filters:
             flt = self.filters_converter(flt).bind(self.filters_form)
@@ -36,13 +35,13 @@ class RESTHandler(Handler):
         return super(RESTHandler, cls).connect(app, *paths, methods=methods, name=name, **kwargs)
 
     @abcoroutine
-    def dispatch(self, request):
+    def dispatch(self, request, view=None):
         """ Process REST. """
         self.auth = yield from self.authorize(request)
         self.collection = yield from self.get_many(request)
 
-        if request.method == 'POST':
-            return (yield from super(RESTHandler, self).dispatch(request))
+        if request.method == 'POST' or view is not None:
+            return (yield from super(RESTHandler, self).dispatch(request, view=view))
 
         resource = yield from self.get_one(request)
 
