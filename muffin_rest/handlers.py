@@ -33,9 +33,6 @@ class RESTHandler(Handler):
         if name is None:
             name = "rest-%s" % cls.name
 
-        if methods is None:
-            methods = ['*']
-
         return super(RESTHandler, cls).connect(app, *paths, methods=methods, name=name, **kwargs)
 
     @abcoroutine
