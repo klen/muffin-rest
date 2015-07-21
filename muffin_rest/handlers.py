@@ -2,7 +2,6 @@
 import datetime as dt
 
 import muffin
-import ujson as json
 from aiohttp import MultiDict
 from muffin.handler import Handler, abcoroutine
 
@@ -134,8 +133,7 @@ class RESTHandler(Handler):
         """ Create a resource. """
         form = yield from self.get_form(request)
         if not form.validate():
-            raise RESTBadRequest(
-                text=json.dumps(form.errors), content_type='application/json')
+            raise RESTBadRequest(json=form.errors)
         resource = yield from self.save_form(form, request)
         return self.to_simple(resource)
 
@@ -147,8 +145,7 @@ class RESTHandler(Handler):
 
         form = yield from self.get_form(request, resource=resource)
         if not form.validate():
-            raise RESTBadRequest(
-                text=json.dumps(form.errors), content_type='application/json')
+            raise RESTBadRequest(json=form.errors)
         resource = yield from self.save_form(form, request, resource=resource)
         return self.to_simple(resource)
 

@@ -119,6 +119,9 @@ def test_peewee(app, client):
     assert response.json['id'] == 1
     assert response.json['name'] == 'test'
 
+    response = client.post('/resource', {'active': True}, status=400)
+    assert 'name' in response.json
+
     response = client.post('/resource', {
         'name': 'test2', 'created': '2010-01-01 00:00:00', 'active': True})
     assert response.json['id'] == 2
