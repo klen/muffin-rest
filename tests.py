@@ -29,6 +29,10 @@ def test_api(app, client):
     class Resource(mr.RESTHandler):
         methods = 'get',
 
+    @Resource.register('%s/action' % api.prefix)
+    def resource_action(resource, request):
+        return 'ACTION'
+
     @api.register('/cfg')
     def cfg(request):
         return {'VAR': 'VALUE'}
@@ -45,6 +49,9 @@ def test_api(app, client):
 
     response = client.get('/api/v1/cfg')
     assert response.json
+
+    response = client.get('/api/v1/action')
+    assert response.text == 'ACTION'
 
 
 def test_base(app, client):
@@ -99,10 +106,14 @@ def test_peewee(app, client):
 
     from muffin_rest.peewee import PWRESTHandler
 
-    @app.register
+    @app.register('/resource', '/resource/{resource:\d+}')
     class ResourceHandler(PWRESTHandler):
         model = Resource
         filters = 'active', 'name'
+
+    @ResourceHandler.register('/resource/action')
+    def action(resource, request):
+        return list(resource.collection)
 
     assert ResourceHandler.form
     assert ResourceHandler.name == 'resource'
@@ -118,6 +129,9 @@ def test_peewee(app, client):
     response = client.get('/resource/1')
     assert response.json['id'] == 1
     assert response.json['name'] == 'test'
+
+    response = client.get('/resource/action')
+    assert response.json
 
     response = client.post('/resource', {'active': True}, status=400)
     assert 'name' in response.json
