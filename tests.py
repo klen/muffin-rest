@@ -1,6 +1,8 @@
 import muffin as m
 import pytest
 import datetime as dt
+import collections
+from aiohttp import MultiDict
 
 import muffin_rest as mr
 
@@ -20,6 +22,37 @@ def clean_app(app, request):
         m.Handler.handlers = set()
 
 
+def test_filters():
+    filters = (
+        'one', ('two', 'two__gt', '>'), mr.Filter('three'), mr.DummyFilter('dummy'),
+    )
+    form = mr.FilterForm(prefix='test-')
+    filters = [mr.default_converter(None, flt).bind(form) for flt in filters]
+    assert form._fields
+    assert 'one' in form._fields
+    assert 'two__gt' in form._fields
+    assert 'three' in form._fields
+
+    Model = collections.namedtuple('Model', ('one', 'two', 'three'))
+
+    collection = [Model(1, 2, 3), Model(4, 5, 6), Model(7, 8, 9)]
+    test = form.process(collection, MultiDict({'one': 1}))
+    assert test == collection
+    assert not form.filters
+
+    test = form.process(collection, MultiDict({'test-one': 1}))
+    assert len(test) == 1
+    assert form.filters == {'one': 1}
+
+    test = form.process(collection, MultiDict({'test-two__gt': 2}))
+    assert len(test) == 2
+    assert form.filters == {'two': 2}
+
+    test = form.process(collection, MultiDict({'test-dummy': 42}))
+    assert test == collection
+    assert form.filters == {'dummy': 42}
+
+
 def test_api(app, client):
     api = mr.Api(app, '/api/v1', scheme='map')
     assert api.prefix == '/api/v1'
@@ -30,7 +63,7 @@ def test_api(app, client):
         methods = 'get',
 
     @Resource.register('%s/action' % api.prefix)
-    def resource_action(resource, request):
+    def resource_action(hander, request, resource=None):
         return 'ACTION'
 
     @api.register('/cfg')
@@ -58,7 +91,7 @@ def test_base(app, client):
 
     class NumFilter(mr.IntegerFilter):
         def apply(self, collection, value):
-            return [o for o in collection if o == value]
+            return [o for o in collection if self.op(o, value)]
 
     @app.register(name='api-resource')
     class Resource(mr.RESTHandler):
@@ -67,7 +100,7 @@ def test_base(app, client):
 
         collection = [1, 2, 3]
 
-        filters = NumFilter('num'),
+        filters = NumFilter('num'), NumFilter('num__gte', op='>=')
 
         def get_many(self, request):
             return self.collection
@@ -88,6 +121,9 @@ def test_base(app, client):
     response = client.get('/resource?mr-num=1')
     assert response.json == ['1']
 
+    response = client.get('/resource?mr-num__gte=2')
+    assert response.json == ['2', '3']
+
     response = client.get('/resource/2')
     assert response.text == '3'
 
@@ -104,16 +140,17 @@ def test_peewee(app, client):
 
     Resource.create_table()
 
-    from muffin_rest.peewee import PWRESTHandler
+    from muffin_rest.peewee import PWRESTHandler, PWMultiFilter
 
     @app.register('/resource', '/resource/{resource:\d+}')
     class ResourceHandler(PWRESTHandler):
         model = Resource
-        filters = 'active', 'name'
-
-    @ResourceHandler.register('/resource/action')
-    def action(resource, request):
-        return list(resource.collection)
+        filters = (
+            'active', 'name',                    # Simple filters by name (equals)
+            ('id', 'id__gte', '>='),             # Filter id by >=
+            PWMultiFilter('name', 'name__in'),   # Multivalue filter
+            mr.DummyFilter('custom')                     # Custom Filter
+        )
 
     assert ResourceHandler.form
     assert ResourceHandler.name == 'resource'
@@ -130,7 +167,11 @@ def test_peewee(app, client):
     assert response.json['id'] == 1
     assert response.json['name'] == 'test'
 
-    response = client.get('/resource/action')
+    @ResourceHandler.register('/resource/action')
+    def action(handler, request, resource=None):
+        return list(handler.collection)
+
+    response = client.get('/resource/action?mr-custom=123')
     assert response.json
 
     response = client.post('/resource', {'active': True}, status=400)
@@ -162,5 +203,8 @@ def test_peewee(app, client):
     response = client.get('/resource?mr-name=test')
     assert len(response.json) == 1
 
-    response = client.get('/resource?mr-name=test&mr-name=test2')
+    response = client.get('/resource?mr-name__in=test&mr-name__in=test2')
     assert len(response.json) == 2
+
+    response = client.get('/resource?mr-id__gte=2')
+    assert len(response.json) == 3

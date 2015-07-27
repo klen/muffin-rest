@@ -3,7 +3,7 @@ import peewee as pw
 from muffin_peewee.models import to_simple
 from wtforms import fields as f
 
-from muffin_rest import RESTHandler, Form, RESTNotFound, Filter
+from muffin_rest import RESTHandler, Form, RESTNotFound, Filter, default_converter
 
 
 try:
@@ -18,10 +18,7 @@ except ImportError:
 
 def pw_converter(handler, flt):
     """ Convert column name to filter. """
-    if isinstance(flt, Filter):
-        return flt
-
-    return PWFilter(flt)
+    return default_converter(handler, flt, PWFilter)
 
 
 class PWRESTHandlerMeta(type(RESTHandler)):
@@ -93,6 +90,23 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         resource.delete_instance()
 
 
+class PWFilter(Filter):
+
+    """ Base filter for Peewee handlers. """
+
+    operations = dict(Filter.operations, **{
+        '%': lambda a, b: a % b,
+        '<<': lambda a, b: a << b,
+    })
+
+    def apply(self, query, value):
+        """ Filter a query. """
+        form_field = query.model_class._meta.fields.get(self.column_name)
+        if not form_field:
+            return query
+        return query.where(self.op(form_field, value))
+
+
 class PWMultiField(f.StringField):
 
     """ Support many values. """
@@ -102,15 +116,18 @@ class PWMultiField(f.StringField):
         self.data = valuelist
 
 
-class PWFilter(Filter):
+class PWMultiFilter(PWFilter):
 
-    """ Base filter for Peewee handlers. """
+    """ Support multi values. """
 
     form_field = PWMultiField
 
     def apply(self, query, value):
         """ Filter a query. """
-        form_field = query.model_class._meta.fields.get(self.name)
+        form_field = query.model_class._meta.fields.get(self.column_name)
+        if not form_field:
+            return query
+
         return query.where(form_field << value)
 
 
@@ -120,6 +137,6 @@ class PWLikeFilter(PWFilter):
 
     def apply(self, query, value):
         """ Filter a query. """
-        form_field = query.model_class._meta.fields.get(self.name)
+        form_field = query.model_class._meta.fields.get(self.column_name)
         value = "*%s*" % value
         return query.where(form_field % value)

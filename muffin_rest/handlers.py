@@ -20,7 +20,7 @@ class RESTHandler(Handler):
         """ Initialize filters. """
         self.filters_form = FilterForm(prefix=FILTER_PREFIX)
         for flt in self.filters:
-            flt = self.filters_converter(flt).bind(self.filters_form)
+            self.filters_converter(flt).bind(self.filters_form)
 
     @classmethod
     def connect(cls, app, *paths, methods=None, name=None, **kwargs):
@@ -39,7 +39,7 @@ class RESTHandler(Handler):
         self.auth = yield from self.authorize(request)
         self.collection = yield from self.get_many(request)
 
-        if request.method == 'POST' or view is not None:
+        if request.method == 'POST':
             return (yield from super(RESTHandler, self).dispatch(request, view=view))
 
         resource = yield from self.get_one(request)
@@ -49,7 +49,8 @@ class RESTHandler(Handler):
             # Filter collection
             self.collection = yield from self.filter(request)
 
-        return (yield from super(RESTHandler, self).dispatch(request, resource=resource))
+        return (
+            yield from super(RESTHandler, self).dispatch(request, resource=resource, view=view))
 
     @abcoroutine
     def authorize(self, request):
