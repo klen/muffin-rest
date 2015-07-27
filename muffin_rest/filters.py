@@ -31,7 +31,7 @@ class Filter:
 
     """ Implement filters. """
 
-    field = wtf.StringField
+    form_field = wtf.StringField
     default = FilterDefault()
     options = {}
 
@@ -42,9 +42,10 @@ class Filter:
 
     def bind(self, form):
         """ Bind to filter's form. """
-        field = self.field(**self.options)
-        field = form._fields[self.name] = field.bind(form, self.name, prefix=form._prefix)
-        field.flt = self
+        form_field = self.form_field(**self.options)
+        form_field = form._fields[self.name] = form_field.bind(
+            form, self.name, prefix=form._prefix)
+        form_field.flt = self
 
     def filter(self, collection, data):
         """ Load value and filter collection. """
@@ -67,21 +68,21 @@ class BoolFilter(Filter):
 
     """ Boolean filter. """
 
-    field = wtf.BooleanField
+    form_field = wtf.BooleanField
 
 
 class IntegerFilter(Filter):
 
     """ Integer filter. """
 
-    field = wtf.IntegerField
+    form_field = wtf.IntegerField
 
 
 class ChoiceFilter(Filter):
 
-    """ Boolean filter. """
+    """ Choice filter. """
 
-    field = wtf.SelectField
+    form_field = wtf.SelectField
 
 
 def default_converter(handler, flt):

@@ -106,12 +106,12 @@ class PWFilter(Filter):
 
     """ Base filter for Peewee handlers. """
 
-    field = PWMultiField
+    form_field = PWMultiField
 
     def apply(self, query, value):
         """ Filter a query. """
-        field = query.model_class._meta.fields.get(self.name)
-        return query.where(field << value)
+        form_field = query.model_class._meta.fields.get(self.name)
+        return query.where(form_field << value)
 
 
 class PWLikeFilter(PWFilter):
@@ -120,6 +120,6 @@ class PWLikeFilter(PWFilter):
 
     def apply(self, query, value):
         """ Filter a query. """
-        field = query.model_class._meta.fields.get(self.name)
+        form_field = query.model_class._meta.fields.get(self.name)
         value = "*%s*" % value
-        return query.where(field % value)
+        return query.where(form_field % value)
