@@ -6,7 +6,7 @@ import ujson
 # Package information
 # ===================
 
-__version__ = "0.0.30"
+__version__ = "0.0.31"
 __project__ = "muffin-rest"
 __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "MIT"
