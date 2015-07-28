@@ -24,7 +24,8 @@ def clean_app(app, request):
 
 def test_filters():
     filters = (
-        'one', ('two', 'two__gt', '>'), mr.Filter('three'), ('dummy', None, None),
+        'one', ('two', {'filter_name': 'two__gt', 'op': '>'}),
+        mr.Filter('three'), ('dummy', {'op': None}),
     )
     form = mr.FilterForm(prefix='test-')
     filters = [mr.default_converter(None, flt).bind(form) for flt in filters]
@@ -147,10 +148,10 @@ def test_peewee(app, client):
     class ResourceHandler(PWRESTHandler):
         model = Resource
         filters = (
-            'active', 'name',                    # Simple filters by name (equals)
-            ('id', 'id__gte', '>='),             # Filter id by >=
-            PWMultiFilter('name', 'name__in'),   # Multivalue filter
-            ('custom', None, None),              # Dummy filter (do nothing)
+            'active', 'name',                                # Simple filters by name (equals)
+            ('id', {'filter_name': 'id__gte', 'op': '>='}),  # Filter id by >=
+            PWMultiFilter('name', 'name__in'),               # Multivalue filter
+            ('custom', {'op': None}),                        # Dummy filter (do nothing)
         )
 
     assert ResourceHandler.form

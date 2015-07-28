@@ -47,10 +47,12 @@ class Filter:
         '<': operator.lt,
     }
 
-    def __init__(self, column_name, filter_name=None, op='==', **options):
-        """ Store name and mode. """
+    def __init__(self, column_name, filter_name=None, op='==', form_field=None, **options):
+        """ Initialize a filter. """
         self.column_name = column_name
         self.filter_name = filter_name or column_name
+        if form_field is not None and issubclass(form_field, wtf.Field):
+            self.form_field = form_field
         self.options = options or self.options
         self.op = self.operations.get(op)
 
@@ -94,6 +96,8 @@ def default_converter(handler, flt, fcls=Filter):
         return flt
 
     if isinstance(flt, str):
-        flt = (flt,)
+        return fcls(flt)
 
-    return fcls(*flt)
+    name, params = flt
+
+    return fcls(name, **params)
