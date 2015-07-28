@@ -24,7 +24,7 @@ def clean_app(app, request):
 
 def test_filters():
     filters = (
-        'one', ('two', 'two__gt', '>'), mr.Filter('three'), mr.DummyFilter('dummy'),
+        'one', ('two', 'two__gt', '>'), mr.Filter('three'), ('dummy', None, None),
     )
     form = mr.FilterForm(prefix='test-')
     filters = [mr.default_converter(None, flt).bind(form) for flt in filters]
@@ -32,6 +32,7 @@ def test_filters():
     assert 'one' in form._fields
     assert 'two__gt' in form._fields
     assert 'three' in form._fields
+    assert 'dummy' in form._fields
 
     Model = collections.namedtuple('Model', ('one', 'two', 'three'))
 
@@ -149,7 +150,7 @@ def test_peewee(app, client):
             'active', 'name',                    # Simple filters by name (equals)
             ('id', 'id__gte', '>='),             # Filter id by >=
             PWMultiFilter('name', 'name__in'),   # Multivalue filter
-            mr.DummyFilter('custom')                     # Custom Filter
+            ('custom', None, None),              # Dummy filter (do nothing)
         )
 
     assert ResourceHandler.form

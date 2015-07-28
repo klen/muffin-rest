@@ -52,11 +52,7 @@ class Filter:
         self.column_name = column_name
         self.filter_name = filter_name or column_name
         self.options = options or self.options
-
-        try:
-            self.op = self.operations[op]
-        except KeyError:
-            raise ValueError('Unknown filters operation: %s' % op)
+        self.op = self.operations.get(op)
 
     def bind(self, form):
         """ Bind to filter's form. """
@@ -70,6 +66,8 @@ class Filter:
         value = self.value(data)
         if value is self.default:
             return collection, False
+        if self.op is None:
+            return collection, True
         return self.apply(collection, value), True
 
     def value(self, data):
@@ -82,19 +80,11 @@ class Filter:
         return [o for o in collection if self.op(getattr(o, self.column_name, None), value)]
 
 
-class DummyFilter(Filter):
-
-    """ Do nothing. """
-
-    def filter(self, collection, data):
-        """Do nothing."""
-        value = self.value(data)
-        return collection, value is not self.default
-
-
 # Filters for base primitives
 BoolFilter = type('BoolFilter', (Filter,), {'form_field': wtf.BooleanField})
 IntegerFilter = type('IntegerFilter', (Filter,), {'form_field': wtf.IntegerField})
+DateFilter = type('DateFilter', (Filter,), {'form_field': wtf.DateField})
+DateTimeFilter = type('DateTimeFilter', (Filter,), {'form_field': wtf.DateTimeField})
 ChoiceFilter = type('ChoiceFilter', (Filter,), {'form_field': wtf.SelectField})
 
 
