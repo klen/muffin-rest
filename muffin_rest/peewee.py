@@ -12,6 +12,10 @@ try:
     ModelConverter.defaults[pw.DateField] = f.DateField
     ModelConverter.defaults[pw.DateTimeField] = f.DateTimeField
 
+    from muffin_peewee.fields import JSONField
+
+    ModelConverter.defaults[JSONField] = f.TextAreaField
+
 except ImportError:
     model_form = None
 

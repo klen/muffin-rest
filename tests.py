@@ -134,11 +134,13 @@ def test_base(app, client):
 
 def test_peewee(app, client):
     import peewee as pw
+    from muffin_peewee.fields import JSONField
 
     @app.ps.peewee.register
     class Resource(app.ps.peewee.TModel):
         active = pw.BooleanField(default=False)
         name = pw.CharField(null=False)
+        config = JSONField(default={})
 
     Resource.create_table()
 
