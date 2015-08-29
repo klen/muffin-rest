@@ -1,7 +1,7 @@
 """ Support Muffin-Peewee. """
 import peewee as pw
 from muffin_peewee.models import to_simple
-from wtforms import fields as f
+import wtforms as wtf
 
 from muffin_rest import RESTHandler, Form, RESTNotFound, Filter, default_converter
 
@@ -9,12 +9,12 @@ from muffin_rest import RESTHandler, Form, RESTNotFound, Filter, default_convert
 try:
     from wtfpeewee.orm import model_form, ModelConverter
 
-    ModelConverter.defaults[pw.DateField] = f.DateField
-    ModelConverter.defaults[pw.DateTimeField] = f.DateTimeField
+    ModelConverter.defaults[pw.DateField] = wtf.DateField
+    ModelConverter.defaults[pw.DateTimeField] = wtf.DateTimeField
 
     from muffin_peewee.fields import JSONField
 
-    ModelConverter.defaults[JSONField] = f.TextAreaField
+    ModelConverter.defaults[JSONField] = wtf.TextAreaField
 
 except ImportError:
     model_form = None
@@ -111,7 +111,14 @@ class PWFilter(Filter):
         return query.where(self.op(form_field, value))
 
 
-class PWMultiField(f.StringField):
+# Filters for base primitives
+PWBoolFilter = type('BoolFilter', (PWFilter,), {'form_field': wtf.BooleanField})
+PWIntegerFilter = type('IntegerFilter', (PWFilter,), {'form_field': wtf.IntegerField})
+PWDateFilter = type('DateFilter', (PWFilter,), {'form_field': wtf.DateField})
+PWDateTimeFilter = type('DateTimeFilter', (PWFilter,), {'form_field': wtf.DateTimeField})
+
+
+class PWMultiField(wtf.StringField):
 
     """ Support many values. """
 
