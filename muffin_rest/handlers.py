@@ -90,7 +90,7 @@ class RESTHandler(Handler):
 
         if resource:
             data = {}
-            for name, field, *args in (self.form._unbound_fields or self.form()._fields):
+            for name, field, *args in self.form()._unbound_fields:
                 value = getattr(resource, name, None)
                 if isinstance(value, (dt.datetime, dt.date)):
                     field = field.bind(None, name, _meta=1)
