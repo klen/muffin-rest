@@ -1,8 +1,4 @@
-""" .
-
-!!! STILL NOT IMPLEMENTED. WORK IN PROGRESS !!!
-
-"""
+"""!!! STILL NOT IMPLEMENTED. WORK IN PROGRESS !!!."""
 
 import re
 import muffin
@@ -16,18 +12,16 @@ PREFIX_RE = re.compile('(/|\s)')
 
 class ApiRoute(web.Route):
 
-    """ Support multiplie routers. """
+    """Support multiplie routers."""
 
     def __init__(self, api):
-        """ Init router. """
+        """Initialize the route."""
         self.api = api
-        self._name = api.prefix_name
-        self._path = api.prefix
-        self._method = "*"
         self.router = web.UrlDispatcher()
+        super(ApiRoute, self).__init__('*', None, api.prefix_name)
 
     def match(self, path):
-        """ Check path for API. """
+        """Check path for API."""
         if path.startswith(self.api.prefix):
             path = path[len(self.api.prefix):]
             for name, route in self.router.items():
@@ -38,22 +32,23 @@ class ApiRoute(web.Route):
         return None
 
     @asyncio.coroutine
-    def _handler(self, request):
+    def handler(self, request):
+        """Handle request."""
         route = self.router[request.match_info['api-name']]
         response = yield from route._handler(request)
         return response
 
     def url(self, **kwargs):
-        """ Do nothing for now. """
-        pass
+        """Do nothing for now."""
+        return self.api.prefix
 
 
 class Api():
 
-    """ Support API. """
+    """Bind group of resources together."""
 
     def __init__(self, app, prefix='/api', scheme=False):
-        """ Initialize the API. """
+        """Initialize the API."""
         self.app = app
         self.prefix = prefix.rstrip('/')
         self.prefix_name = PREFIX_RE.sub('-', prefix.strip('/'))
@@ -66,7 +61,7 @@ class Api():
             app.register(path)(handler)
 
     def register(self, *paths, methods=None, name=None):
-        """ Register handler to application. """
+        """Register handler to the API."""
         if isinstance(methods, str):
             methods = [methods]
 
@@ -95,7 +90,7 @@ class Api():
         return wrapper
 
     def render_scheme(self, request):
-        """ Render API Scheme. """
+        """Render API Scheme."""
         response = {}
 
         for name, handler in self.handlers.items():
@@ -104,3 +99,5 @@ class Api():
             response[name] = scheme
 
         return response
+
+#  pylama:ignore=W1401,W0212

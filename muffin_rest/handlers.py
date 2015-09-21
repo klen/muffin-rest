@@ -1,4 +1,4 @@
-""" REST support. """
+"""Handle REST."""
 import datetime as dt
 
 import muffin
@@ -10,21 +10,26 @@ from muffin_rest import RESTNotFound, RESTBadRequest, FILTER_PREFIX, default_con
 
 class RESTHandler(Handler):
 
-    """ Implement handler for REST operations. """
+    """Implement a handler for REST operations."""
 
     form = None
     filters = ()
     filters_converter = default_converter
 
     def __init__(self):
-        """ Initialize filters. """
+        """Initialize filters."""
+        # Process filters
         self.filters_form = FilterForm(prefix=FILTER_PREFIX)
         for flt in self.filters:
-            self.filters_converter(flt).bind(self.filters_form)
+            field = self.filters_converter(flt)
+            field.bind(self.filters_form)
 
     @classmethod
     def connect(cls, app, *paths, methods=None, name=None, **kwargs):
-        """ Connect to the application. """
+        """Connect to the application.
+
+        Generate URL, name if it's not provided.
+        """
         if not paths:
             paths = [muffin.sre('/%s(/{%s})?/?' % (cls.name, cls.name))]
 
@@ -35,7 +40,7 @@ class RESTHandler(Handler):
 
     @abcoroutine
     def dispatch(self, request, view=None):
-        """ Process REST. """
+        """Process request."""
         self.auth = yield from self.authorize(request)
         self.collection = yield from self.get_many(request)
 
@@ -44,9 +49,8 @@ class RESTHandler(Handler):
 
         resource = yield from self.get_one(request)
 
+        # Filter collection
         if request.method == 'GET' and resource is None:
-
-            # Filter collection
             self.collection = yield from self.filter(request)
 
         return (
@@ -54,12 +58,12 @@ class RESTHandler(Handler):
 
     @abcoroutine
     def authorize(self, request):
-        """ Base point for authorization. """
+        """Base point for authorization."""
         return True
 
     @abcoroutine
     def parse(self, request):
-        """ Ensure that request.data is multidict. """
+        """Ensure that request.data is multidict."""
         data = yield from super().parse(request)
         if not isinstance(data, MultiDict):
             data = MultiDict(data)
@@ -67,30 +71,30 @@ class RESTHandler(Handler):
 
     @abcoroutine
     def get_many(self, request):
-        """ Base point for collect data. """
+        """Base point for collect data."""
         return []
 
     @abcoroutine
     def filter(self, request):
-        """ Filter collection. """
+        """Filter collection."""
         return self.filters_form.process(self.collection, request.GET)
 
     @abcoroutine
     def get_one(self, request):
-        """ Base point load resource. """
+        """Load resource."""
         return request.match_info.get(self.name)
 
     @abcoroutine
     def get_form(self, request, resource=None):
-        """ Base point load resource. """
+        """Initialize resource's form."""
         formdata = yield from self.parse(request)
 
         if not self.form:
-            raise muffin.MuffinException("%s.form is not defined." % type(self).__name__)
+            raise RESTBadRequest(reason="%s.form is not defined." % type(self).__name__)
 
         if resource:
             data = {}
-            for name, field, *args in self.form()._unbound_fields:
+            for name, field, *_ in self.form()._unbound_fields:
                 value = getattr(resource, name, None)
                 if isinstance(value, (dt.datetime, dt.date)):
                     field = field.bind(None, name, _meta=1)
@@ -104,7 +108,7 @@ class RESTHandler(Handler):
 
     @abcoroutine
     def save_form(self, form, request, resource=None):
-        """ Save self form. """
+        """Save self form."""
         if resource is None:
             resource = self.populate()
 
@@ -112,18 +116,18 @@ class RESTHandler(Handler):
         return resource
 
     def populate(self):
-        """ Create object. """
+        """Create a resource."""
         return object()
 
     def to_simple(self, data, many=False):
-        """ Convert resource to simple. """
+        """Serialize response to simple object (list, dict)."""
         if many:
             return [self.to_simple(r) for r in data]
         return str(data)
 
     @abcoroutine
     def get(self, request, resource=None):
-        """ Get collection of resources. """
+        """Get resource or collection of resources."""
         if resource:
             return self.to_simple(resource)
 
@@ -131,7 +135,7 @@ class RESTHandler(Handler):
 
     @abcoroutine
     def post(self, request):
-        """ Create a resource. """
+        """Create a resource."""
         form = yield from self.get_form(request)
         if not form.validate():
             raise RESTBadRequest(json=form.errors)
@@ -140,7 +144,7 @@ class RESTHandler(Handler):
 
     @abcoroutine
     def put(self, request, resource=None):
-        """ Update a resource. """
+        """Update a resource."""
         if resource is None:
             raise RESTNotFound(reason='Resource not found')
 
@@ -154,16 +158,18 @@ class RESTHandler(Handler):
 
     @abcoroutine
     def delete(self, request, resource=None):
-        """ Delete a resource. """
+        """Delete a resource."""
         if resource is None:
             raise RESTNotFound(reason='Resource not found')
 
     @classmethod
     def scheme(cls):
-        """ Return self schema. """
+        """Return self schema."""
         return {
             'form': cls.form and {
                 name: str(type(field)) for (name, field) in cls.form()._fields.items()} or None,
             'methods': cls.methods,
             'description': cls.__doc__,
         }
+
+#  pylama:ignore=W0201

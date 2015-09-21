@@ -1,7 +1,7 @@
-""" REST helpers for Muffin Framework. """
-
-from muffin import HTTPNotFound, HTTPBadRequest, HTTPForbidden
+"""REST helpers for Muffin Framework."""
 import ujson
+from muffin import HTTPNotFound, HTTPBadRequest, HTTPForbidden
+
 
 # Package information
 # ===================
@@ -14,10 +14,10 @@ __license__ = "MIT"
 
 class JSONResponse:
 
-    """ Accept JSON data. """
+    """Accept JSON data."""
 
     def __init__(self, *, json=None, **kwargs):
-        """ Convert JSON data to text. """
+        """Convert JSON data to text."""
         if json:
             kwargs.setdefault('text', ujson.dumps(json))
             kwargs.setdefault('content_type', 'application/json')
@@ -26,21 +26,21 @@ class JSONResponse:
 
 class RESTNotFound(JSONResponse, HTTPNotFound):
 
-    """ Custom excption class for stopping default application error handlers. """
+    """Custom excption class for stopping default application error handlers."""
 
     pass
 
 
 class RESTBadRequest(JSONResponse, HTTPBadRequest):
 
-    """ Custom excption class for stopping default application error handlers. """
+    """Custom excption class for stopping default application error handlers."""
 
     pass
 
 
 class RESTForbidden(JSONResponse, HTTPForbidden):
 
-    """ Custom exception class for stopping default application error handlers. """
+    """Custom exception class for stopping default application error handlers."""
 
     pass
 

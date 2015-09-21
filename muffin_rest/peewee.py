@@ -1,4 +1,4 @@
-""" Support Muffin-Peewee. """
+"""Support Muffin-Peewee."""
 import peewee as pw
 from muffin_peewee.models import to_simple
 import wtforms as wtf
@@ -21,16 +21,16 @@ except ImportError:
 
 
 def pw_converter(handler, flt):
-    """ Convert column name to filter. """
+    """Convert column name to filter."""
     return default_converter(handler, flt, PWFilter)
 
 
 class PWRESTHandlerMeta(type(RESTHandler)):
 
-    """ Peewee specific. """
+    """Peewee specific."""
 
     def __new__(mcs, name, bases, params):
-        """ Prepare handler params. """
+        """Prepare handler params."""
         model = params.get('model')
         params.setdefault('name', model and model._meta.db_table.lower() or name.lower())
         params.setdefault('model_pk', model and model._meta.primary_key or None)
@@ -42,7 +42,7 @@ class PWRESTHandlerMeta(type(RESTHandler)):
 
 class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
 
-    """ Support REST for Peewee. """
+    """Support REST for Peewee."""
 
     filters_converter = pw_converter
 
@@ -56,11 +56,11 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
     form_meta = {}
 
     def get_many(self, request):
-        """ Get collection. """
+        """Get collection."""
         return self.model.select()
 
     def get_one(self, request):
-        """ Load a resource. """
+        """Load a resource."""
         resource = request.match_info.get(self.name)
         if not resource:
             return None
@@ -71,24 +71,24 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
             raise RESTNotFound(reason='Resource not found.')
 
     def populate(self):
-        """ Create object. """
+        """Create object."""
         return self.model()
 
     def save_form(self, form, request, resource=None):
-        """ Save data. """
+        """Save data."""
         resource = yield from super(PWRESTHandler, self).save_form(
             form, request, resource=resource)
         resource.save()
         return resource
 
     def to_simple(self, data, many=False):
-        """ Serialize data. """
+        """Serialize data."""
         if many:
             return super(PWRESTHandler, self).to_simple(data, many)
         return to_simple(data, **self.simple_meta)
 
     def delete(self, request, resource=None):
-        """ Delete a resource. """
+        """Delete a resource."""
         if resource is None:
             raise RESTNotFound(reason='Resource not found')
         resource.delete_instance()
@@ -96,7 +96,7 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
 
 class PWFilter(Filter):
 
-    """ Base filter for Peewee handlers. """
+    """Base filter for Peewee handlers."""
 
     operations = dict(Filter.operations, **{
         '%': lambda a, b: a % b,
@@ -104,7 +104,7 @@ class PWFilter(Filter):
     })
 
     def apply(self, query, value):
-        """ Filter a query. """
+        """Filter a query."""
         form_field = query.model_class._meta.fields.get(self.column_name)
         if not form_field:
             return query
@@ -120,21 +120,21 @@ PWDateTimeFilter = type('DateTimeFilter', (PWFilter,), {'form_field': wtf.DateTi
 
 class PWMultiField(wtf.StringField):
 
-    """ Support many values. """
+    """Support many values."""
 
     def process_formdata(self, valuelist):
-        """ Save multivalues. """
-        self.data = valuelist
+        """Save multivalues."""
+        self.data = valuelist # noqa
 
 
 class PWMultiFilter(PWFilter):
 
-    """ Support multi values. """
+    """Support multi values."""
 
     form_field = PWMultiField
 
     def apply(self, query, value):
-        """ Filter a query. """
+        """Filter a query."""
         form_field = query.model_class._meta.fields.get(self.column_name)
         if not form_field:
             return query
@@ -144,10 +144,10 @@ class PWMultiFilter(PWFilter):
 
 class PWLikeFilter(PWFilter):
 
-    """ Filter query by value. """
+    """Filter query by value."""
 
     def apply(self, query, value):
-        """ Filter a query. """
+        """Filter a query."""
         form_field = query.model_class._meta.fields.get(self.column_name)
         value = "*%s*" % value
         return query.where(form_field % value)
