@@ -232,10 +232,11 @@ class RESTHandler(Handler):
 
 def make_pagination_headers(request, limit, curpage, total):
     """Return Link Hypermedia Header."""
-    links = {}
-    headers = {'X-Total-Count': str(total), 'X-Limit': str(limit)}
-    base = "{0.scheme}://{0.host}{0.path}?%s".format(request)
     lastpage = total // limit
+    headers = {'X-Total-Count': str(total), 'X-Limit': str(limit),
+               'X-Page-Last': str(lastpage), 'X-Page-Current': str(curpage)}
+    base = "{}?%s".format(request.path)
+    links = {}
     links['first'] = base % urlencode(dict(request.GET, **{PAGE_VAR: 0}))
     links['last'] = base % urlencode(dict(request.GET, **{PAGE_VAR: lastpage}))
     if curpage:
