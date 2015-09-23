@@ -86,7 +86,7 @@ def test_api(app, client):
     assert response.json
 
     response = client.get('/api/v1/action')
-    assert response.text == 'ACTION'
+    assert response.json == 'ACTION'
 
 
 def test_base(app, client):
@@ -100,9 +100,11 @@ def test_base(app, client):
 
         methods = 'get',
 
-        collection = [1, 2, 3]
+        collection = [1, 2, 3, 4, 5]
 
         filters = NumFilter('num'), NumFilter('num__gte', op='>=')
+
+        limit = 3
 
         def get_many(self, request):
             return self.collection
@@ -117,17 +119,20 @@ def test_base(app, client):
             raise Exception('Shouldnt be called')
 
     assert 'api-resource-*' in app.router
-    response = client.get('/resource')
+    response = client.get('/resource?some=22')
     assert response.json == ['1', '2', '3']
+    assert response.headers['X-TOTAL-COUNT'] == '5'
+    assert response.headers['X-Limit'] == '3'
+    assert response.headers['Link']
 
     response = client.get('/resource?mr-num=1')
     assert response.json == ['1']
 
-    response = client.get('/resource?mr-num__gte=2')
-    assert response.json == ['2', '3']
+    response = client.get('/resource?mr-num__gte=3')
+    assert response.json == ['3', '4', '5']
 
     response = client.get('/resource/2')
-    assert response.text == '3'
+    assert response.json == '3'
 
     client.post('/resource', status=405)
 
@@ -146,7 +151,7 @@ def test_peewee(app, client):
 
     from muffin_rest.peewee import PWRESTHandler, PWMultiFilter
 
-    @app.register('/resource', '/resource/{resource:\d+}')
+    @app.register('/resource', r'/resource/{resource:\d+}')
     class ResourceHandler(PWRESTHandler):
         model = Resource
         filters = (
@@ -197,7 +202,7 @@ def test_peewee(app, client):
     assert created.year == 2010
 
     response = client.delete('/resource/2', {'name': 'new'})
-    assert response.text == ''
+    assert response.text == 'null'
     assert Resource.select().where(Resource.id == 1).exists()
     assert not Resource.select().where(Resource.id == 2).exists()
 
@@ -212,3 +217,14 @@ def test_peewee(app, client):
 
     response = client.get('/resource?mr-id__gte=2')
     assert len(response.json) == 3
+
+    for n in range(6):
+        Resource(name='test%d' % n).save()
+
+    response = client.get('/resource')
+    assert len(response.json) == 10
+
+    response = client.get('/resource?mr--limit=3')
+    assert len(response.json) == 3
+
+#  pylama:ignore=W0621,W0612

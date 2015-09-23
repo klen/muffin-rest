@@ -1,24 +1,39 @@
 """Handle REST."""
 import datetime as dt
+from asyncio import iscoroutine
+from urllib.parse import urlencode
 
 import muffin
 from aiohttp import MultiDict
+from aiohttp.web import StreamResponse, Response
 from muffin.handler import Handler, abcoroutine
+from ujson import dumps # noqa
 
 from muffin_rest import RESTNotFound, RESTBadRequest, FILTER_PREFIX, default_converter, FilterForm
 
 
+PAGE_VAR = FILTER_PREFIX + '-page'
+LIMIT_VAR = FILTER_PREFIX + '-limit'
+
+
 class RESTHandler(Handler):
 
-    """Implement a handler for REST operations."""
+    """Implement a common handler for REST operations."""
 
+    #: A form for create/update the resource
     form = None
+
+    #: Resource filters, it could be a field names or Filter instances
     filters = ()
+
+    #: A function which convert field names to Filters
     filters_converter = default_converter
 
+    #: If greater than zero collection of the resources will be paginated
+    limit = 0
+
     def __init__(self):
-        """Initialize filters."""
-        # Process filters
+        """Initialize a filters' form. And convert filters."""
         self.filters_form = FilterForm(prefix=FILTER_PREFIX)
         for flt in self.filters:
             field = self.filters_converter(flt)
@@ -39,22 +54,52 @@ class RESTHandler(Handler):
         return super(RESTHandler, cls).connect(app, *paths, methods=methods, name=name, **kwargs)
 
     @abcoroutine
-    def dispatch(self, request, view=None):
+    def dispatch(self, request, **kwgs):
         """Process request."""
+        headers = {}
+
+        # Authorization endpoint
         self.auth = yield from self.authorize(request)
+
+        # Load collection
         self.collection = yield from self.get_many(request)
 
         if request.method == 'POST':
-            return (yield from super(RESTHandler, self).dispatch(request, view=view))
+            return (yield from super(RESTHandler, self).dispatch(request, **kwgs))
 
         resource = yield from self.get_one(request)
 
-        # Filter collection
         if request.method == 'GET' and resource is None:
-            self.collection = yield from self.filter(request)
 
-        return (
-            yield from super(RESTHandler, self).dispatch(request, resource=resource, view=view))
+            # Filter the collection
+            if self.filters_form._fields:
+                self.collection = yield from self.filter(request)
+
+            # Paginate the collection
+            try:
+                limit = int(request.GET.get(LIMIT_VAR, self.limit))
+                if limit:
+                    curpage = int(request.GET.get(PAGE_VAR, 0))
+                    offset = curpage * limit
+                    self.collection, total = yield from self.paginate(request, offset, limit)
+                    headers.update(make_pagination_headers(request, limit, curpage, total))
+            except ValueError:
+                raise RESTBadRequest('Pagination params are invalid.')
+
+        response = yield from super(RESTHandler, self).dispatch(request, resource=resource, **kwgs)
+        response.headers.update(headers)
+        return response
+
+    @abcoroutine
+    def make_response(self, request, response):
+        """Convert a handler result to web response."""
+        while iscoroutine(response):
+            response = yield from response
+
+        if isinstance(response, StreamResponse):
+            return response
+
+        return Response(text=dumps(response), content_type='application/json')
 
     @abcoroutine
     def authorize(self, request):
@@ -128,10 +173,10 @@ class RESTHandler(Handler):
     @abcoroutine
     def get(self, request, resource=None):
         """Get resource or collection of resources."""
-        if resource:
+        if resource is not None and resource != '':
             return self.to_simple(resource)
 
-        return self.to_simple(self.collection, True)
+        return self.to_simple(self.collection, many=True)
 
     @abcoroutine
     def post(self, request):
@@ -161,6 +206,18 @@ class RESTHandler(Handler):
         """Delete a resource."""
         if resource is None:
             raise RESTNotFound(reason='Resource not found')
+        self.collection.remove(resource)
+
+    @abcoroutine
+    def paginate(self, request, offset=0, limit=0):
+        """Paginate collection.
+
+        :param request: client's request
+        :param offset: current offset
+        :param limit: limit items per page
+        :returns: (paginated collection, count of resources)
+        """
+        return self.collection[offset: offset + limit], len(self.collection)
 
     @classmethod
     def scheme(cls):
@@ -171,5 +228,23 @@ class RESTHandler(Handler):
             'methods': cls.methods,
             'description': cls.__doc__,
         }
+
+
+def make_pagination_headers(request, limit, curpage, total):
+    """Return Link Hypermedia Header."""
+    links = {}
+    headers = {'X-Total-Count': str(total), 'X-Limit': str(limit)}
+    base = "{0.scheme}://{0.host}{0.path}?%s".format(request)
+    lastpage = total // limit
+    links['first'] = base % urlencode(dict(request.GET, **{PAGE_VAR: 0}))
+    links['last'] = base % urlencode(dict(request.GET, **{PAGE_VAR: lastpage}))
+    if curpage:
+        links['prev'] = base % urlencode(dict(request.GET, **{PAGE_VAR: curpage - 1}))
+    if curpage < lastpage:
+        links['next'] = base % urlencode(dict(request.GET, **{PAGE_VAR: curpage + 1}))
+
+    headers['Link'] = ",".join(['<%s>; rel="%s"' % (v, n) for n, v in links.items()])
+    return headers
+
 
 #  pylama:ignore=W0201

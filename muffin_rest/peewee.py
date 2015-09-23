@@ -1,7 +1,7 @@
 """Support Muffin-Peewee."""
 import peewee as pw
-from muffin_peewee.models import to_simple
 import wtforms as wtf
+from muffin_peewee.models import to_simple
 
 from muffin_rest import RESTHandler, Form, RESTNotFound, Filter, default_converter
 
@@ -92,6 +92,10 @@ class PWRESTHandler(RESTHandler, metaclass=PWRESTHandlerMeta):
         if resource is None:
             raise RESTNotFound(reason='Resource not found')
         resource.delete_instance()
+
+    def paginate(self, request, offset=0, limit=None):
+        """Paginate queryset."""
+        return self.collection.offset(offset).limit(limit), self.collection.count()
 
 
 class PWFilter(Filter):

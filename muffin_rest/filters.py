@@ -20,7 +20,7 @@ class FilterForm(wtf.Form):
 
     """Store filters for resource."""
 
-    filters = {}
+    filters = None
 
     def process(self, collection, formdata=None, obj=None, data=None, **kwargs):
         """Filter collection."""
