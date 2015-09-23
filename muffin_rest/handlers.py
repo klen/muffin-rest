@@ -234,7 +234,7 @@ def make_pagination_headers(request, limit, curpage, total):
     """Return Link Hypermedia Header."""
     lastpage = total // limit
     headers = {'X-Total-Count': str(total), 'X-Limit': str(limit),
-               'X-Page-Last': str(lastpage), 'X-Page-Current': str(curpage)}
+               'X-Page-Last': str(lastpage), 'X-Page': str(curpage)}
     base = "{}?%s".format(request.path)
     links = {}
     links['first'] = base % urlencode(dict(request.GET, **{PAGE_VAR: 0}))
