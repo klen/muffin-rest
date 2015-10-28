@@ -58,7 +58,7 @@ def test_filters():
 def test_api(app, client):
     api = mr.Api(app, '/api/v1', scheme='map')
     assert api.prefix == '/api/v1'
-    assert api.prefix_name == 'api-v1'
+    assert api.prefix_name == 'api.v1'
 
     @api.register
     class Resource(mr.RESTHandler):
@@ -72,7 +72,7 @@ def test_api(app, client):
     def cfg(request):
         return {'VAR': 'VALUE'}
 
-    assert 'api-v1-resource-*' in api.urls.router
+    assert 'api.v1.resource' in api.urls.router
 
     client.get('/api/v1/unknown', status=404)
 
@@ -95,7 +95,7 @@ def test_base(app, client):
         def apply(self, collection, value):
             return [o for o in collection if self.op(o, value)]
 
-    @app.register(name='api-resource')
+    @app.register(name='api.resource')
     class Resource(mr.RESTHandler):
 
         methods = 'get',
@@ -118,7 +118,7 @@ def test_base(app, client):
         def post(self, request):
             raise Exception('Shouldnt be called')
 
-    assert 'api-resource-*' in app.router
+    assert 'api.resource' in app.router
     response = client.get('/resource?some=22')
     assert response.json == ['1', '2', '3']
     assert response.headers['X-TOTAL-COUNT'] == '5'
@@ -163,7 +163,7 @@ def test_peewee(app, client):
 
     assert ResourceHandler.form
     assert ResourceHandler.name == 'resource'
-    assert 'rest-resource-*' in app.router
+    assert 'rest.resource.any' in app.router
 
     response = client.get('/resource')
     assert response.json == []

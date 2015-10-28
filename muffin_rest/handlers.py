@@ -3,13 +3,12 @@ import datetime as dt
 from asyncio import iscoroutine
 from urllib.parse import urlencode
 
-import muffin
 from aiohttp import MultiDict
 from aiohttp.web import StreamResponse, Response
-from muffin.handler import Handler, abcoroutine
+from muffin_rest import RESTNotFound, RESTBadRequest, FILTER_PREFIX, default_converter, FilterForm
 from ujson import dumps # noqa
 
-from muffin_rest import RESTNotFound, RESTBadRequest, FILTER_PREFIX, default_converter, FilterForm
+from muffin.handler import Handler, abcoroutine
 
 
 PAGE_VAR = FILTER_PREFIX + '-page'
@@ -46,10 +45,10 @@ class RESTHandler(Handler):
         Generate URL, name if it's not provided.
         """
         if not paths:
-            paths = [muffin.sre('/%s(/{%s})?/?' % (cls.name, cls.name))]
+            paths = ['/%s(/{%s})?/?' % (cls.name, cls.name)]
 
         if name is None:
-            name = "rest-%s" % cls.name
+            name = "rest.%s" % cls.name
 
         return super(RESTHandler, cls).connect(app, *paths, methods=methods, name=name, **kwargs)
 
@@ -200,6 +199,10 @@ class RESTHandler(Handler):
         return self.to_simple(resource)
 
     patch = put
+
+    @abcoroutine
+    def batch(self, request):
+        """Make group operations."""
 
     @abcoroutine
     def delete(self, request, resource=None):

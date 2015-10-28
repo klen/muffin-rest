@@ -1,9 +1,9 @@
 """!!! STILL NOT IMPLEMENTED. WORK IN PROGRESS !!!."""
-
-import re
-import muffin
 import asyncio
+import re
 from types import FunctionType
+
+import muffin
 from aiohttp import web
 
 
@@ -12,7 +12,7 @@ PREFIX_RE = re.compile('(/|\s)')
 
 class ApiRoute(web.Route):
 
-    """Support multiplie routers."""
+    """Support multiple routers."""
 
     def __init__(self, api):
         """Initialize the route."""
@@ -51,7 +51,7 @@ class Api():
         """Initialize the API."""
         self.app = app
         self.prefix = prefix.rstrip('/')
-        self.prefix_name = PREFIX_RE.sub('-', prefix.strip('/'))
+        self.prefix_name = PREFIX_RE.sub('.', prefix.strip('/'))
         self.handlers = {}
         self.urls = ApiRoute(self)
         self.app.router.register_route(self.urls)
@@ -77,7 +77,7 @@ class Api():
 
             handler.connect(
                 self.app, *paths, methods=methods,
-                name=name or "%s-%s" % (self.prefix_name, handler.name), router=self.urls.router)
+                name=name or "%s.%s" % (self.prefix_name, handler.name), router=self.urls.router)
 
             return handler
 

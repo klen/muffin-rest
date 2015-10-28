@@ -14,7 +14,15 @@ __license__ = "MIT"
 
 class JSONResponse:
 
-    """Accept JSON data."""
+    """Accept JSON data.
+
+    Helper which makes JSON responses more easy.
+
+    ::
+
+        return JSONResponse(json={'json': 'here'})
+
+    """
 
     def __init__(self, *, json=None, **kwargs):
         """Convert JSON data to text."""
@@ -26,24 +34,25 @@ class JSONResponse:
 
 class RESTNotFound(JSONResponse, HTTPNotFound):
 
-    """Custom excption class for stopping default application error handlers."""
+    """Resource is not found."""
 
     pass
 
 
 class RESTBadRequest(JSONResponse, HTTPBadRequest):
 
-    """Custom excption class for stopping default application error handlers."""
+    """Request data is bad."""
 
     pass
 
 
 class RESTForbidden(JSONResponse, HTTPForbidden):
 
-    """Custom exception class for stopping default application error handlers."""
+    """Access to resource is forbidden."""
 
     pass
 
+# Import Muffin-REST Elements to the root module namespace
 from .api import *      # noqa
 from .filters import *  # noqa
 from .forms import *    # noqa
