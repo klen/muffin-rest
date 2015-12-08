@@ -1,7 +1,8 @@
-import muffin as m
-import pytest
-import datetime as dt
 import collections
+import datetime as dt
+
+import muffin
+import pytest
 from aiohttp import MultiDict
 
 import muffin_rest as mr
@@ -9,7 +10,7 @@ import muffin_rest as mr
 
 @pytest.fixture(scope='session')
 def app(loop, request):
-    return m.Application(
+    return muffin.Application(
         'rest', loop=loop, PLUGINS=['muffin_peewee'], PEEWEE_CONNECTION='sqlite:///:memory:')
 
 
@@ -19,7 +20,7 @@ def clean_app(app, request):
     def _():
         app.router._routes.clear()
         app.router._urls = []
-        m.Handler.handlers = set()
+        muffin.Handler.handlers = set()
 
 
 def test_filters():
@@ -145,6 +146,7 @@ def test_peewee(app, client):
     class Resource(app.ps.peewee.TModel):
         active = pw.BooleanField(default=False)
         name = pw.CharField(null=False)
+        count = pw.IntegerField(null=True)
         config = JSONField(default={})
 
     Resource.create_table()

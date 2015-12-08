@@ -12,6 +12,22 @@ try:
     ModelConverter.defaults[pw.DateField] = wtf.DateField
     ModelConverter.defaults[pw.DateTimeField] = wtf.DateTimeField
 
+    class IntegerField(wtf.IntegerField):
+
+        """Support null values."""
+
+        def process_formdata(self, valuelist):
+            """Support null values."""
+            if valuelist:
+                try:
+                    self.data = int(valuelist[0])
+                except (ValueError, TypeError):
+                    self.raw_data = ['']
+                    self.data = None
+                    raise ValueError(self.gettext('Not a valid integer value'))
+
+    ModelConverter.defaults[pw.IntegerField] = IntegerField
+
     from muffin_peewee.fields import JSONField
 
     ModelConverter.defaults[JSONField] = wtf.TextAreaField
