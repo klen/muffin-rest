@@ -18,8 +18,7 @@ def app(loop, request):
 def clean_app(app, request):
     @request.addfinalizer
     def _():
-        app.router._routes.clear()
-        app.router._urls = []
+        app.router._resources.clear()
         muffin.Handler.handlers = set()
 
 
@@ -73,7 +72,7 @@ def test_api(app, client):
     def cfg(request):
         return {'VAR': 'VALUE'}
 
-    assert 'api.v1.resource' in api.urls.router
+    assert 'resource' in api.resource.router
 
     client.get('/api/v1/unknown', status=404)
 
@@ -165,7 +164,7 @@ def test_peewee(app, client):
 
     assert ResourceHandler.form
     assert ResourceHandler.name == 'resource'
-    assert 'rest.resource.any' in app.router
+    assert 'rest.resource' in app.router
 
     response = client.get('/resource')
     assert response.json == []

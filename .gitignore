@@ -43,3 +43,4 @@ docs/_build
 
 /todo.txt
 /.ropeproject
+/.cache

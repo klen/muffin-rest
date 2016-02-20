@@ -52,6 +52,7 @@ class RESTForbidden(JSONResponse, HTTPForbidden):
 
     pass
 
+
 # Import Muffin-REST Elements to the root module namespace
 from .api import *      # noqa
 from .filters import *  # noqa

@@ -5,6 +5,7 @@ from types import FunctionType
 
 import muffin
 from aiohttp import web
+from muffin.urls import ParentResource
 
 
 PREFIX_RE = re.compile('(/|\s)')
@@ -53,8 +54,8 @@ class Api():
         self.prefix = prefix.rstrip('/')
         self.prefix_name = PREFIX_RE.sub('.', prefix.strip('/'))
         self.handlers = {}
-        self.urls = ApiRoute(self)
-        self.app.router.register_route(self.urls)
+        self.resource = ParentResource(self.prefix, name=self.prefix_name)
+        self.app.router._reg_resource(self.resource)
         if scheme:
             path = '/'.join((self.prefix, scheme.strip('/')))
             handler = muffin.Handler.from_view(self.render_scheme, 'GET')
@@ -76,8 +77,8 @@ class Api():
             self.handlers[handler.name] = handler
 
             handler.connect(
-                self.app, *paths, methods=methods,
-                name=name or "%s.%s" % (self.prefix_name, handler.name), router=self.urls.router)
+                self.app, *paths, methods=methods, name=name or handler.name,
+                router=self.resource.router)
 
             return handler
 

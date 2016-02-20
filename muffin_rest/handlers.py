@@ -5,10 +5,10 @@ from urllib.parse import urlencode
 
 from aiohttp import MultiDict
 from aiohttp.web import StreamResponse, Response
-from muffin_rest import RESTNotFound, RESTBadRequest, FILTER_PREFIX, default_converter, FilterForm
+from muffin.handler import Handler, abcoroutine
 from ujson import dumps # noqa
 
-from muffin.handler import Handler, abcoroutine
+from muffin_rest import RESTNotFound, RESTBadRequest, FILTER_PREFIX, default_converter, FilterForm
 
 
 PAGE_VAR = FILTER_PREFIX + '-page'
