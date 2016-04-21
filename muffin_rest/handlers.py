@@ -1,5 +1,6 @@
 """Handle REST."""
 import datetime as dt
+import math
 from asyncio import iscoroutine
 from urllib.parse import urlencode
 
@@ -235,7 +236,7 @@ class RESTHandler(Handler):
 
 def make_pagination_headers(request, limit, curpage, total):
     """Return Link Hypermedia Header."""
-    lastpage = total // limit if total > limit else 0
+    lastpage = math.ceil(total / limit) - 1
     headers = {'X-Total-Count': str(total), 'X-Limit': str(limit),
                'X-Page-Last': str(lastpage), 'X-Page': str(curpage)}
     base = "{}?%s".format(request.path)

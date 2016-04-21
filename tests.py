@@ -1,4 +1,5 @@
 import collections
+import math
 import datetime as dt
 
 import muffin
@@ -227,5 +228,9 @@ def test_peewee(app, client):
 
     response = client.get('/resource?mr--limit=3')
     assert len(response.json) == 3
+
+    response = client.get('/resource?mr--limit=1')
+    assert response.headers['x-page-last'] == '9'
+    assert response.headers['x-total-count'] == '10'
 
 #  pylama:ignore=W0621,W0612
