@@ -141,6 +141,9 @@ class RESTHandler(Handler):
             data = {}
             for name, field, *_ in self.form()._unbound_fields:
                 value = getattr(resource, name, None)
+                if value is None:
+                    continue
+
                 if isinstance(value, (dt.datetime, dt.date)):
                     field = field.bind(None, name, _meta=1)
                     value = value.strftime(field.format)
