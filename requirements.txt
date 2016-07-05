@@ -1,2 +1,2 @@
-muffin  >= 0.0.99
-wtforms
+muffin      >= 0.0.99
+marshmallow

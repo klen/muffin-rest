@@ -1,107 +1,105 @@
 """Support API filters."""
-
+import ujson
 import operator
-import wtforms as wtf
 
-
-FILTER_PREFIX = 'mr-'
-
-
-class FilterDefault:
-
-    """Default filters' value."""
-
-    def __str__(self):
-        """Empty string."""
-        return ""
-
-
-class FilterForm(wtf.Form):
-
-    """Store filters for resource."""
-
-    filters = None
-
-    def process(self, collection, formdata=None, obj=None, data=None, **kwargs):
-        """Filter collection."""
-        super(FilterForm, self).process(formdata, obj, data, **kwargs)
-        self.filters = {}
-        for field in self._fields.values():
-            collection, active = field.flt.filter(collection, self.data)
-            if active:
-                self.filters[field.flt.column_name] = field.data
-        return collection
+from cached_property import cached_property
+from marshmallow import fields, missing
 
 
 class Filter:
 
-    """Implement filters."""
+    """Base filter class."""
 
-    form_field = wtf.StringField
-    default = FilterDefault()
-    options = {}
-    operations = {
-        '==': operator.eq,
-        '!=': operator.ne,
-        '>=': operator.ge,
-        '<=': operator.le,
-        '>': operator.gt,
-        '<': operator.lt,
+    operators = {
+        '$lt': operator.lt,
+        '$le': operator.le,
+        '$gt': operator.gt,
+        '$ge': operator.ge,
+        '$eq': operator.eq,
+        '$ne': operator.ne,
+        '$in': lambda v, c: v in c,
     }
 
-    def __init__(self, column_name, filter_name=None, op='==', form_field=None, **options):
-        """Initialize the filter."""
-        self.column_name = column_name
-        self.filter_name = filter_name or column_name
-        if form_field is not None and issubclass(form_field, wtf.Field):
-            self.form_field = form_field
-        self.options = options or self.options
-        self.op = self.operations.get(op)
+    field_cls = fields.Raw
 
-    def bind(self, form):
-        """Bind to filter's form."""
-        form_field = self.form_field(**self.options)
-        form_field = form._fields[self.filter_name] = form_field.bind(
-            form, self.filter_name, prefix=form._prefix)
-        form_field.flt = self
+    def __init__(self, name, fname=None, field=None):
+        """Initialize filter.
 
-    def filter(self, collection, data):
-        """Load value and filter collection."""
-        value = self.value(data)
-        if value is self.default:
-            return collection, False
-        if self.op is None:
-            return collection, True
-        return self.apply(collection, value), True
+        :param name: Column/Property name.
+        :param fname: Filter name
+        :param fields: Marshmallow Field instance
 
-    def value(self, data):
-        """Get value from data."""
-        value = data.get(self.filter_name, self.default)
-        return value or self.default
+        """
+        self.field = field or self.field_cls()
+        self.fname = fname or name
+        self.name = name
 
-    def apply(self, collection, value):
-        """Filter collection."""
-        return [o for o in collection if self.op(getattr(o, self.column_name, None), value)]
+    def __repr__(self):
+        """String representation."""
+        return '<Filter %s>' % self.name
 
+    def parse(self, data):
+        """Parse operator and value from filter's data."""
+        val = data.get(self.fname, missing)
+        if not isinstance(val, dict):
+            return (self.operators['$eq'], self.field.deserialize(val)),
 
-# Filters for base primitives
-BoolFilter = type('BoolFilter', (Filter,), {'form_field': wtf.BooleanField})
-IntegerFilter = type('IntegerFilter', (Filter,), {'form_field': wtf.IntegerField})
-DateFilter = type('DateFilter', (Filter,), {'form_field': wtf.DateField})
-DateTimeFilter = type('DateTimeFilter', (Filter,), {'form_field': wtf.DateTimeField})
-ChoiceFilter = type('ChoiceFilter', (Filter,), {'form_field': wtf.SelectField})
+        return tuple(
+            (
+                self.operators[op],
+                (self.field.deserialize(val)) if op != '$in' else [
+                    self.field.deserialize(v) for v in val])
+            for (op, val) in val.items() if op in self.operators
+        )
+
+    def filter(self, collection, data, resource=None, **kwargs):
+        """Filter given collection."""
+        ops = self.parse(data)
+        validator = lambda obj: all(op(obj, val) for (op, val) in ops)  # noqa
+        return [o for o in collection if validator(o)]
 
 
-def default_converter(handler, flt, fcls=Filter):
-    """Convert column name to filter."""
-    if isinstance(flt, Filter):
-        return flt
+class Filters:
 
-    if isinstance(flt, str):
-        return fcls(flt)
+    """Build filters for given handler."""
 
-    name, params = flt
+    FILTER_CLASS = Filter
 
-    return fcls(name, **params)
+    def __init__(self, filters, Handler):
+        """Initialize object."""
+        self._filters = filters
+        self.Handler = Handler
 
-#  pylama:ignore=W0212
+    @cached_property
+    def filters(self):
+        """Build filters."""
+        if not self._filters:
+            return None
+        return list(f if isinstance(f, Filter) else self.convert(f) for f in self._filters)
+
+    def convert(self, args):
+        """Prepare filters."""
+        name = args
+        field = fname = None
+        if isinstance(args, (list, tuple)):
+            name, params = args
+            field = params.get('field')
+            fname = params.get('fname')
+
+        if not self.Handler or  not self.Handler.Schema or \
+                name not in self.Handler.Schema._declared_fields:
+            return self.FILTER_CLASS(name, fname=fname, field=field)
+
+        field = field or self.Handler.Schema._declared_fields[name]
+        return self.FILTER_CLASS(name, fname=fname, field=field)
+
+    def filter(self, data, collection, **kwargs):
+        """Filter given collection."""
+        if not data or self.filters is None:
+            return collection
+
+        for f in self.filters:
+            if f.fname not in data:
+                continue
+            collection = f.filter(collection, data, resource=self.Handler, **kwargs)
+        return collection
