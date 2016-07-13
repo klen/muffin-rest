@@ -19,8 +19,10 @@ class PWFilter(Filter):
     def filter(self, collection, data, resource=None, **kwargs):
         """Filter given collection."""
         ops = self.parse(data)
-        mfield = resource.meta.model._meta.fields.get(self.field.attribute)
-        return collection.where(*(op(mfield, val) for op, val in ops))
+        mfield = resource.meta.model._meta.fields.get(self.field.attribute or self.name)
+        if not mfield:
+            return collection
+        return collection.where(*[op(mfield, val) for op, val in ops])
 
 
 class PWFilters(Filters):
