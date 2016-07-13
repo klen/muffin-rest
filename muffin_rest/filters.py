@@ -20,6 +20,8 @@ class Filter:
         '$in': lambda v, c: v in c,
     }
 
+    list_ops = '$in',
+
     field_cls = fields.Raw
 
     def __init__(self, name, fname=None, field=None):
@@ -47,7 +49,7 @@ class Filter:
         return tuple(
             (
                 self.operators[op],
-                (self.field.deserialize(val)) if op != '$in' else [
+                (self.field.deserialize(val)) if op not in self.list_ops else [
                     self.field.deserialize(v) for v in val])
             for (op, val) in val.items() if op in self.operators
         )

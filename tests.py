@@ -1,9 +1,7 @@
-import collections
 import datetime as dt
 
 import muffin
 import pytest
-from aiohttp import MultiDict
 
 import muffin_rest as mr
 
@@ -178,6 +176,18 @@ def test_peewee(app, client):
 
     response = client.get('/resource?where={"name": {"$in": ["test", "test2"]}}')
     assert len(response.json) == 2
+
+    response = client.get('/resource?where={"name": {"$starts": "test"}}')
+    assert len(response.json) == 4
+
+    response = client.get('/resource?where={"name": {"$ends": "3"}}')
+    assert len(response.json) == 1
+
+    response = client.get('/resource?where={"name": {"$regexp": "(3|4)"}}')
+    assert len(response.json) == 2
+
+    response = client.get('/resource?where={"id": {"$between": [2, 4]}}')
+    assert len(response.json) == 3
 
     response = client.get('/resource?where={"id": {"$gt": 2}}')
     assert len(response.json) == 2

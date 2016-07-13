@@ -14,7 +14,16 @@ class PWFilter(Filter):
     """Filter Peewee Queryset."""
 
     operators = Filter.operators
-    operators['$in'] = lambda v, c: v << c
+    operators['$in'] = lambda f, v: f << v
+    operators['$none'] = lambda f, v: f >> v
+    operators['$like'] = lambda f, v: f % v
+    operators['$contains'] = lambda f, v: f.contains(v)
+    operators['$starts'] = lambda f, v: f.startswith(v)
+    operators['$ends'] = lambda f, v: f.endswith(v)
+    operators['$between'] = lambda f, v: f.between(*v)
+    operators['$regexp'] = lambda f, v: f.regexp(v)
+
+    list_ops = Filter.list_ops + ('$between',)
 
     def filter(self, collection, data, resource=None, **kwargs):
         """Filter given collection."""
