@@ -54,7 +54,7 @@ class PWRESTOptions(RESTOptions):
         if not self.model:
             return None
 
-        self.model_pk = self.model._meta.primary_key
+        self.model_pk = self.model_pk or self.model._meta.primary_key
 
         if not cls.Schema:
             meta = type('Meta', (object,), dict({'model': self.model}, **self.schema_meta))
