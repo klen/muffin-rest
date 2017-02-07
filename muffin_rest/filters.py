@@ -1,8 +1,6 @@
 """Support API filters."""
-import ujson
 import operator
 
-from cached_property import cached_property
 from marshmallow import fields, missing
 
 
@@ -54,11 +52,16 @@ class Filter:
             for (op, val) in val.items() if op in self.operators
         )
 
-    def filter(self, collection, data, resource=None, **kwargs):
-        """Filter given collection."""
-        ops = self.parse(data)
+    def apply(self, collection, ops, **kwargs):
+        """Apply the filter to collection."""
         validator = lambda obj: all(op(obj, val) for (op, val) in ops)  # noqa
         return [o for o in collection if validator(o)]
+
+    def filter(self, collection, data, **kwargs):
+        """Filter given collection."""
+        ops = self.parse(data)
+        collection = self.apply(collection, ops, **kwargs)
+        return ops, collection
 
 
 class Filters:
@@ -67,19 +70,12 @@ class Filters:
 
     FILTER_CLASS = Filter
 
-    def __init__(self, filters, Handler):
+    def __init__(self, *filters, handler=None):
         """Initialize object."""
-        self._filters = filters
-        self.Handler = Handler
+        self.filters = tuple(
+            f if isinstance(f, Filter) else self.convert(f, handler) for f in filters)
 
-    @cached_property
-    def filters(self):
-        """Build filters."""
-        if not self._filters:
-            return None
-        return list(f if isinstance(f, Filter) else self.convert(f) for f in self._filters)
-
-    def convert(self, args):
+    def convert(self, args, handler=None):
         """Prepare filters."""
         name = args
         field = fname = None
@@ -88,20 +84,22 @@ class Filters:
             field = params.get('field')
             fname = params.get('fname')
 
-        if not self.Handler or  not self.Handler.Schema or \
-                name not in self.Handler.Schema._declared_fields:
+        if not handler or not handler.Schema or name not in handler.Schema._declared_fields:
             return self.FILTER_CLASS(name, fname=fname, field=field)
 
-        field = field or self.Handler.Schema._declared_fields[name]
+        field = field or handler.Schema._declared_fields[name]
         return self.FILTER_CLASS(name, fname=fname, field=field)
 
     def filter(self, data, collection, **kwargs):
         """Filter given collection."""
         if not data or self.filters is None:
-            return collection
+            return None, collection
 
+        filters = {}
         for f in self.filters:
             if f.fname not in data:
                 continue
-            collection = f.filter(collection, data, resource=self.Handler, **kwargs)
-        return collection
+            ops, collection = f.filter(collection, data, **kwargs)
+            filters[f.fname] = ops
+
+        return filters, collection

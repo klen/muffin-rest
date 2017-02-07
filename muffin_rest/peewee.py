@@ -25,9 +25,8 @@ class PWFilter(Filter):
 
     list_ops = Filter.list_ops + ('$between',)
 
-    def filter(self, collection, data, resource=None, **kwargs):
+    def apply(self, collection, ops, resource=None, **kwargs):
         """Filter given collection."""
-        ops = self.parse(data)
         mfield = resource.meta.model._meta.fields.get(self.field.attribute or self.name)
         if not mfield:
             return collection

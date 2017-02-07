@@ -1,6 +1,5 @@
 """REST Handler."""
 import math
-import copy
 from asyncio import iscoroutine
 from urllib.parse import urlencode
 
@@ -24,7 +23,7 @@ class RESTOptions(object):
     def __init__(self, cls, **params):
         """Process meta options."""
         # Store link to self.meta
-        self.meta = meta = getattr(cls, "Meta", None)
+        self.meta = getattr(cls, "Meta", None)
 
         self.cls = cls
 
@@ -50,7 +49,7 @@ class RESTOptions(object):
         }
 
         # Setup filters
-        self.filters = self.filters_converter(self.filters, cls)
+        self.filters = self.filters_converter(*self.filters, handler=cls)
 
     def __repr__(self):
         """String representation."""
@@ -93,6 +92,11 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         # Redefine Schema.Meta completely
         schema_meta = None
 
+    def __init__(self, *args, **kwargs):
+        """Init the resource state."""
+        super(RESTHandler, self).__init__(*args, **kwargs)
+        self.filters = self.auth = self.collection = None
+
     @classmethod
     def connect(cls, app, *paths, methods=None, name=None, **kwargs):
         """Connect to the application.
@@ -111,7 +115,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
     def dispatch(self, request, **kwargs):
         """Process request."""
         # Authorization endpoint
-        self.auth = yield from self.authorize(request, **kwargs)
+        self.auth = yield from self.authorize(request, **kwargs)  # noqa
 
         # Load collection
         self.collection = yield from self.get_many(request, **kwargs)
@@ -189,8 +193,12 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         try:
             data = loads(request.GET.get(VAR_WHERE))
         except (ValueError, TypeError):
-            return self.collection
-        return self.meta.filters.filter(data, self.collection, **kwargs)
+            return None, self.collection
+
+        self.filters, collection = self.meta.filters.filter(
+            data, self.collection, resource=self, **kwargs)
+
+        return collection
 
     @abcoroutine
     def sort(self, *sorting, **kwargs):
