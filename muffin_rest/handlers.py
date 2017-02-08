@@ -193,7 +193,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         try:
             data = loads(request.GET.get(VAR_WHERE))
         except (ValueError, TypeError):
-            return None, self.collection
+            return self.collection
 
         self.filters, collection = self.meta.filters.filter(
             data, self.collection, resource=self, **kwargs)
