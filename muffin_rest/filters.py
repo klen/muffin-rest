@@ -22,25 +22,31 @@ class Filter:
 
     field_cls = fields.Raw
 
-    def __init__(self, name, fname=None, field=None):
+    def __init__(self, name, prop=None, field=None):
         """Initialize filter.
 
-        :param name: Column/Property name.
-        :param fname: Filter name
+        :param name: The filter's name
+        :param prop: Column/Property name.
         :param fields: Marshmallow Field instance
 
         """
-        self.field = field or self.field_cls()
-        self.fname = fname or name
         self.name = name
+        self.prop = prop or name
+        self.field = field or self.field_cls()
 
     def __repr__(self):
         """String representation."""
         return '<Filter %s>' % self.name
 
+    def filter(self, collection, data, **kwargs):
+        """Filter given collection."""
+        ops = self.parse(data)
+        collection = self.apply(collection, ops, **kwargs)
+        return ops, collection
+
     def parse(self, data):
         """Parse operator and value from filter's data."""
-        val = data.get(self.fname, missing)
+        val = data.get(self.name, missing)
         if not isinstance(val, dict):
             return (self.operators['$eq'], self.field.deserialize(val)),
 
@@ -57,12 +63,6 @@ class Filter:
         validator = lambda obj: all(op(obj, val) for (op, val) in ops)  # noqa
         return [o for o in collection if validator(o)]
 
-    def filter(self, collection, data, **kwargs):
-        """Filter given collection."""
-        ops = self.parse(data)
-        collection = self.apply(collection, ops, **kwargs)
-        return ops, collection
-
 
 class Filters:
 
@@ -78,17 +78,19 @@ class Filters:
     def convert(self, args, handler=None):
         """Prepare filters."""
         name = args
-        field = fname = None
+        field = prop = None
         if isinstance(args, (list, tuple)):
-            name, params = args
-            field = params.get('field')
-            fname = params.get('fname')
+            name, *opts = args
+            if opts:
+                prop = opts.pop()
+            if opts:
+                field = opts.pop()
 
         if not handler or not handler.Schema or name not in handler.Schema._declared_fields:
-            return self.FILTER_CLASS(name, fname=fname, field=field)
+            return self.FILTER_CLASS(name, prop=prop, field=field)
 
         field = field or handler.Schema._declared_fields[name]
-        return self.FILTER_CLASS(name, fname=fname, field=field)
+        return self.FILTER_CLASS(name, prop=prop, field=field)
 
     def filter(self, data, collection, **kwargs):
         """Filter given collection."""
@@ -97,9 +99,9 @@ class Filters:
 
         filters = {}
         for f in self.filters:
-            if f.fname not in data:
+            if f.name not in data:
                 continue
             ops, collection = f.filter(collection, data, **kwargs)
-            filters[f.fname] = ops
+            filters[f.name] = ops
 
         return filters, collection

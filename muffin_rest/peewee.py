@@ -27,7 +27,7 @@ class PWFilter(Filter):
 
     def apply(self, collection, ops, resource=None, **kwargs):
         """Filter given collection."""
-        mfield = resource.meta.model._meta.fields.get(self.field.attribute or self.name)
+        mfield = resource.meta.model._meta.fields.get(self.field.attribute or self.prop)
         if not mfield:
             return collection
         return collection.where(*[op(mfield, val) for op, val in ops])

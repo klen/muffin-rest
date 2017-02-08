@@ -120,7 +120,7 @@ def test_peewee(app, client):
         class Meta:
             model = Resource
             schema = dict(created=Timestamp())
-            filters = 'active', 'name', 'id',
+            filters = 'active', 'name', ('oid', 'id'),
 
     assert ResourceHandler.Schema
     assert ResourceHandler.name == 'resource'
@@ -186,10 +186,10 @@ def test_peewee(app, client):
     response = client.get('/resource?where={"name": {"$regexp": "(3|4)"}}')
     assert len(response.json) == 2
 
-    response = client.get('/resource?where={"id": {"$between": [2, 4]}}')
+    response = client.get('/resource?where={"oid": {"$between": [2, 4]}}')
     assert len(response.json) == 3
 
-    response = client.get('/resource?where={"id": {"$gt": 2}}')
+    response = client.get('/resource?where={"oid": {"$gt": 2}}')
     assert len(response.json) == 2
 
     for n in range(6):
