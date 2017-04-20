@@ -7,4 +7,5 @@ from example.models import ResourceModel
 @app.register
 class Resource(PWRESTHandler):
 
-    model = ResourceModel
+    class Meta:
+        model = ResourceModel
