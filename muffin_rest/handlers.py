@@ -218,7 +218,15 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
 
     @abcoroutine
     def get(self, request, resource=None, **kwargs):
-        """Get resource or collection of resources."""
+        """Get resource or collection of resources.
+
+        ---
+        parameters:
+            - name: resource
+              in: path
+              type: string
+
+        """
         if resource is not None and resource != '':
             return self.to_simple(request, resource, **kwargs)
 
@@ -257,7 +265,14 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
 
     @abcoroutine
     def put(self, request, resource=None, **kwargs):
-        """Update a resource."""
+        """Update a resource.
+
+        ---
+        parameters:
+            - name: resource
+              in: path
+              type: string
+        """
         if resource is None:
             raise RESTNotFound(reason='Resource not found')
 

@@ -1,2 +1,3 @@
-muffin      >= 0.0.99
+muffin      >= 0.10.3
+apispec     >= 0.21.0
 marshmallow
