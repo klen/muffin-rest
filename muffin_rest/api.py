@@ -73,7 +73,7 @@ class Api():
         for paths, handler in self.handlers.items():
             spec.add_tag({
                 'name': handler.name,
-                'description': utils.dedent(handler.__doc__),
+                'description': utils.dedent(handler.__doc__ or ''),
             })
             for path in paths:
                 operations = {}
