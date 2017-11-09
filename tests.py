@@ -61,6 +61,9 @@ def test_base(app, client):
     response = client.get('/resource/2')
     assert response.json == 2
 
+    response = client.get('/resource/?sort=2')
+    assert response.json
+
     client.post('/resource', status=405)
 
 

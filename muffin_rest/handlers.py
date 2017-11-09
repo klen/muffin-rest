@@ -138,7 +138,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
             if VAR_SORT in request.GET:
                 sorting = [(name.strip('-'), name.startswith('-'))
                            for name in request.GET[VAR_SORT].split(',')]
-                self.collection = self.sort(*sorting, **kwargs)
+                self.collection = yield from self.sort(*sorting, **kwargs)
 
             # Paginate resources
             per_page = request.GET.get(VAR_PER_PAGE, self.meta.per_page)
