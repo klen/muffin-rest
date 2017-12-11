@@ -68,7 +68,7 @@ def test_base(app, client):
 
 
 def test_api(app, client):
-    api = mr.Api(app, '/api/v1', scheme='map')
+    api = mr.Api(app, '/api/v1', swagger=False)
     assert api.prefix == '/api/v1'
     assert api.prefix_name == 'api.v1'
 
@@ -91,8 +91,8 @@ def test_api(app, client):
     response = client.get('/api/v1/resource')
     assert response.json == []
 
-    response = client.get('/api/v1/map')
-    assert response.json
+    #  response = client.get('/api/v1/map')
+    #  assert response.json
 
     response = client.get('/api/v1/cfg')
     assert response.json
@@ -137,7 +137,7 @@ def test_peewee(app, client):
     assert response.json
 
     response = client.get('/resource/1')
-    assert response.json['id'] == 1
+    assert response.json['id'] == '1'
     assert response.json['name'] == 'test'
 
     @ResourceHandler.register('/resource/action')
@@ -153,14 +153,14 @@ def test_peewee(app, client):
 
     response = client.post('/resource', {
         'name': 'test2', 'created': 1000000, 'active': True})
-    assert response.json['id'] == 2
+    assert response.json['id'] == '2'
     assert response.json['name'] == 'test2'
     assert response.json['active']
     created = dt.datetime.fromtimestamp(response.json['created'])
     assert created.year == 1970
 
     response = client.patch('/resource/2', {'name': 'new'})
-    assert response.json['id'] == 2
+    assert response.json['id'] == '2'
     assert response.json['name'] == 'new'
     assert response.json['active']
     created = dt.datetime.fromtimestamp(response.json['created'])

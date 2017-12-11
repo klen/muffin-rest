@@ -60,6 +60,10 @@ class PWRESTOptions(RESTOptions):
             cls.Schema = type(
                 cls.name.title() + 'Schema', (ModelSchema,), dict({'Meta': meta}, **self.schema))
 
+        # Resetup filters
+        if getattr(self.meta, 'filters', None):
+            self.filters = self.filters_converter(*self.meta.filters, handler=cls)
+
 
 class PWRESTHandler(RESTHandler):
 
