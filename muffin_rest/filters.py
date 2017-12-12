@@ -87,10 +87,8 @@ class Filters:
             if opts:
                 field = opts.pop()
 
-        if not handler or not handler.Schema or name not in handler.Schema._declared_fields:
-            return self.FILTER_CLASS(name, attr=attr, field=field, *opts)
-
-        field = field or handler.Schema._declared_fields.get(attr or name)
+        if not field and handler and handler.Schema:
+            field = handler.Schema._declared_fields.get(attr or name)
         return self.FILTER_CLASS(name, attr=attr, field=field, *opts)
 
     def filter(self, data, collection, **kwargs):

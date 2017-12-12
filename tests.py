@@ -189,10 +189,10 @@ def test_peewee(app, client):
     response = client.get('/resource?where={"name": {"$regexp": "(3|4)"}}')
     assert len(response.json) == 2
 
-    response = client.get('/resource?where={"oid": {"$between": [2, 4]}}')
+    response = client.get('/resource?where={"oid": {"$between": ["2", "4"]}}')
     assert len(response.json) == 3
 
-    response = client.get('/resource?where={"oid": {"$gt": 2}}')
+    response = client.get('/resource?where={"oid": {"$gt": "2"}}')
     assert len(response.json) == 2
 
     for n in range(6):
