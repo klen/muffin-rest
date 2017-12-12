@@ -22,17 +22,17 @@ class Filter:
 
     field_cls = fields.Raw
 
-    def __init__(self, name, prop=None, field=None):
+    def __init__(self, name, attr=None, field=None):
         """Initialize filter.
 
         :param name: The filter's name
-        :param prop: Column/Property name.
+        :param attr: Column/Property name.
         :param fields: Marshmallow Field instance
 
         """
         self.name = name
-        self.prop = prop or name
-        self.field = field or self.field_cls()
+        self.attr = attr or name
+        self.field = field or self.field_cls(attribute=attr)
 
     def __repr__(self):
         """String representation."""
@@ -78,19 +78,20 @@ class Filters:
     def convert(self, args, handler=None):
         """Prepare filters."""
         name = args
-        field = prop = None
+        field = attr = None
+        opts = ()
         if isinstance(args, (list, tuple)):
             name, *opts = args
             if opts:
-                prop = opts.pop()
+                attr = opts.pop()
             if opts:
                 field = opts.pop()
 
         if not handler or not handler.Schema or name not in handler.Schema._declared_fields:
-            return self.FILTER_CLASS(name, prop=prop, field=field)
+            return self.FILTER_CLASS(name, attr=attr, field=field, *opts)
 
-        field = field or handler.Schema._declared_fields[name]
-        return self.FILTER_CLASS(name, prop=prop, field=field)
+        field = field or handler.Schema._declared_fields.get(attr or name)
+        return self.FILTER_CLASS(name, attr=attr, field=field, *opts)
 
     def filter(self, data, collection, **kwargs):
         """Filter given collection."""
