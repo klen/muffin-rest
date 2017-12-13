@@ -89,6 +89,7 @@ class Filters:
 
         if not field and handler and handler.Schema:
             field = handler.Schema._declared_fields.get(attr or name)
+            field.attribute = field.attribute or attr or name
         return self.FILTER_CLASS(name, attr=attr, field=field, *opts)
 
     def filter(self, data, collection, **kwargs):

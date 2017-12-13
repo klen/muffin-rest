@@ -2,6 +2,7 @@ import datetime as dt
 
 import muffin
 import pytest
+import marshmallow as ma
 
 import muffin_rest as mr
 
@@ -122,7 +123,10 @@ def test_peewee(app, client):
 
         class Meta:
             model = Resource
-            schema = dict(created=Timestamp())
+            schema = dict(
+                id=ma.fields.String(dump_only=True),
+                created=Timestamp(),
+            )
             filters = 'active', 'name', ('oid', 'id'),
 
     assert ResourceHandler.Schema
