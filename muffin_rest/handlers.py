@@ -112,7 +112,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         return super(RESTHandler, cls).connect(app, *paths, methods=methods, name=name, **kwargs)
 
     @abcoroutine
-    def dispatch(self, request, **kwargs):
+    def dispatch(self, request, view=None, **kwargs):
         """Process request."""
         # Authorization endpoint
         self.auth = yield from self.authorize(request, **kwargs)  # noqa
@@ -120,7 +120,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         # Load collection
         self.collection = yield from self.get_many(request, **kwargs)
 
-        if request.method == 'POST':
+        if request.method == 'POST' and view is None:
             return (yield from super(RESTHandler, self).dispatch(request, **kwargs))
 
         # Load resource
@@ -155,7 +155,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
                     raise RESTBadRequest(reason='Pagination params are invalid.')
 
         response = yield from super(RESTHandler, self).dispatch(
-            request, resource=resource, **kwargs)
+            request, resource=resource, view=view, **kwargs)
         response.headers.update(headers)
         return response
 

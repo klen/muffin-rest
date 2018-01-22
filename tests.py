@@ -81,8 +81,12 @@ def test_api(app, client):
     def resource_action(hander, request, resource=None):
         return 'ACTION'
 
+    @Resource.register('%s/action2' % api.prefix, methods=['POST'])
+    def resource_post_action(hander, request, resource=None):
+        return 'POST ACTION'
+
     @api.register('/cfg')
-    def cfg(request):
+    def cfg(resource, request, **kwargs):
         return {'VAR': 'VALUE'}
 
     assert 'resource' in api.resource.router
@@ -100,6 +104,11 @@ def test_api(app, client):
 
     response = client.get('/api/v1/action')
     assert response.json == 'ACTION'
+
+    response = client.post('/api/v1/action2')
+    assert response.json == 'POST ACTION'
+
+    response = client.get('/api/v1/action2', status=405)
 
 
 def test_peewee(app, client):
