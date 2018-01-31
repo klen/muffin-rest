@@ -93,7 +93,7 @@ class Api():
             if handler.Schema:
                 kwargs = {}
                 if handler.meta.model:
-                    kwargs['description'] = utils.dedent(handler.meta.model.__doc__)
+                    kwargs['description'] = utils.dedent(handler.meta.model.__doc__ or '')
                 spec.definition(handler.name, schema=handler.Schema, **kwargs)
 
         return deepcopy(spec.to_dict())
