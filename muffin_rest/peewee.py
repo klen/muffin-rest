@@ -62,7 +62,8 @@ class PWRESTOptions(RESTOptions):
         if not cls.Schema:
             meta = type('Meta', (object,), dict({'model': self.model}, **self.schema_meta))
             cls.Schema = type(
-                cls.name.title() + 'Schema', (ModelSchema,), dict({'Meta': meta}, **self.schema))
+                cls.name.title() + 'Schema', (self.schema_cls,),
+                dict({'Meta': meta}, **self.schema))
 
         # Resetup filters
         if getattr(self.meta, 'filters', None):
@@ -85,6 +86,7 @@ class PWRESTHandler(RESTHandler):
         model_pk = None
 
         schema = {}
+        schema_cls = ModelSchema
 
     def get_many(self, request, **kwargs):
         """Get collection."""
