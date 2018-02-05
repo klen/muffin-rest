@@ -77,8 +77,8 @@ class Api():
             })
             for path in paths:
                 operations = {}
-                for method in handler.methods:
-                    method = getattr(handler, method.lower())
+                for http_method in handler.methods:
+                    method = getattr(handler, http_method.lower())
                     operation = OrderedDict({
                         'tags': [handler.name],
                         'summary': method.__doc__,
@@ -86,11 +86,11 @@ class Api():
                         'responses': {200: {'schema': {'$ref': {'#/definitions/' + handler.name}}}}
                     })
                     operation.update(utils.load_yaml_from_docstring(method.__doc__) or {})
-                    operations[method.__name__] = operation
+                    operations[http_method.lower()] = operation
 
                 spec.add_path(self.prefix + path, operations=operations)
 
-            if handler.Schema:
+            if hasattr(handler, 'Schema'):
                 kwargs = {}
                 if handler.meta.model:
                     kwargs['description'] = utils.dedent(handler.meta.model.__doc__ or '')
