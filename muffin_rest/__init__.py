@@ -2,7 +2,7 @@
 # Package information
 # ===================
 
-__version__ = "1.3.8"
+__version__ = "1.4.0"
 __project__ = "muffin-rest"
 __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "MIT"
