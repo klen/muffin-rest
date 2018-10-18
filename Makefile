@@ -79,3 +79,8 @@ test: $(VIRTUAL_ENV)/bin/py.test
 
 .PHONY: t
 t: test
+
+.PHONY: run
+# target: run - Runs example
+run: $(VIRTUAL_ENV)
+	@$(VIRTUAL_ENV)/bin/muffin example run --reload --timeout=300 --workers=1

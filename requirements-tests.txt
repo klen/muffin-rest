@@ -2,7 +2,6 @@
 -e .
 
 pytest
-webtest
 
-muffin-peewee       >= 0.0.14
-marshmallow-peewee  >= 1.0.2
+muffin-peewee       >= 1.3.0
+marshmallow-peewee  < 2

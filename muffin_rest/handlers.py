@@ -4,10 +4,11 @@ from asyncio import iscoroutine
 from urllib.parse import urlencode
 
 from aiohttp.web import StreamResponse, Response
-from muffin.handler import Handler, abcoroutine
+from muffin.handler import Handler
 from ujson import dumps, loads # noqa
 
-from muffin_rest import RESTNotFound, RESTBadRequest, Filters
+from .filters import Filters
+from .exceptions import RESTNotFound, RESTBadRequest
 
 
 VAR_PAGE = 'page'
@@ -82,6 +83,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
 
         # per_page: Paginate results (set to None for disable pagination)
         per_page = None
+        page_links = False
 
         # Resource filters
         filters = ()
@@ -98,72 +100,66 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         self.filters = self.auth = self.collection = None
 
     @classmethod
-    def connect(cls, app, *paths, methods=None, name=None, **kwargs):
-        """Connect to the application.
+    def bind(cls, app, *paths, methods=None, name=None, **kwargs):
+        """Bind to the application.
 
         Generate URL, name if it's not provided.
         """
-        if not paths:
-            paths = ['/%s(/{%s})?/?' % (cls.name, cls.name)]
+        paths = paths or ['/%s(/{%s})?/?' % (cls.name, cls.name)]
+        name = name or "api.%s" % cls.name
+        return super(RESTHandler, cls).bind(app, *paths, methods=methods, name=name, **kwargs)
 
-        if name is None:
-            name = "rest.%s" % cls.name
-
-        return super(RESTHandler, cls).connect(app, *paths, methods=methods, name=name, **kwargs)
-
-    @abcoroutine
-    def dispatch(self, request, view=None, **kwargs):
+    async def dispatch(self, request, view=None, **kwargs):
         """Process request."""
         # Authorization endpoint
-        self.auth = yield from self.authorize(request, **kwargs)  # noqa
+        self.auth = await self.authorize(request, **kwargs)  # noqa
 
         # Load collection
-        self.collection = yield from self.get_many(request, **kwargs)
+        self.collection = await self.get_many(request, **kwargs)
 
         if request.method == 'POST' and view is None:
-            return (yield from super(RESTHandler, self).dispatch(request, **kwargs))
+            return await super(RESTHandler, self).dispatch(request, **kwargs)
 
         # Load resource
-        resource = yield from self.get_one(request, **kwargs)
+        resource = await self.get_one(request, **kwargs)
 
         headers = {}
 
         if request.method == 'GET' and resource is None:
 
             # Filter resources
-            if VAR_WHERE in request.GET:
-                self.collection = yield from self.filter(request, **kwargs)
+            if VAR_WHERE in request.query:
+                self.collection = await self.filter(request, **kwargs)
 
             # Sort resources
-            if VAR_SORT in request.GET:
+            if VAR_SORT in request.query:
                 sorting = [(name.strip('-'), name.startswith('-'))
-                           for name in request.GET[VAR_SORT].split(',')]
-                self.collection = yield from self.sort(*sorting, **kwargs)
+                           for name in request.query[VAR_SORT].split(',')]
+                self.collection = await self.sort(*sorting, **kwargs)
 
             # Paginate resources
-            per_page = request.GET.get(VAR_PER_PAGE, self.meta.per_page)
+            per_page = request.query.get(VAR_PER_PAGE, self.meta.per_page)
             if per_page:
                 try:
                     per_page = int(per_page)
                     if per_page:
-                        page = int(request.GET.get(VAR_PAGE, 0))
+                        page = int(request.query.get(VAR_PAGE, 0))
                         offset = page * per_page
-                        self.collection, total = yield from self.paginate(
-                            request, offset, per_page)
-                        headers = make_pagination_headers(request, per_page, page, total)
+                        self.collection, total = await self.paginate(request, offset, per_page)
+                        headers = make_pagination_headers(
+                            request, per_page, page, total, self.meta.page_links)
                 except ValueError:
                     raise RESTBadRequest(reason='Pagination params are invalid.')
 
-        response = yield from super(RESTHandler, self).dispatch(
+        response = await super(RESTHandler, self).dispatch(
             request, resource=resource, view=view, **kwargs)
         response.headers.update(headers)
         return response
 
-    @abcoroutine
-    def make_response(self, request, response, **response_kwargs):
+    async def make_response(self, request, response, **response_kwargs):
         """Convert a handler result to web response."""
         while iscoroutine(response):
-            response = yield from response
+            response = await response
 
         if isinstance(response, StreamResponse):
             return response
@@ -172,26 +168,22 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
 
         return Response(text=dumps(response), **response_kwargs)
 
-    @abcoroutine
-    def authorize(self, request, **kwargs):
+    async def authorize(self, request, **kwargs):
         """Base point for authorization."""
         return True
 
-    @abcoroutine
-    def get_many(self, request, **kwargs):
+    async def get_many(self, request, **kwargs):
         """Base point for collect data."""
         return []
 
-    @abcoroutine
-    def get_one(self, request, **kwargs):
+    async def get_one(self, request, **kwargs):
         """Load resource."""
         return request.match_info.get(self.name)
 
-    @abcoroutine
-    def filter(self, request, **kwargs):
+    async def filter(self, request, **kwargs):
         """Filter collection."""
         try:
-            data = loads(request.GET.get(VAR_WHERE))
+            data = loads(request.query.get(VAR_WHERE))
         except (ValueError, TypeError):
             return self.collection
 
@@ -200,13 +192,11 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
 
         return collection
 
-    @abcoroutine
-    def sort(self, *sorting, **kwargs):
+    async def sort(self, *sorting, **kwargs):
         """Sort collection."""
         return self.collection
 
-    @abcoroutine
-    def paginate(self, request, offset=0, limit=0):
+    async def paginate(self, request, offset=0, limit=0):
         """Paginate collection.
 
         :param request: client's request
@@ -216,8 +206,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         """
         return self.collection[offset: offset + limit], len(self.collection)
 
-    @abcoroutine
-    def get(self, request, resource=None, **kwargs):
+    async def get(self, request, resource=None, **kwargs):
         """Get resource or collection of resources.
 
         ---
@@ -241,30 +230,26 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         """Create schema instance."""
         return self.Schema and self.Schema()
 
-    @abcoroutine
-    def post(self, request, resource=None, **kwargs):
+    async def post(self, request, resource=None, **kwargs):
         """Create a resource."""
-        resource = yield from self.load(request, resource=resource, **kwargs)
-        resource = yield from self.save(request, resource=resource, **kwargs)
+        resource = await self.load(request, resource=resource, **kwargs)
+        resource = await self.save(request, resource=resource, **kwargs)
         return self.to_simple(request, resource, **kwargs)
 
-    @abcoroutine
-    def load(self, request, resource=None, **kwargs):
+    async def load(self, request, resource=None, **kwargs):
         """Load resource from given data."""
         schema = self.get_schema(request, resource=resource, **kwargs)
-        data = yield from self.parse(request)
+        data = await self.parse(request)
         resource, errors = schema.load(data, partial=resource is not None)
         if errors:
             raise RESTBadRequest(reason='Bad request', json={'errors': errors})
         return resource
 
-    @abcoroutine
-    def save(self, request, resource=None, **kwargs):
+    async def save(self, request, resource=None, **kwargs):
         """Create a resource."""
         return resource
 
-    @abcoroutine
-    def put(self, request, resource=None, **kwargs):
+    async def put(self, request, resource=None, **kwargs):
         """Update a resource.
 
         ---
@@ -276,37 +261,35 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         if resource is None:
             raise RESTNotFound(reason='Resource not found')
 
-        return (yield from self.post(request, resource=resource, **kwargs))
+        return await self.post(request, resource=resource, **kwargs)
 
     patch = put
 
-    @abcoroutine
-    def delete(self, request, resource=None, **kwargs):
+    async def delete(self, request, resource=None, **kwargs):
         """Delete a resource."""
         if resource is None:
             raise RESTNotFound(reason='Resource not found')
         self.collection.remove(resource)
 
-    @abcoroutine
-    def batch(self, request):
+    async def batch(self, request):
         """Make group operations."""
 
 
-def make_pagination_headers(request, limit, curpage, total):
+def make_pagination_headers(request, limit, curpage, total, links=False):
     """Return Link Hypermedia Header."""
     lastpage = math.ceil(total / limit) - 1
     headers = {'X-Total-Count': str(total), 'X-Limit': str(limit),
                'X-Page-Last': str(lastpage), 'X-Page': str(curpage)}
-    base = "{}?%s".format(request.path)
-    links = {}
-    links['first'] = base % urlencode(dict(request.GET, **{VAR_PAGE: 0}))
-    links['last'] = base % urlencode(dict(request.GET, **{VAR_PAGE: lastpage}))
-    if curpage:
-        links['prev'] = base % urlencode(dict(request.GET, **{VAR_PAGE: curpage - 1}))
-    if curpage < lastpage:
-        links['next'] = base % urlencode(dict(request.GET, **{VAR_PAGE: curpage + 1}))
-
-    headers['Link'] = ",".join(['<%s>; rel="%s"' % (v, n) for n, v in links.items()])
+    if links:
+        base = "{}?%s".format(request.path)
+        links = {}
+        links['first'] = base % urlencode(dict(request.query, **{VAR_PAGE: 0}))
+        links['last'] = base % urlencode(dict(request.query, **{VAR_PAGE: lastpage}))
+        if curpage:
+            links['prev'] = base % urlencode(dict(request.query, **{VAR_PAGE: curpage - 1}))
+        if curpage < lastpage:
+            links['next'] = base % urlencode(dict(request.query, **{VAR_PAGE: curpage + 1}))
+        headers['Link'] = ",".join(['<%s>; rel="%s"' % (v, n) for n, v in links.items()])
     return headers
 
 

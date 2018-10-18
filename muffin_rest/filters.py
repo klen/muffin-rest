@@ -32,7 +32,7 @@ class Filter:
         """
         self.name = name
         self.attr = attr or name
-        self.field = field or self.field_cls(attribute=attr)
+        self.field = field or self.field_cls(attribute=self.attr)
 
     def __repr__(self):
         """String representation."""
@@ -88,7 +88,8 @@ class Filters:
                 field = opts.pop()
 
         if not field and handler and handler.Schema:
-            field = handler.Schema._declared_fields.get(attr or name)
+            field = handler.Schema._declared_fields.get(attr or name) or \
+                self.FILTER_CLASS.field_cls()
             field.attribute = field.attribute or attr or name
         return self.FILTER_CLASS(name, attr=attr, field=field, *opts)
 

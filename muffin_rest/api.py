@@ -1,34 +1,39 @@
 """!!! STILL NOT IMPLEMENTED. WORK IN PROGRESS !!!."""
 import os.path as op
 import re
-from types import FunctionType
+from types import FunctionType, MethodType
 
 from apispec import APISpec, utils
 from copy import deepcopy
 from collections import OrderedDict
 import muffin
+from muffin.app import BaseApplication as Application
+
+from .handlers import RESTHandler
 
 
-PREFIX_RE = re.compile('(/|\s)')
+PREFIX_RE = re.compile(r'(/|\s)')
 PLUGIN_ROOT = op.dirname(op.abspath(__file__))
 
 
 class Api():
     """Bind group of resources together."""
 
-    def __init__(self, app, prefix='/api', swagger=True):
+    def __init__(self, prefix='/api', swagger=True):
         """Initialize the API."""
-        self.app = app
         self.prefix = prefix.rstrip('/')
         self.prefix_name = PREFIX_RE.sub('.', prefix.strip('/'))
+        self.app = Application()
         self.handlers = {}
-        self.resource = muffin.urls.ParentResource(self.prefix, name=self.prefix_name)
-        self.app.router._reg_resource(self.resource)
+
+        # Support Swagger
         if swagger:
-            app.ps.jinja2.cfg.template_folders.append(op.join(PLUGIN_ROOT, 'templates'))
-            app.register(self.prefix)(muffin.Handler.from_view(self.swagger_ui, 'GET'))
-            app.register(self.prefix + '/schema.json')(
-                muffin.Handler.from_view(self.swagger_schema, 'GET'))
+            self.register('/')(self.swagger_ui)
+            self.register('/schema.json')(self.swagger_schema)
+
+    def bind(self, app):
+        """Bind API to Muffin."""
+        app.add_subapp(self.prefix, self.app)
 
     def register(self, *paths, methods=None, name=None):
         """Register handler to the API."""
@@ -37,18 +42,15 @@ class Api():
 
         def wrapper(handler):
 
-            if isinstance(handler, FunctionType):
-                handler = muffin.Handler.from_view(handler, *(methods or ['GET']))
+            if isinstance(handler, (FunctionType, MethodType)):
+                handler = RESTHandler.from_view(handler, *(methods or ['GET']))
 
             if handler.name in self.handlers:
                 raise muffin.MuffinException('Handler is already registered: %s' % handler.name)
 
             self.handlers[tuple(paths or ["/{0}/{{{0}}}".format(handler.name)])] = handler
 
-            handler.connect(
-                self.app, *paths, methods=methods, name=name or handler.name,
-                router=self.resource.router)
-
+            handler.bind(self.app, *paths, methods=methods, name=name or handler.name)
             return handler
 
         # Support for @app.register(func)
@@ -61,7 +63,35 @@ class Api():
 
     def swagger_ui(self, request):
         """Render swagger UI."""
-        return self.app.ps.jinja2.render('swagger.html', schema_url=self.prefix + '/schema.json')
+        schema_url = self.prefix + '/schema.json'
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.0.10/swagger-ui.css" >
+            </head>
+            <body>
+                <div id="ui"></div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.0.10/swagger-ui-bundle.js"> </script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.0.10/swagger-ui-standalone-preset.js"> </script>
+                <script>
+                    window.onload = function() {
+                        const ui = SwaggerUIBundle({
+                            url: "%s",
+                            dom_id: '#ui',
+                            presets: [
+                                SwaggerUIBundle.presets.apis,
+                                SwaggerUIStandalonePreset
+                            ],
+                            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+                            layout: "StandaloneLayout"
+                        })
+                    window.ui = ui
+                }
+                </script>
+            </body>
+            </html>
+        """ % schema_url
 
     def swagger_schema(self, request):
         """Render API Schema."""
