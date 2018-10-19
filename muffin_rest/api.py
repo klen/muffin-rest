@@ -7,6 +7,7 @@ from apispec import APISpec, utils
 from copy import deepcopy
 from collections import OrderedDict
 import muffin
+from muffin import Handler
 from muffin.app import BaseApplication as Application
 
 from .handlers import RESTHandler
@@ -24,15 +25,17 @@ class Api():
         self.prefix = prefix.rstrip('/')
         self.prefix_name = PREFIX_RE.sub('.', prefix.strip('/'))
         self.app = Application()
+        self.parent = None
         self.handlers = {}
 
         # Support Swagger
         if swagger:
-            self.register('/')(self.swagger_ui)
-            self.register('/schema.json')(self.swagger_schema)
+            self.app.register('/')(Handler.from_view(self.swagger_ui))
+            self.register('/schema.json')(Handler.from_view(self.swagger_schema))
 
     def bind(self, app):
         """Bind API to Muffin."""
+        self.parent = app
         app.add_subapp(self.prefix, self.app)
 
     def register(self, *paths, methods=None, name=None):
@@ -95,9 +98,12 @@ class Api():
 
     def swagger_schema(self, request):
         """Render API Schema."""
+        if self.parent is None:
+            return {}
+
         spec = APISpec(
-            self.app.name, self.app.cfg.VERSION, plugins=['apispec.ext.marshmallow'],
-            basePatch=self.prefix
+            self.parent.name, self.parent.cfg.get('VERSION', ''),
+            plugins=['apispec.ext.marshmallow'], basePatch=self.prefix
         )
 
         for paths, handler in self.handlers.items():
@@ -120,9 +126,9 @@ class Api():
 
                 spec.add_path(self.prefix + path, operations=operations)
 
-            if hasattr(handler, 'Schema'):
+            if getattr(handler, 'Schema', None):
                 kwargs = {}
-                if handler.meta.model:
+                if getattr(handler.meta, 'model', None):
                     kwargs['description'] = utils.dedent(handler.meta.model.__doc__ or '')
                 spec.definition(handler.name, schema=handler.Schema, **kwargs)
 

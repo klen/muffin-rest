@@ -93,6 +93,7 @@ async def test_api(aiohttp_client):
     assert 'resource' in api.app.router
 
     api.bind(app)
+    assert api.parent is app
 
     client = await aiohttp_client(app)
     async with client.get('/api/v1/unknown') as resp:
@@ -120,6 +121,15 @@ async def test_api(aiohttp_client):
 
     async with client.get('/api/v1/action2') as resp:
         assert resp.status == 405
+
+    # Swagger
+    async with client.get('/api/v1/') as resp:
+        assert resp.status == 200
+
+    async with client.get('/api/v1/schema.json') as resp:
+        assert resp.status == 200
+        json = await resp.json()
+        assert json
 
 
 async def test_peewee(aiohttp_client):
