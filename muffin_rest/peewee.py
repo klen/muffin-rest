@@ -127,7 +127,9 @@ class PWRESTHandler(RESTHandler):
 
     def save(self, request, resource=None, **kwargs):
         """Create a resource."""
-        resource.save()
+        resources = resource if isinstance(resource, list) else [resource]
+        for obj in resources:
+            obj.save()
         return resource
 
     def delete(self, request, resource=None, **kwargs):

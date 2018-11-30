@@ -234,13 +234,14 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         """Create a resource."""
         resource = await self.load(request, resource=resource, **kwargs)
         resource = await self.save(request, resource=resource, **kwargs)
-        return self.to_simple(request, resource, **kwargs)
+        return self.to_simple(request, resource, many=isinstance(resource, list), **kwargs)
 
     async def load(self, request, resource=None, **kwargs):
         """Load resource from given data."""
         schema = self.get_schema(request, resource=resource, **kwargs)
         data = await self.parse(request)
-        resource, errors = schema.load(data, partial=resource is not None)
+        resource, errors = schema.load(
+            data, partial=resource is not None, many=isinstance(data, list))
         if errors:
             raise RESTBadRequest(reason='Bad request', json={'errors': errors})
         return resource

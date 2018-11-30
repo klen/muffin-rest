@@ -284,4 +284,17 @@ async def test_peewee(aiohttp_client):
         json = await resp.json()
         assert len(json) == 3
 
+    # Batch operations (only POST is supported for now)
+    async with client.post('/resource', json=[
+                {'name': 'test3', 'created': 1000000, 'active': True},
+                {'name': 'test4', 'created': 1000000, 'active': True},
+                {'name': 'test6', 'created': 1000000, 'active': True},
+            ]) as resp:
+        assert resp.status == 200
+        json = await resp.json()
+        assert len(json) == 3
+        assert json[0]['id'] == '11'
+        assert json[1]['id'] == '12'
+        assert json[2]['id'] == '13'
+
 #  pylama:ignore=W0621,W0612
