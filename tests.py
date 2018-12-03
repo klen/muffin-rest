@@ -37,35 +37,35 @@ async def test_base(aiohttp_client):
 
     client = await aiohttp_client(app)
 
-    async with client.get('/resource?some=22') as resp:
-        assert resp.status == 200
-        assert resp.headers['X-TOTAL-COUNT'] == '10'
-        assert resp.headers['X-Limit'] == '3'
-        assert 'Link' not in resp.headers
-        json = await resp.json()
+    async with client.get('/resource?some=22') as res:
+        assert res.status == 200
+        assert res.headers['X-TOTAL-COUNT'] == '10'
+        assert res.headers['X-Limit'] == '3'
+        assert 'Link' not in res.headers
+        json = await res.json()
         assert json == [0, 1, 2]
 
-    async with client.get('/resource?where={"num":1}') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource?where={"num":1}') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json == [1]
 
-    async with client.get('/resource?where={"num":{"$gt":3}}') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource?where={"num":{"$gt":3}}') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json == [4, 5, 6]
 
-    async with client.get('/resource/2') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource/2') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json == 2
 
-    async with client.get('/resource/?sort=2') as resp:
-        assert resp.status == 200
-        assert await resp.json()
+    async with client.get('/resource/?sort=2') as res:
+        assert res.status == 200
+        assert await res.json()
 
-    async with client.post('/resource') as resp:
-        assert resp.status == 405
+    async with client.post('/resource') as res:
+        assert res.status == 405
 
 
 async def test_api(aiohttp_client):
@@ -96,39 +96,39 @@ async def test_api(aiohttp_client):
     assert api.parent is app
 
     client = await aiohttp_client(app)
-    async with client.get('/api/v1/unknown') as resp:
-        assert resp.status == 404
+    async with client.get('/api/v1/unknown') as res:
+        assert res.status == 404
 
-    async with client.get('/api/v1/cfg') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/api/v1/cfg') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json
 
-    async with client.get('/api/v1/resource') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/api/v1/resource') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json == []
 
-    async with client.get('/api/v1/action') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/api/v1/action') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json == 'ACTION'
 
-    async with client.post('/api/v1/action2') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.post('/api/v1/action2') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json == 'POST ACTION'
 
-    async with client.get('/api/v1/action2') as resp:
-        assert resp.status == 405
+    async with client.get('/api/v1/action2') as res:
+        assert res.status == 405
 
     # Swagger
-    async with client.get('/api/v1/') as resp:
-        assert resp.status == 200
+    async with client.get('/api/v1/') as res:
+        assert res.status == 200
 
-    async with client.get('/api/v1/schema.json') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/api/v1/schema.json') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json
 
 
@@ -173,57 +173,57 @@ async def test_peewee(aiohttp_client):
     assert 'api.resource' in app.router
 
     client = await aiohttp_client(app)
-    async with client.get('/resource') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json == []
 
     Resource(name='test').save()
 
-    async with client.get('/resource') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json
 
-    async with client.get('/resource/1') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource/1') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json['id'] == '1'
         assert json['name'] == 'test'
 
-    async with client.get('/resource/action?custom=123') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource/action?custom=123') as res:
+        assert res.status == 200
+        json = await res.json()
         assert json
 
-    async with client.post('/resource', json={'active': True}) as resp:
-        assert resp.status == 400
-        json = await resp.json()
+    async with client.post('/resource', json={'active': True}) as res:
+        assert res.status == 400
+        json = await res.json()
         assert json['errors']
         assert 'name' in json['errors']
 
     async with client.post('/resource', data={
-            'name': 'test2', 'created': 1000000, 'active': True}) as resp:
-        assert resp.status == 200
-        json = await resp.json()
+            'name': 'test2', 'created': 1000000, 'active': True}) as res:
+        assert res.status == 200
+        json = await res.json()
         assert json['id'] == '2'
         assert json['name'] == 'test2'
         assert json['active']
         created = dt.datetime.fromtimestamp(json['created'])
         assert created.year == 1970
 
-    async with client.patch('/resource/2', json={'name': 'new'}) as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.patch('/resource/2', json={'name': 'new'}) as res:
+        assert res.status == 200
+        json = await res.json()
         assert json['id'] == '2'
         assert json['name'] == 'new'
         assert json['active']
         created = dt.datetime.fromtimestamp(json['created'])
         assert created.year == 1970
 
-    async with client.delete('/resource/2') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.delete('/resource/2') as res:
+        assert res.status == 200
+        json = await res.json()
         assert not json
 
     assert Resource.select().where(Resource.id == 1).exists()
@@ -233,68 +233,73 @@ async def test_peewee(aiohttp_client):
     Resource(name='test3').save()
     Resource(name='test4').save()
 
-    async with client.get('/resource?where={"name":"test"}') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource?where={"name":"test"}') as res:
+        assert res.status == 200
+        json = await res.json()
         assert len(json) == 1
 
-    async with client.get('/resource?where={"name": {"$in": ["test", "test2"]}}') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource?where={"name": {"$in": ["test", "test2"]}}') as res:
+        assert res.status == 200
+        json = await res.json()
         assert len(json) == 2
 
-    async with client.get('/resource?where={"name": {"$starts": "test"}}') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource?where={"name": {"$starts": "test"}}') as res:
+        assert res.status == 200
+        json = await res.json()
         assert len(json) == 4
 
-    async with client.get('/resource?where={"name": {"$ends": "3"}}') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource?where={"name": {"$ends": "3"}}') as res:
+        assert res.status == 200
+        json = await res.json()
         assert len(json) == 1
 
-    async with client.get('/resource?where={"name": {"$regexp": "(3|4)"}}') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource?where={"name": {"$regexp": "(3|4)"}}') as res:
+        assert res.status == 200
+        json = await res.json()
         assert len(json) == 2
 
-    async with client.get('/resource?where={"oid": {"$between": ["2", "4"]}}') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource?where={"oid": {"$between": ["2", "4"]}}') as res:
+        assert res.status == 200
+        json = await res.json()
         assert len(json) == 3
 
-    async with client.get('/resource?where={"oid": {"$gt": "2"}}') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource?where={"oid": {"$gt": "2"}}') as res:
+        assert res.status == 200
+        json = await res.json()
         assert len(json) == 2
 
     for n in range(6):
         Resource(name='test%d' % n).save()
 
-    async with client.get('/resource') as resp:
-        assert resp.status == 200
-        json = await resp.json()
+    async with client.get('/resource') as res:
+        assert res.status == 200
+        json = await res.json()
         assert len(json) == 10
 
-    async with client.get('/resource?per_page=3') as resp:
-        assert resp.status == 200
-        assert resp.headers['x-page'] == '0'
-        assert resp.headers['x-page-last'] == '3'
-        assert resp.headers['x-total-count'] == '10'
-        json = await resp.json()
+    async with client.get('/resource?per_page=3') as res:
+        assert res.status == 200
+        assert res.headers['x-page'] == '0'
+        assert res.headers['x-page-last'] == '3'
+        assert res.headers['x-total-count'] == '10'
+        json = await res.json()
         assert len(json) == 3
 
-    # Batch operations (only POST is supported for now)
+    # Batch operations (only POST/DELETE are supported for now)
     async with client.post('/resource', json=[
                 {'name': 'test3', 'created': 1000000, 'active': True},
                 {'name': 'test4', 'created': 1000000, 'active': True},
                 {'name': 'test6', 'created': 1000000, 'active': True},
-            ]) as resp:
-        assert resp.status == 200
-        json = await resp.json()
+            ]) as res:
+        assert res.status == 200
+        json = await res.json()
         assert len(json) == 3
         assert json[0]['id'] == '11'
         assert json[1]['id'] == '12'
         assert json[2]['id'] == '13'
+
+    async with client.delete('/resource', json=['11', '12', '13']) as res:
+        assert res.status == 200
+
+    assert not Resource.select().where(Resource.id << ('11', '12', '13')).count()
 
 #  pylama:ignore=W0621,W0612
