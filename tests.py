@@ -15,7 +15,7 @@ async def test_base(aiohttp_client):
     @app.register(name='api.resource')
     class Resource(mr.RESTHandler):
 
-        methods = 'get',
+        methods = 'get', 'post'
 
         class Meta:
             filters = 'num',
@@ -31,6 +31,9 @@ async def test_base(aiohttp_client):
             return None
 
         def post(self, request, **kwargs):
+            return self.load(request, **kwargs)
+
+        def put(self, request, **kwargs):
             raise Exception('Should never be called')
 
     assert 'api.resource' in app.router
@@ -64,8 +67,11 @@ async def test_base(aiohttp_client):
         assert res.status == 200
         assert await res.json()
 
-    async with client.post('/resource') as res:
+    async with client.put('/resource') as res:
         assert res.status == 405
+
+    async with client.post('/resource', data='{"test": "passed"}') as res:
+        assert res.status == 200
 
 
 async def test_api(aiohttp_client):

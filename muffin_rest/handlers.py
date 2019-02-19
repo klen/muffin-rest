@@ -238,8 +238,15 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
 
     async def load(self, request, resource=None, **kwargs):
         """Load resource from given data."""
+        try:
+            data = await self.parse(request)
+        except ValueError as exc:
+            raise RESTBadRequest(reason=str(exc))
+
         schema = self.get_schema(request, resource=resource, **kwargs)
-        data = await self.parse(request)
+        if not schema:
+            return data
+
         resource, errors = schema.load(
             data, partial=resource is not None, many=isinstance(data, list))
         if errors:
