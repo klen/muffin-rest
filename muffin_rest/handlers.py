@@ -53,7 +53,9 @@ class RESTOptions(object):
         self.filters = self.filters_converter(*self.filters, handler=cls)
 
         # Setup sorting
-        self.sorting = dict(n if isinstance(n, (list, tuple)) else (n, n) for n in self.sorting)
+        if not isinstance(self.sorting, dict):
+            self.sorting = dict(
+                n if isinstance(n, (list, tuple)) else (n, n) for n in self.sorting)
 
     def __repr__(self):
         """String representation."""
