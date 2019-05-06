@@ -52,6 +52,9 @@ class RESTOptions(object):
         # Setup filters
         self.filters = self.filters_converter(*self.filters, handler=cls)
 
+        # Setup sorting
+        self.sorting = dict(n if isinstance(n, (list, tuple)) else (n, n) for n in self.sorting)
+
     def __repr__(self):
         """String representation."""
         return "<Options %s>" % self.cls
@@ -90,6 +93,9 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
 
         # Filters converter class
         filters_converter = Filters
+
+        # Define allowed resource sorting params
+        sorting = ()
 
         # Redefine Schema.Meta completely
         schema_meta = None
@@ -133,8 +139,11 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
 
             # Sort resources
             if VAR_SORT in request.query:
-                sorting = [(name.strip('-'), name.startswith('-'))
-                           for name in request.query[VAR_SORT].split(',')]
+                sorting = [
+                    (name.strip('-'), name.startswith('-'))
+                    for name in request.query[VAR_SORT].split(',')
+                    if name.strip('-') in self.meta.sorting]
+
                 self.collection = await self.sort(*sorting, **kwargs)
 
             # Paginate resources

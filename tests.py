@@ -169,6 +169,7 @@ async def test_peewee(aiohttp_client):
                 created=Timestamp(),
             )
             filters = 'active', 'name', ('oid', 'id'),
+            sorting = 'name', Resource.count
 
     @ResourceHandler.register('/resource/action')
     def action(handler, request, resource=None):
@@ -235,9 +236,15 @@ async def test_peewee(aiohttp_client):
     assert Resource.select().where(Resource.id == 1).exists()
     assert not Resource.select().where(Resource.id == 2).exists()
 
-    Resource(name='test2').save()
-    Resource(name='test3').save()
-    Resource(name='test4').save()
+    Resource(name='test2', count=2).save()
+    Resource(name='test3', count=3).save()
+    Resource(name='test4', count=1).save()
+
+    async with client.get('/resource?sort=-count') as res:
+        assert res.status == 200
+        json = await res.json()
+        assert json[0]['id'] == '3'
+        assert json[1]['id'] == '2'
 
     async with client.get('/resource?where={"name":"test"}') as res:
         assert res.status == 200

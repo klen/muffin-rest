@@ -1,4 +1,5 @@
 """Support Muffin-Peewee."""
+import peewee as pw
 from muffin_rest import RESTHandler, RESTNotFound, Filter, Filters, RESTOptions
 
 try:
@@ -69,6 +70,11 @@ class PWRESTOptions(RESTOptions):
         if getattr(self.meta, 'filters', None):
             self.filters = self.filters_converter(*self.meta.filters, handler=cls)
 
+        # Resetup sorting
+        self.sorting = dict(
+            (isinstance(n, pw.Field) and n.name or n, prop)
+            for (n, prop) in self.sorting.items())
+
 
 class PWRESTHandler(RESTHandler):
 
@@ -107,14 +113,21 @@ class PWRESTHandler(RESTHandler):
         """Sort resources."""
         sorting_ = []
         for name, desc in sorting:
-            field = self.meta.model._meta.fields.get(name)
+            field = self.meta.sorting[name]
+            if not isinstance(field, pw.Field):
+                field = self.meta.model._meta.fields.get(name)
+
             if field is None:
                 continue
+
             if desc:
                 field = field.desc()
+
             sorting_.append(field)
+
         if sorting_:
             return self.collection.order_by(*sorting_)
+
         return self.collection
 
     def paginate(self, request, offset=0, limit=None):
