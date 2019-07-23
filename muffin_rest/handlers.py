@@ -153,8 +153,8 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
             if per_page:
                 try:
                     per_page = int(per_page)
-                    if per_page:
-                        page = int(request.query.get(VAR_PAGE, 0))
+                    page = int(request.query.get(VAR_PAGE, 0))
+                    if per_page and page >= 0:
                         offset = page * per_page
                         self.collection, total = await self.paginate(request, offset, per_page)
                         headers = make_pagination_headers(
