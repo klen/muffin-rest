@@ -113,8 +113,8 @@ class PWRESTHandler(RESTHandler):
         """Sort resources."""
         sorting_ = []
         for name, desc in sorting:
-            field = self.meta.sorting[name]
-            if not isinstance(field, pw.Field):
+            field = self.meta.sorting.get(name)
+            if field and not isinstance(field, pw.Field):
                 field = self.meta.model._meta.fields.get(name)
 
             if field is None:
