@@ -241,6 +241,13 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
         """Create schema instance."""
         return self.Schema and self.Schema()
 
+    async def parse(self, request):
+        """Catch an exception from request parsing."""
+        try:
+            return await super(RESTHandler, self).parse(request)
+        except ValueError as exc:
+            raise RESTBadRequest(reason=str(exc))
+
     async def post(self, request, resource=None, **kwargs):
         """Create a resource."""
         resource = await self.load(request, resource=resource, **kwargs)
@@ -249,10 +256,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
 
     async def load(self, request, resource=None, **kwargs):
         """Load resource from given data."""
-        try:
-            data = await self.parse(request)
-        except ValueError as exc:
-            raise RESTBadRequest(reason=str(exc))
+        data = await self.parse(request)
 
         schema = self.get_schema(request, resource=resource, **kwargs)
         if not schema:
