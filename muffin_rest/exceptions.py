@@ -1,6 +1,6 @@
-import ujson
 
 from muffin import HTTPNotFound, HTTPBadRequest, HTTPForbidden
+from muffin.utils import json as JSON
 
 
 class JSONResponse:
@@ -18,7 +18,7 @@ class JSONResponse:
     def __init__(self, *, json=None, **kwargs):
         """Convert JSON data to text."""
         if json:
-            kwargs.setdefault('text', ujson.dumps(json))
+            kwargs.setdefault('text', JSON.dumps(json))
             kwargs.setdefault('content_type', 'application/json')
         super(JSONResponse, self).__init__(**kwargs)
 

@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 from aiohttp.web import StreamResponse, Response
 from muffin.handler import Handler
-from ujson import dumps, loads # noqa
+from muffin.utils import json, dumps
 
 from .filters import Filters
 from .exceptions import RESTNotFound, RESTBadRequest
@@ -176,7 +176,6 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
             return response
 
         response_kwargs.setdefault('content_type', 'application/json')
-
         return Response(text=dumps(response), **response_kwargs)
 
     async def authorize(self, request, **kwargs):
@@ -194,7 +193,7 @@ class RESTHandler(Handler, metaclass=RESTHandlerMeta):
     async def filter(self, request, **kwargs):
         """Filter collection."""
         try:
-            data = loads(request.query.get(VAR_WHERE))
+            data = json.loads(request.query.get(VAR_WHERE))
         except (ValueError, TypeError):
             return self.collection
 
