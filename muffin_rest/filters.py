@@ -40,7 +40,12 @@ class Filter:
 
     def filter(self, collection, data, **kwargs):
         """Filter given collection."""
-        ops = self.parse(data)
+        try:
+            ops = self.parse(data)
+        except ValueError:
+            # Ignore invalid filters' values
+            return collection
+
         collection = self.apply(collection, ops, **kwargs)
         return ops, collection
 
