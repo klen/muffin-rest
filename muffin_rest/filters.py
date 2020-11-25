@@ -1,7 +1,7 @@
 """Support API filters."""
 import operator
 
-from marshmallow import fields, missing
+from marshmallow import fields, missing, ValidationError
 
 
 class Filter:
@@ -42,9 +42,9 @@ class Filter:
         """Filter given collection."""
         try:
             ops = self.parse(data)
-        except ValueError:
+        except (ValueError, ValidationError):
             # Ignore invalid filters' values
-            return collection
+            return None, collection
 
         collection = self.apply(collection, ops, **kwargs)
         return ops, collection

@@ -281,6 +281,11 @@ async def test_peewee(aiohttp_client):
         json = await res.json()
         assert len(json) == 2
 
+    async with client.get('/resource?where={"oid": {"$gt": NaN}}') as res:
+        assert res.status == 200
+        json = await res.json()
+        assert len(json) == 4
+
     for n in range(6):
         Resource(name='test%d' % n).save()
 
