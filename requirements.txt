@@ -1,3 +1,0 @@
-muffin      >= 0.30.5
-apispec     == 0.39
-marshmallow < 3

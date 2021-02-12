@@ -1,137 +1,74 @@
-"""!!! STILL NOT IMPLEMENTED. WORK IN PROGRESS !!!."""
-import os.path as op
-import re
-from types import FunctionType, MethodType
+"""Implement a base class for API."""
 
-from apispec import APISpec, utils
-from copy import deepcopy
-from collections import OrderedDict
+import dataclasses as dc
+import typing as t
+
 import muffin
-from muffin import Handler
-from muffin.app import BaseApplication as Application
-
-from .handlers import RESTHandler
+from muffin.utils import to_awaitable
+from http_router import Router
 
 
-PREFIX_RE = re.compile(r'(/|\s)')
-PLUGIN_ROOT = op.dirname(op.abspath(__file__))
+AUTH = t.TypeVar('AUTH', bound=t.Callable[[muffin.Request], t.Awaitable])
 
 
-class Api():
-    """Bind group of resources together."""
+@dc.dataclass
+class API:
+    """Initialize an API."""
 
-    def __init__(self, prefix='/api', swagger=True):
+    app: t.Optional[muffin.Application] = dc.field(default=None, repr=False)
+    prefix: str = ''
+    router: Router = dc.field(default_factory=Router, repr=False)
+
+    def __post_init__(self):
+        """Post initialize the API if we have an application already."""
+        if self.app:
+            self.setup(self.app, prefix=self.prefix)
+        self.authorize: t.Callable[[muffin.Request], t.Awaitable] = to_awaitable(lambda r: True)
+
+    @property
+    def logger(self):
+        if self.app is None:
+            raise RuntimeError('API must be binded to an app.')
+
+        return self.app.logger
+
+    def setup(self, app: muffin.Application, prefix: str = ''):
         """Initialize the API."""
+        self.app = app
         self.prefix = prefix.rstrip('/')
-        self.prefix_name = PREFIX_RE.sub('.', prefix.strip('/'))
-        self.app = Application()
-        self.parent = None
-        self.handlers = {}
 
-        # Support Swagger
-        if swagger:
-            self.app.register('/')(Handler.from_view(self.swagger_ui))
-            self.register('/schema.json')(Handler.from_view(self.swagger_schema))
+        # Setup routing
+        self.router.trim_last_slash = self.app.router.trim_last_slash
+        self.router.validate_cb = self.app.router.validate_cb               # type: ignore
+        self.router.MethodNotAllowed = self.app.router.MethodNotAllowed     # type: ignore
+        self.router.NotFound = self.app.router.NotFound                     # type: ignore
+        self.app.router.route(self.prefix)(self.router)
 
-    def bind(self, app):
-        """Bind API to Muffin."""
-        self.parent = app
-        app.add_subapp(self.prefix, self.app)
+    def route(self, path: t.Union[str, t.Any], *paths: str, **params):
+        """Route an endpoint by the API."""
+        from .endpoint import Endpoint
 
-    def register(self, *paths, methods=None, name=None):
-        """Register handler to the API."""
-        if isinstance(methods, str):
-            methods = [methods]
+        def wrapper(cb):
+            cb = self.router.route(*paths, **params)(cb)
+            cb._api = self
+            return cb
 
-        def wrapper(handler):
+        if isinstance(path, str):
+            paths = (path, *paths)
 
-            if isinstance(handler, (FunctionType, MethodType)):
-                handler = RESTHandler.from_view(handler, *(methods or ['GET']))
+        # Generate URL paths automatically
+        elif issubclass(path, Endpoint):
+            endpoint = path
+            paths = (f'/{ endpoint.meta.name }',
+                     f'/{ endpoint.meta.name }/{{{ endpoint.meta.name }}}')
+            return wrapper(endpoint)
 
-            if handler.name in self.handlers:
-                raise muffin.MuffinException('Handler is already registered: %s' % handler.name)
-
-            self.handlers[tuple(paths or ["/{0}/{{{0}}}".format(handler.name)])] = handler
-
-            handler.bind(self.app, *paths, methods=methods, name=name or handler.name)
-            return handler
-
-        # Support for @app.register(func)
-        if len(paths) == 1 and callable(paths[0]):
-            view = paths[0]
-            paths = []
-            return wrapper(view)
+        else:
+            raise Exception("Invalid endpoint")  # TODO
 
         return wrapper
 
-    def swagger_ui(self, request):
-        """Render swagger UI."""
-        schema_url = self.prefix + '/schema.json'
-        return """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.0.10/swagger-ui.css" >
-            </head>
-            <body>
-                <div id="ui"></div>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.0.10/swagger-ui-bundle.js"> </script>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.0.10/swagger-ui-standalone-preset.js"> </script>
-                <script>
-                    window.onload = function() {
-                        const ui = SwaggerUIBundle({
-                            url: "%s",
-                            dom_id: '#ui',
-                            presets: [
-                                SwaggerUIBundle.presets.apis,
-                                SwaggerUIStandalonePreset
-                            ],
-                            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-                            layout: "StandaloneLayout"
-                        })
-                    window.ui = ui
-                }
-                </script>
-            </body>
-            </html>
-        """ % schema_url
-
-    def swagger_schema(self, request):
-        """Render API Schema."""
-        if self.parent is None:
-            return {}
-
-        spec = APISpec(
-            self.parent.name, self.parent.cfg.get('VERSION', ''),
-            plugins=['apispec.ext.marshmallow'], basePatch=self.prefix
-        )
-
-        for paths, handler in self.handlers.items():
-            spec.add_tag({
-                'name': handler.name,
-                'description': utils.dedent(handler.__doc__ or ''),
-            })
-            for path in paths:
-                operations = {}
-                for http_method in handler.methods:
-                    method = getattr(handler, http_method.lower())
-                    operation = OrderedDict({
-                        'tags': [handler.name],
-                        'summary': method.__doc__,
-                        'produces': ['application/json'],
-                        'responses': {200: {'schema': {'$ref': {'#/definitions/' + handler.name}}}}
-                    })
-                    operation.update(utils.load_yaml_from_docstring(method.__doc__) or {})
-                    operations[http_method.lower()] = operation
-
-                spec.add_path(self.prefix + path, operations=operations)
-
-            if getattr(handler, 'Schema', None):
-                kwargs = {}
-                if getattr(handler.meta, 'model', None):
-                    kwargs['description'] = utils.dedent(handler.meta.model.__doc__ or '')
-                spec.definition(handler.name, schema=handler.Schema, **kwargs)
-
-        return deepcopy(spec.to_dict())
-
-#  pylama:ignore=W1401,W0212
+    def authorization(self, auth: AUTH) -> AUTH:
+        """Bind an authorization flow to self API."""
+        self.authorize = auth
+        return auth

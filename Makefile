@@ -22,9 +22,8 @@ clean:
 .PHONY: release
 VERSION?=minor
 # target: release - Bump version
-release:
-	@$(VIRTUAL_ENV)/bin/pip install bumpversion
-	@$(VIRTUAL_ENV)/bin/bumpversion $(VERSION)
+release: $(VIRTUAL_ENV)
+	@$(VIRTUAL_ENV)/bin/bump2version $(VERSION)
 	@git checkout master
 	@git merge develop
 	@git checkout develop
@@ -46,41 +45,32 @@ major:
 #  Build package
 # ===============
 
-.PHONY: register
-# target: register - Register module on PyPi
-register:
-	@$(VIRTUAL_ENV)/bin/python setup.py register
-
 .PHONY: upload
 # target: upload - Upload module on PyPi
-upload: clean
-	@$(VIRTUAL_ENV)/bin/pip install twine wheel
-	@$(VIRTUAL_ENV)/bin/python setup.py sdist bdist_wheel
-	@$(VIRTUAL_ENV)/bin/twine upload dist/*.tar.gz || true
-	@$(VIRTUAL_ENV)/bin/twine upload dist/*.whl || true
+upload: clean $(VIRTUAL_ENV)
+	@$(VIRTUAL_ENV)/bin/python setup.py bdist_wheel
+	@$(VIRTUAL_ENV)/bin/twine upload dist/* || true
 
 # =============
 #  Development
 # =============
 
-$(VIRTUAL_ENV): requirements.txt
-	@[ -d $(VIRTUAL_ENV) ] || virtualenv --no-site-packages --python=python3 $(VIRTUAL_ENV)
-	@$(VIRTUAL_ENV)/bin/pip install -r requirements.txt
+$(VIRTUAL_ENV): setup.cfg
+	@[ -d $(VIRTUAL_ENV) ] || python -m venv $(VIRTUAL_ENV)
+	@$(VIRTUAL_ENV)/bin/pip install -e .[tests,build,example]
 	@touch $(VIRTUAL_ENV)
 
-$(VIRTUAL_ENV)/bin/py.test: $(VIRTUAL_ENV) requirements-tests.txt
-	@$(VIRTUAL_ENV)/bin/pip install -r requirements-tests.txt
-	@touch $(VIRTUAL_ENV)/bin/py.test
-
-.PHONY: test
+.PHONY: t test
 # target: test - Runs tests
-test: $(VIRTUAL_ENV)/bin/py.test
-	@$(VIRTUAL_ENV)/bin/py.test -xs tests.py
+t test: $(VIRTUAL_ENV)
+	@$(VIRTUAL_ENV)/bin/pytest tests
 
-.PHONY: t
-t: test
+.PHONY: mypy
+# target: mypy - Check typing
+mypy: $(VIRTUAL_ENV)
+	@$(VIRTUAL_ENV)/bin/mypy muffin_rest
 
 .PHONY: run
 # target: run - Runs example
 run: $(VIRTUAL_ENV)
-	@$(VIRTUAL_ENV)/bin/muffin example run --reload --timeout=300 --workers=1
+	@$(VIRTUAL_ENV)/bin/uvicorn example:app --reload --port=5000

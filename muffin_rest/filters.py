@@ -1,7 +1,8 @@
 """Support API filters."""
 import operator
+import typing as t
 
-from marshmallow import fields, missing, ValidationError
+import marshmallow as ma
 
 
 class Filter:
@@ -9,20 +10,27 @@ class Filter:
     """Base filter class."""
 
     operators = {
+        '<':   operator.lt,
         '$lt': operator.lt,
+        '<=':  operator.le,
         '$le': operator.le,
+        '>':   operator.gt,
         '$gt': operator.gt,
+        '>=':  operator.ge,
         '$ge': operator.ge,
+        '==':  operator.eq,
         '$eq': operator.eq,
+        '!':   operator.ne,
         '$ne': operator.ne,
         '$in': lambda v, c: v in c,
     }
+    operators['<<'] = operators['$in']
 
-    list_ops = '$in',
+    list_ops = ['$in', '<<']
 
-    field_cls = fields.Raw
+    field_cls: t.Type[ma.fields.Field] = ma.fields.Raw
 
-    def __init__(self, name, attr=None, field=None):
+    def __init__(self, name: str, attr: str = None, field: ma.fields.Field = None):
         """Initialize filter.
 
         :param name: The filter's name
@@ -34,24 +42,19 @@ class Filter:
         self.attr = attr or name
         self.field = field or self.field_cls(attribute=self.attr)
 
-    def __repr__(self):
-        """String representation."""
+    def __repr__(self) -> str:
+        """Represent self as a string."""
         return '<Filter %s>' % self.name
 
-    def filter(self, collection, data, **kwargs):
+    def filter(self, collection: t.Any, data: t.Mapping, **kwargs):
         """Filter given collection."""
-        try:
-            ops = self.parse(data)
-        except (ValueError, ValidationError):
-            # Ignore invalid filters' values
-            return None, collection
-
+        ops = self.parse(data)
         collection = self.apply(collection, ops, **kwargs)
         return ops, collection
 
-    def parse(self, data):
+    def parse(self, data: t.Mapping) -> t.Tuple[t.Tuple[t.Callable, t.Any], ...]:
         """Parse operator and value from filter's data."""
-        val = data.get(self.name, missing)
+        val = data.get(self.name, ma.missing)
         if not isinstance(val, dict):
             return (self.operators['$eq'], self.field.deserialize(val)),
 
@@ -65,22 +68,22 @@ class Filter:
 
     def apply(self, collection, ops, **kwargs):
         """Apply the filter to collection."""
-        validator = lambda obj: all(op(obj, val) for (op, val) in ops)  # noqa
+        validator = lambda obj: all(op(get_value(obj, self.name), val) for (op, val) in ops)  # noqa
         return [o for o in collection if validator(o)]
 
 
 class Filters:
 
-    """Build filters for given handler."""
+    """Build filters for given endpoint."""
 
     FILTER_CLASS = Filter
 
-    def __init__(self, *filters, handler=None):
+    def __init__(self, *filters, endpoint=None):
         """Initialize object."""
         self.filters = tuple(
-            f if isinstance(f, Filter) else self.convert(f, handler) for f in filters)
+            f if isinstance(f, Filter) else self.convert(f, endpoint) for f in filters)
 
-    def convert(self, args, handler=None):
+    def convert(self, args, endpoint=None):
         """Prepare filters."""
         name = args
         field = attr = None
@@ -92,8 +95,8 @@ class Filters:
             if opts:
                 field = opts.pop()
 
-        if not field and handler and handler.Schema:
-            field = handler.Schema._declared_fields.get(attr or name) or \
+        if not field and endpoint and endpoint.meta.Schema:
+            field = endpoint.meta.Schema._declared_fields.get(attr or name) or \
                 self.FILTER_CLASS.field_cls()
             field.attribute = field.attribute or attr or name
         return self.FILTER_CLASS(name, attr=attr, field=field, *opts)
@@ -111,3 +114,11 @@ class Filters:
             filters[f.name] = ops
 
         return filters, collection
+
+
+def get_value(obj, name):
+    """Get value from object by name."""
+    if isinstance(obj, dict):
+        return obj.get(name)
+
+    return getattr(obj, name, obj)
