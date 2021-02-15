@@ -29,7 +29,7 @@ class MongoChain:
     def __init__(self, collection: motor.AsyncIOMotorCollection):
         """Initialize the resource."""
         self.collection = collection
-        self.query = []
+        self.query: t.List = []
         self.projection = None
         self.sorting = None
 

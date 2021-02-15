@@ -2,17 +2,16 @@
 
 import typing as t
 
-from motor import motor_asyncio as motor
 import bson
 import marshmallow as ma
 import muffin
+from motor import motor_asyncio as motor
 
 from ..endpoint import Endpoint, EndpointOpts
 from ..errors import APIError
-
+from ..filters import Filter, Filters
 from .schema import MongoSchema
 from .utils import MongoChain
-from ..filters import Filter, Filters
 
 
 class MongoFilter(Filter):
@@ -32,10 +31,9 @@ class MongoFilter(Filter):
     }
 
     def apply(self, collection: MongoChain,
-              ops: t.Tuple[t.Tuple[str, t.Any]], **kwargs) -> MongoChain:
+              ops: t.Tuple[t.Tuple[t.Callable, t.Any]], **kwargs) -> MongoChain:
         """Filter mongo."""
-        ops = dict(op(self.name, v) for op, v in ops)
-        return collection.find({self.attr: ops})
+        return collection.find({self.attr: dict(op(self.name, v) for op, v in ops)})
 
 
 class MongoFilters(Filters):
@@ -46,6 +44,11 @@ class MongoFilters(Filters):
 
 class MongoEndpointOpts(EndpointOpts):
     """Support Mongo DB."""
+
+    collection: motor.AsyncIOMotorCollection
+    collection_id: str
+    aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
+    Schema: t.Type[MongoSchema]
 
     def __init__(self, cls):
         """Prepare meta options."""
@@ -72,9 +75,9 @@ class MongoEndpoint(Endpoint):
         filters_cls = MongoFilters
 
         # Mongo options
-        collection = None
+        collection: t.Optional[motor.AsyncIOMotorCollection] = None
         collection_id = '_id'
-        aggregate = False  # Support aggregation. Set to pipeline.
+        aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
         schema_fields = None
 
     async def prepare_collection(self, request: muffin.Request) -> MongoChain:
@@ -146,6 +149,9 @@ class MongoEndpoint(Endpoint):
         oids = [resource[self.meta.collection_id]] if resource else await request.data()
         if not oids:
             raise APIError.NOT_FOUND()
+
+        if not isinstance(oids, list):
+            raise APIError.BAD_REQUEST()
 
         oids = [bson.ObjectId(_id) for _id in oids]
         await self.meta.collection.delete_many({self.meta.collection_id: {'$in': oids}})

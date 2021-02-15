@@ -71,7 +71,7 @@ class SAEndpointOpts(EndpointOpts):
     table: sa.Table
     table_pk: sa.Column
     database: DB
-    Schema: t.Optional[t.Type[SQLAlchemyAutoSchema]] = None
+    Schema: t.Type[SQLAlchemyAutoSchema]
 
     def __init__(self, cls):
         """Prepare meta options."""
