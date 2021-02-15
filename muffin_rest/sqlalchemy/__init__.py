@@ -41,6 +41,8 @@ class SAFilter(Filter):
     operators['$notlike'] = lambda c, v: c.notlike(v)
     operators['$starts'] = lambda c, v: c.startswith(v)
 
+    list_ops = Filter.list_ops + ['$between']
+
     def __init__(self, name: str, attr: str = None,
                  field: ma.fields.Field = None, column: sa.Column = None):
         """Support custom model fields."""
@@ -49,7 +51,7 @@ class SAFilter(Filter):
 
     def apply(self, collection: sa.sql.Select, ops: t.Tuple[t.Tuple[t.Callable, t.Any], ...],
               endpoint: 'SAEndpoint' = None, **kwargs) -> sa.sql.Select:
-        """Apply the filters to Peewee QuerySet.."""
+        """Apply the filters to SQLAlchemy Select."""
         column = (self.column or endpoint and endpoint.meta.table.c.get(self.field.attribute))
         if ops and column is not None:
             collection = collection.where(*[op(column, val) for op, val in ops])
@@ -64,7 +66,7 @@ class SAFilters(Filters):
 
 
 class SAEndpointOpts(EndpointOpts):
-    """Support Peewee."""
+    """Support SQLAlchemy Core."""
 
     table: sa.Table
     table_pk: sa.Column
@@ -108,13 +110,12 @@ class SAEndpoint(Endpoint):
     class Meta:
         """Tune sqlalchemy endpoints."""
 
-        filters_converter = SAFilters
+        filters_cls = SAFilters
 
         # Sqlalchemy options
         table = None
         table_pk = None
         database = None
-        model_pk = None
 
         Schema = SQLAlchemyAutoSchema
 
@@ -165,8 +166,9 @@ class SAEndpoint(Endpoint):
         """
         resources = resource if isinstance(resource, t.Sequence) else [resource]
         for res in resources:
-            if res.get('id'):
-                update = self.meta.table.update().where(self.meta.table_pk == res['id'])
+            if res.get(self.meta.table_pk.name):
+                update = self.meta.table.update().where(
+                    self.meta.table_pk == res[self.meta.table_pk.name])
                 await self.meta.database.execute(update, res)
 
             else:
@@ -177,7 +179,7 @@ class SAEndpoint(Endpoint):
 
     async def remove(self, request: muffin.Request, *, resource: dict = None):
         """Remove the given resource."""
-        pks = [resource['id']] if resource else await request.data()
+        pks = [resource[self.meta.table_pk.name]] if resource else await request.data()
         if not pks:
             raise APIError.NOT_FOUND()
 

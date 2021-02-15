@@ -50,9 +50,6 @@ class EndpointOpts:
         self.name = self.name or cls.__name__.lower().split('endpoint', 1)[0] or\
             cls.__name__.lower()
 
-        # Setup filters
-        self.filters = self.filters_converter(*self.filters, endpoint=cls)
-
         # Setup sorting
         if not isinstance(self.sorting, dict):
             self.sorting = dict(
@@ -70,6 +67,7 @@ class EndpointMeta(HandlerMeta):
         """Prepare options for the endpoint."""
         cls = super().__new__(mcs, name, bases, params)
         cls.meta = cls.meta_class(cls)
+        cls.meta.filters = cls.meta.filters_cls(*cls.meta.filters, endpoint=cls)
         return cls
 
 
@@ -79,7 +77,6 @@ class Endpoint(Handler, metaclass=EndpointMeta):
 
     collection: t.Any
     resource: t.Any
-    filters: t.Dict
     meta: EndpointOpts
     meta_class: t.Type[EndpointOpts] = EndpointOpts
 
@@ -96,10 +93,8 @@ class Endpoint(Handler, metaclass=EndpointMeta):
         limit: int = 0
 
         # Resource filters
-        filters: t.Sequence[t.Union[str, Filter]] = ()
-
-        # Filters converter class
-        filters_converter: t.Type[Filters] = Filters
+        filters: t.Sequence[t.Union[str, t.Tuple[str, str], Filter]] = ()
+        filters_cls: t.Type[Filters] = Filters
 
         # Define allowed resource sorting params
         sorting: t.Union[t.Dict[str, bool], t.Sequence[t.Union[str, t.Tuple[str, bool]]]] = {}

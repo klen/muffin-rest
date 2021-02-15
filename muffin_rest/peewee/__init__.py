@@ -90,7 +90,7 @@ class PeeweeEndpoint(Endpoint):
     class Meta:
         """Tune peewee endpoints."""
 
-        filters_converter = PeeweeFilters
+        filters_cls = PeeweeFilters
 
         # Peewee options
         model = None

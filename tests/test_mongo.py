@@ -1,48 +1,40 @@
 import pytest
-import sqlalchemy as sa
-from muffin_databases import Plugin as DB
+from muffin_mongo import Plugin as Mongo
+import marshmallow as ma
+from bson import ObjectId
 
 
 @pytest.mark.parametrize('anyio_backend', ['asyncio'])
 async def test_base(app, client):
     from muffin_rest import API
-    from muffin_rest.sqlalchemy import SAEndpoint
+    from muffin_rest.mongo import MongoEndpoint
 
-    db = DB(app, url='sqlite:///:memory:', params={'force_rollback': True})
+    mongo = Mongo(app)
     api = API(app, '/api')
 
-    await db.connect()
+    # Link to a resources collection
+    resources = mongo.tests.resources
 
-    meta = sa.MetaData()
-    Resource = sa.Table(
-        'resource', meta,
-        sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('active', sa.Boolean, default=False, nullable=False),
-        sa.Column('name', sa.String, nullable=False),
-        sa.Column('count', sa.Integer),
-    )
-
-    await db.execute(
-        'create table resource ('
-        'id integer primary key,'
-        'active integer default 0,'
-        'name varchar(256) not null,'
-        'count integer)'
-    )
+    # Clean the tests collection
+    await resources.drop()
 
     @api.route
-    class ResourceEndpoint(SAEndpoint):
+    class ResourceEndpoint(MongoEndpoint):
 
         class Meta:
-            database = db
-            filters = 'active', 'name', ('oid', 'id'),
+            collection = resources
+            filters = 'active', 'name', ('oid', '_id'),
             limit = 10
             sorting = 'name', 'count'
-            table = Resource
+            schema_fields = {
+                'active': ma.fields.Bool(default=False),
+                'name': ma.fields.String(required=True),
+                'count': ma.fields.Integer(),
+            }
 
-        @SAEndpoint.route('/resource/action')
+        @MongoEndpoint.route('/resource/action')
         async def action(self, request, resource=None):
-            rows = await self.meta.database.fetch_all(self.collection)
+            rows = await self.meta.collection.find().to_list(None)
             return await self.dump(request, rows)
 
     assert ResourceEndpoint
@@ -56,22 +48,21 @@ async def test_base(app, client):
     assert res.status_code == 200
     assert await res.json() == []
 
-    await db.execute(Resource.insert(), values={'name': 'test'})
+    await resources.insert_one({'name': 'test'})
     res = await client.get('/api/resource')
     assert res.status_code == 200
     json = await res.json()
-    assert json[0]['id'] == 1
-    assert json[0]['count'] is None
+    assert json[0]['_id']
+    assert not json[0]['active']
     assert json[0]['name'] == 'test'
 
-    res = await client.get('/api/resource/1')
+    res = await client.get(f"/api/resource/{ json[0]['_id'] }")
     assert res.status_code == 200
-    assert await res.json() == {
-        'active': None,
-        'count': None,
-        'id': 1,
-        'name': 'test',
-    }
+    json = await res.json()
+    assert json
+    assert json['_id']
+    assert not json['active']
+    assert json['name'] == 'test'
 
     res = await client.get('/api/resource/unknown')
     assert res.status_code == 404
@@ -90,25 +81,27 @@ async def test_base(app, client):
     res = await client.post('/api/resource', data={'name': 'test2', 'active': True})
     assert res.status_code == 200
     json = await res.json()
-    assert json['id'] == 2
+    assert json['_id']
     assert json['name'] == 'test2'
     assert json['active']
 
-    res = await client.patch('/api/resource/2', data={'name': 'new'})
+    _id = json['_id']
+
+    res = await client.patch(f"/api/resource/{ json['_id'] }", data={'name': 'new'})
     assert res.status_code == 200
     json = await res.json()
     assert json['name'] == 'new'
-    assert json['id'] == 2
+    assert json['_id'] == _id
 
-    res = await client.delete('/api/resource/2')
+    res = await client.delete(f"/api/resource/{ _id }")
     assert res.status_code == 200
     json = await res.json()
     assert not json
 
-    assert await db.fetch_one(Resource.select().where(Resource.c.id == 1))
-    assert not await db.fetch_one(Resource.select().where(Resource.c.id == 2))
+    assert not await resources.find_one({'_id': _id})
+    assert await resources.count_documents({})
 
-    await db.execute_many(Resource.insert(), [
+    await resources.insert_many([
         {'name': 'test2', 'count': 2},
         {'name': 'test3', 'count': 3},
         {'name': 'test4', 'count': 1},
@@ -117,8 +110,8 @@ async def test_base(app, client):
     res = await client.get('/api/resource?sort=-count')
     assert res.status_code == 200
     json = await res.json()
-    assert json[0]['id'] == 3
-    assert json[1]['id'] == 2
+    assert json[0]['count'] == 3
+    assert json[1]['count'] == 2
 
     res = await client.get('/api/resource?where={"name":"test"}')
     assert res.status_code == 200
@@ -140,17 +133,14 @@ async def test_base(app, client):
     json = await res.json()
     assert len(json) == 1
 
-    res = await client.get('/api/resource?where={"oid": {"$between": [2, 4]}}')
+    _id = json[0]['_id']
+
+    res = await client.get('/api/resource?where={"oid": "%s"}' % _id)
     assert res.status_code == 200
     json = await res.json()
-    assert len(json) == 3
+    assert len(json) == 1
 
-    res = await client.get('/api/resource?where={"oid": {"$gt": "2"}}')
-    assert res.status_code == 200
-    json = await res.json()
-    assert len(json) == 2
-
-    await db.execute_many(Resource.insert(), [
+    await resources.insert_many([
         {'name': 'test%d' % n} for n in range(6)
     ])
 
@@ -184,13 +174,12 @@ async def test_base(app, client):
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 3
-    assert json[0]['id'] == 11
-    assert json[1]['id'] == 12
-    assert json[2]['id'] == 13
+    assert json[0]['_id']
+    assert json[1]['_id']
+    assert json[2]['_id']
 
-    res = await client.delete('/api/resource', json=[11, 12, 13])
+    res = await client.delete('/api/resource', json=[item['_id'] for item in json])
     assert res.status_code == 200
 
-    assert not await db.fetch_all(Resource.select().where(Resource.c.id.in_([11, 12, 13])))
-
-    await db.disconnect()
+    assert not await resources.find(
+        {'_id': {"$in": list(map(ObjectId, [item['_id'] for item in json]))}}).to_list(None)

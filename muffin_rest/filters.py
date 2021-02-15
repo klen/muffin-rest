@@ -23,6 +23,7 @@ class Filter:
         '!':   operator.ne,
         '$ne': operator.ne,
         '$in': lambda v, c: v in c,
+        '$nin': lambda v, c: v not in c,
     }
     operators['<<'] = operators['$in']
 
@@ -48,7 +49,11 @@ class Filter:
 
     def filter(self, collection: t.Any, data: t.Mapping, **kwargs):
         """Filter given collection."""
-        ops = self.parse(data)
+        try:
+            ops = self.parse(data)
+        except ma.ValidationError:
+            return None, collection
+
         collection = self.apply(collection, ops, **kwargs)
         return ops, collection
 
@@ -82,6 +87,10 @@ class Filters:
         """Initialize object."""
         self.filters = tuple(
             f if isinstance(f, Filter) else self.convert(f, endpoint) for f in filters)
+
+    def __iter__(self):
+        """Iterate through self filters."""
+        return iter(self.filters)
 
     def convert(self, args, endpoint=None):
         """Prepare filters."""
