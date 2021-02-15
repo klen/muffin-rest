@@ -1,8 +1,10 @@
 import muffin
+import muffin_peeewee
 
 
-app = muffin.Application(
-    'rest', PLUGINS=['muffin_peewee']
-)
+app = muffin.Application('rest')
 
-from example.api import * # noqa Register API Handlers
+db = muffin_peeewee.Plugin(app)
+
+# Register the API
+from example.api import * # noqa

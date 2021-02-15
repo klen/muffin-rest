@@ -1,4 +1,4 @@
-from muffin_rest.peewee import PWRESTHandler
+from muffin_rest.peewee import PeeweeEndpoint
 
 from example import app
 from example.models import ResourceModel

@@ -1,10 +1,13 @@
+import datetime as dt
+
 import peewee as pw
 
-from example import app
+from example import db
 
 
-@app.ps.peewee.register
-class ResourceModel(app.ps.peewee.TModel):
+@db.register
+class ResourceModel(pw.Model):
 
+    created = pw.DateTimeField(default=dt.datetime.utcnow)
     active = pw.BooleanField(default=True)
     name = pw.CharField(null=False)
