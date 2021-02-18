@@ -36,7 +36,7 @@ async def test_base(app, client):
     assert ResourceEndpoint.meta.Schema
 
     assert api.router.plain['/resource']
-    assert api.router.dynamic[0].pattern.pattern == '/resource/(?P<resource>[^/]+)$'
+    assert api.router.dynamic[0].pattern.pattern == '^/resource/(?P<resource>[^/]+)$'
 
     res = await client.get('/api/resource')
     assert res.status_code == 200
@@ -84,7 +84,7 @@ async def test_base(app, client):
     assert json['name'] == 'test2'
     assert json['active']
 
-    res = await client.patch('/api/resource/2', data={'name': 'new'})
+    res = await client.put('/api/resource/2', data={'name': 'new'})
     assert res.status_code == 200
     json = await res.json()
     assert json['name'] == 'new'

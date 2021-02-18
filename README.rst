@@ -3,16 +3,17 @@ Muffin-REST
 
 .. _description:
 
-**Muffin-REST** -- REST API helpers for Muffin_ Framework.
+**Muffin-REST** -- provides enhanced support for writing REST APIs with Muffin_.
+
 
 .. _badges:
 
-.. image:: https://github.com/klen/muffin-mongo/workflows/tests/badge.svg
-    :target: https://github.com/klen/muffin-mongo/actions
+.. image:: https://github.com/klen/muffin-rest/workflows/tests/badge.svg
+    :target: https://github.com/klen/muffin-rest/actions
     :alt: Tests Status
 
-.. image:: https://img.shields.io/pypi/v/muffin-mongo
-    :target: https://pypi.org/project/muffin-mongo/
+.. image:: https://img.shields.io/pypi/v/muffin-rest
+    :target: https://pypi.org/project/muffin-rest/
     :alt: PYPI Version
 
 ----------
@@ -22,7 +23,7 @@ Muffin-REST
 Features
 --------
 
-- Build REST API;
+- API class to simplify the creation of REST APIs;
 - Automatic filtering and sorting for resources;
 - Support for `Peewee ORM`_, Mongo_, `SQLAlchemy Core`_;
 - Auto documentation with Swagger_;

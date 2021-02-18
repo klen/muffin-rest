@@ -50,9 +50,10 @@ class PeeweeFilters(Filters):
 class PeeweeEndpointOpts(EndpointOpts):
     """Support Peewee."""
 
-    model: pw.Model
-    model_pk: pw.Field
-    Schema: t.Optional[t.Type[ModelSchema]] = None
+    if t.TYPE_CHECKING:
+        model: pw.Model
+        model_pk: pw.Field
+        Schema: t.Type[ModelSchema]
 
     def __init__(self, cls):
         """Prepare meta options."""
@@ -171,7 +172,7 @@ class PeeweeEndpoint(Endpoint):
 
     delete = remove  # noqa
 
-    async def get_schema(self, request: muffin.Request, resource=None) -> t.Optional[ma.Schema]:
+    async def get_schema(self, request: muffin.Request, resource=None) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
             instance=resource,

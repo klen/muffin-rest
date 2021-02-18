@@ -68,10 +68,11 @@ class SAFilters(Filters):
 class SAEndpointOpts(EndpointOpts):
     """Support SQLAlchemy Core."""
 
-    table: sa.Table
-    table_pk: sa.Column
-    database: DB
-    Schema: t.Type[SQLAlchemyAutoSchema]
+    if t.TYPE_CHECKING:
+        table: sa.Table
+        table_pk: sa.Column
+        database: DB
+        Schema: t.Type[SQLAlchemyAutoSchema]
 
     def __init__(self, cls):
         """Prepare meta options."""
@@ -150,13 +151,13 @@ class SAEndpoint(Endpoint):
             raise APIError.NOT_FOUND('Resource not found')
         return dict(resource)
 
-    async def get_schema(self, request: muffin.Request, resource=None) -> t.Optional[ma.Schema]:
+    async def get_schema(self, request: muffin.Request, resource=None) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
             instance=resource,
             only=request.url.query.get('schema_only'),
             exclude=request.url.query.get('schema_exclude', ()),
-        ) if self.meta.Schema else None
+        )
 
     async def save(self, request: muffin.Request,  # type: ignore
                    resource: t.Union[dict, t.List[dict]]):

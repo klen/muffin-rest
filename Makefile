@@ -57,7 +57,7 @@ upload: clean $(VIRTUAL_ENV)
 
 $(VIRTUAL_ENV): setup.cfg
 	@[ -d $(VIRTUAL_ENV) ] || python -m venv $(VIRTUAL_ENV)
-	@$(VIRTUAL_ENV)/bin/pip install -e .[tests,build,example]
+	@$(VIRTUAL_ENV)/bin/pip install -e .[apispec,tests,build,example]
 	@touch $(VIRTUAL_ENV)
 
 .PHONY: t test
@@ -70,7 +70,7 @@ t test: $(VIRTUAL_ENV)
 mypy: $(VIRTUAL_ENV)
 	@$(VIRTUAL_ENV)/bin/mypy muffin_rest
 
-.PHONY: run
-# target: run - Runs example
-run: $(VIRTUAL_ENV)
+.PHONY: example
+# target: example - Run example
+example: $(VIRTUAL_ENV)
 	@$(VIRTUAL_ENV)/bin/uvicorn example:app --reload --port=5000

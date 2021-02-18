@@ -6,8 +6,21 @@ from example import db
 
 
 @db.register
-class ResourceModel(pw.Model):
+class Category(pw.Model):
+    name = pw.CharField()
+
+
+@db.register
+class Pet(pw.Model):
 
     created = pw.DateTimeField(default=dt.datetime.utcnow)
-    active = pw.BooleanField(default=True)
-    name = pw.CharField(null=False)
+    name = pw.CharField()
+    photoUrls = pw.CharField()
+    status = pw.CharField(choices=['available', 'pending', 'sold'])
+
+    category = pw.ForeignKeyField(Category)
+
+
+# don't do on production, this is only for the example
+Category.create_table()
+Pet.create_table()

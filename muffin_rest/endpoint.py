@@ -1,14 +1,19 @@
 """Base class for API Endpoints."""
+from __future__ import annotations
+
 import abc
 import json
 import typing as t
 
 import marshmallow as ma
+from apispec import APISpec
+from http_router.routes import Route, DynamicRoute
 from asgi_tools.response import parse_response
 from muffin import Request
 from muffin._types import JSONType
 from muffin.handler import Handler, HandlerMeta
 
+from . import openapi
 from .api import API
 from .errors import APIError
 from .filters import Filters, Filter
@@ -25,15 +30,12 @@ OFFSET_PARAM = 'offset'
 class EndpointOpts:
     """Endpoints' options."""
 
-    name: str
-
-    filters: Filters
-
-    limit: int = 0
-
-    sorting: t.Dict[str, bool] = {}
-
-    Schema: t.Optional[t.Type[ma.Schema]] = None
+    if t.TYPE_CHECKING:
+        name: str
+        filters: Filters
+        Schema: t.Type[ma.Schema]
+        limit: int = 0
+        sorting: t.Dict[str, bool] = {}
 
     def __init__(self, cls):
         """Prepare meta options."""
@@ -63,11 +65,17 @@ class EndpointOpts:
 class EndpointMeta(HandlerMeta):
     """Create class options."""
 
+    __abc__ = True
+
     def __new__(mcs, name, bases, params):
         """Prepare options for the endpoint."""
         cls = super().__new__(mcs, name, bases, params)
         cls.meta = cls.meta_class(cls)
         cls.meta.filters = cls.meta.filters_cls(*cls.meta.filters, endpoint=cls)
+        if not (mcs.__abc__ or cls.meta.Schema):
+            raise RuntimeError('Endpoint.meta.Schema is required.')
+
+        mcs.__abc__ = False
         return cls
 
 
@@ -75,10 +83,13 @@ class Endpoint(Handler, metaclass=EndpointMeta):
 
     """Load/save resources."""
 
-    collection: t.Any
-    resource: t.Any
-    meta: EndpointOpts
+    if t.TYPE_CHECKING:
+        collection: t.Any
+        resource: t.Any
+        meta: EndpointOpts
+
     meta_class: t.Type[EndpointOpts] = EndpointOpts
+    _api: t.Optional[API] = None
 
     class Meta:
         """Tune the endpoint."""
@@ -98,8 +109,6 @@ class Endpoint(Handler, metaclass=EndpointMeta):
 
         # Define allowed resource sorting params
         sorting: t.Union[t.Dict[str, bool], t.Sequence[t.Union[str, t.Tuple[str, bool]]]] = {}
-
-    _api: t.Optional[API] = None
 
     async def __call__(self, request: Request, *args, **options) -> t.Any:
         """Dispatch the given request by HTTP method."""
@@ -176,7 +185,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def sort(self, request: Request, *sorting: t.Tuple[str, bool], **options):
+    async def sort(self, request: Request, *sorting: t.Tuple[str, bool], **options) -> t.Any:
         """Remove the given resource."""
         raise NotImplementedError
 
@@ -193,27 +202,46 @@ class Endpoint(Handler, metaclass=EndpointMeta):
         if not auth:
             raise APIError.UNAUTHORIZED()
 
-    async def get(self, request, *, resource=None):
-        """Get resource or collection of resources."""
+    async def get_schema(self, request: Request, resource=None) -> ma.Schema:
+        """Initialize marshmallow schema for serialization/deserialization."""
+        return self.meta.Schema(
+            only=request.url.query.get('schema_only'),
+            exclude=request.url.query.get('schema_exclude', ()),
+        )
+
+    async def dump(self, request: Request, response: t.Any, *, many=...) -> JSONType:
+        """Serialize the given response."""
+        schema = await self.get_schema(request)
+        if many is ...:
+            many = isinstance(response, t.Sequence)
+
+        return schema.dump(response, many=many) if schema else response
+
+    async def get(self, request, *, resource=None) -> JSONType:
+        """Get a resource or a collection of resources.
+
+        Specify a path param to load a resource.
+        """
         if resource is not None and resource != '':
             return await self.dump(request, resource)
 
         return await self.dump(request, self.collection, many=True)
 
-    async def post(self, request, *, resource=None):
-        """Create a resource."""
+    async def post(self, request, *, resource=None) -> JSONType:
+        """Create a resource.
+
+        The method accepts a single resource's data or a list of resources to create.
+        """
         resource = await self.load(request, resource=resource)
         resource = await self.save(request, resource=resource)
         return await self.dump(request, resource, many=isinstance(resource, list))
 
-    async def put(self, request, *, resource=None):
+    async def put(self, request, *, resource=None) -> JSONType:
         """Update a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()
 
         return await self.post(request, resource=resource)
-
-    patch = put
 
     async def delete(self, request, *, resource=None):
         """Delete a resource."""
@@ -225,23 +253,6 @@ class Endpoint(Handler, metaclass=EndpointMeta):
     async def prepare_resource(self, request: Request) -> t.Any:
         """Load a resource."""
         return request['path_params'].get(self.meta.name)
-
-    async def get_schema(self, request: Request, resource=None) -> t.Optional[ma.Schema]:
-        """Initialize marshmallow schema for serialization/deserialization."""
-        return self.meta.Schema(
-            only=request.url.query.get('schema_only'),
-            exclude=request.url.query.get('schema_exclude', ()),
-        ) if self.meta.Schema else None
-
-    async def dump(
-            self, request: Request, response: T, *,
-            many: bool = ...) -> t.Union[T, JSONType]:  # type: ignore
-        """Serialize the given response."""
-        schema = await self.get_schema(request)
-        if many is ...:
-            many = isinstance(response, t.Sequence)
-
-        return schema.dump(response, many=many) if schema else response
 
     async def load(self, request: Request, *, resource: t.Any = None) -> t.Any:
         """Load data from request and create/update a resource."""
@@ -260,3 +271,52 @@ class Endpoint(Handler, metaclass=EndpointMeta):
             raise APIError.BAD_REQUEST('Invalid data', errors=exc.messages)
 
         return resource
+
+    @classmethod
+    def openapi(cls, route: Route, spec: APISpec) -> t.Dict:
+        """Prepare the endpoint for openapi specs."""
+        operations: t.Dict = {}
+        schema_ref = None
+        summary, desc, schema = openapi.parse_docs(cls)
+        if cls not in spec.tags:
+            spec.tags[cls] = cls.meta.name
+            spec.tag({'name': cls.meta.name, 'description': summary})
+            spec.components.schema(cls.meta.Schema.__name__, schema=cls.meta.Schema)
+
+        schema_ref = {'$ref': f"#/components/schemas/{ cls.meta.Schema.__name__ }"}
+
+        for method in openapi.route_to_methods(route):
+            if not isinstance(route, DynamicRoute):
+                if method in {'put', 'patch', 'delete'}:
+                    continue
+            elif route.params.get(cls.meta.name) and method == 'post':
+                continue
+
+            operations[method] = {}
+            if method in {'post', 'put'}:
+                operations[method]['requestBody'] = {
+                    'required': True,
+                    'content': {
+                        'application/json': {'schema': schema_ref}
+                    }
+                }
+
+            meth = getattr(cls, method, None)
+            if meth is None:
+                continue
+
+            operations[method]['summary'], operations[method]['description'], _ = openapi.parse_docs(meth)  # noqa
+            operations[method]['tags'] = [spec.tags[cls]]
+            return_type = meth.__annotations__.get('return')
+            if return_type == 'JSONType':
+                responses = {200: {'description': 'Request is successfull', 'content': {
+                    'application/json': {'schema': schema_ref}
+                }}}
+            else:
+                responses = openapi.return_type_to_response(meth)
+
+            operations[method]['responses'] = responses
+
+        operations = openapi.merge_dicts(operations, schema)
+
+        return operations

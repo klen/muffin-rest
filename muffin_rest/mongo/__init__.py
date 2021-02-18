@@ -45,10 +45,11 @@ class MongoFilters(Filters):
 class MongoEndpointOpts(EndpointOpts):
     """Support Mongo DB."""
 
-    collection: motor.AsyncIOMotorCollection
-    collection_id: str
-    aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
-    Schema: t.Type[MongoSchema]
+    if t.TYPE_CHECKING:
+        collection: motor.AsyncIOMotorCollection
+        collection_id: str
+        aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
+        Schema: t.Type[MongoSchema]
 
     def __init__(self, cls):
         """Prepare meta options."""
@@ -57,7 +58,7 @@ class MongoEndpointOpts(EndpointOpts):
         if self.collection is None:
             return
 
-        if not self.Schema:
+        if self.Schema is MongoSchema:
             meta = type('Meta', (object,), self.schema_meta)
             self.Schema = type(self.name.title() + 'Schema', (MongoSchema,), dict(
                 {'Meta': meta}, **(self.schema_fields or {})))
@@ -78,6 +79,7 @@ class MongoEndpoint(Endpoint):
         collection: t.Optional[motor.AsyncIOMotorCollection] = None
         collection_id = '_id'
         aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
+        Schema = MongoSchema
         schema_fields = None
 
     async def prepare_collection(self, request: muffin.Request) -> MongoChain:
@@ -118,13 +120,13 @@ class MongoEndpoint(Endpoint):
         except bson.errors.InvalidId:
             raise APIError.NOT_FOUND()
 
-    async def get_schema(self, request: muffin.Request, resource=None) -> t.Optional[ma.Schema]:
+    async def get_schema(self, request: muffin.Request, resource=None) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
             instance=resource,
             only=request.url.query.get('schema_only'),
             exclude=request.url.query.get('schema_exclude', ()),
-        ) if self.meta.Schema else None
+        )
 
     async def save(self, request: muffin.Request,  # type: ignore
                    resource: t.Union[dict, t.List[dict]]):

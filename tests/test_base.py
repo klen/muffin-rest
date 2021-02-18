@@ -1,5 +1,6 @@
 import pytest
 import marshmallow as ma
+import muffin
 
 
 @pytest.fixture
@@ -49,10 +50,21 @@ async def test_endpoints(api, client):
 
     assert Endpoint
 
+    class FakeSchema(ma.Schema):
+
+        def dump(self, data, **kwargs):
+            return data
+
+        def load(self, data, **kwargs):
+            return data
+
     @api.route('/simple')
     class Simple(Endpoint):
 
-        methods = 'get', 'patch'
+        methods = 'get', 'put'
+
+        class Meta:
+            Schema = FakeSchema
 
         async def prepare_collection(self, request):
             return f'SIMPLE {request.method}'
@@ -62,13 +74,14 @@ async def test_endpoints(api, client):
     assert Simple.meta.limit == 0
     assert Simple.meta.filters
     assert Simple.meta.sorting == {}
-    assert Simple.methods == {'GET', 'PATCH'}
+    assert Simple.methods == {'GET', 'PUT'}
+    assert api.router.routes()[1].methods == Simple.methods
 
     res = await client.get('/api/simple')
     assert res.status_code == 200
     assert await res.body() == b'SIMPLE GET'
 
-    res = await client.patch('/api/simple')
+    res = await client.put('/api/simple')
     assert res.status_code == 404
     assert await res.json() == {'error': True, 'message': 'Nothing matches the given URI'}
 
@@ -85,8 +98,9 @@ async def test_endpoints(api, client):
 
         class Meta:
             sorting = 'test',
+            Schema = FakeSchema
 
-    assert Simple2.methods == {'POST', 'PUT', 'GET', 'PATCH', 'DELETE'}
+    assert Simple2.methods == {'POST', 'PUT', 'GET', 'DELETE'}
     assert Simple2.meta.sorting == {'test': True}
 
     source = [1, 2, 3]
@@ -97,6 +111,7 @@ async def test_endpoints(api, client):
         class Meta:
             filters = 'val',
             limit = 10
+            Schema = FakeSchema
 
         async def prepare_collection(self, request):
             return source
@@ -213,3 +228,56 @@ async def test_endpoints_with_schema(api, client):
     assert res.status_code == 200
     json = await res.json()
     assert json == [{'name': 'muffin'}]
+
+
+async def test_apispec(api, client):
+    from muffin_rest import Endpoint
+
+    @api.authorization
+    async def authorization(request):
+        """Setup authorization for whole API.
+
+        Can be redefined for an endpoint.
+
+        ---
+
+        bearerAuth:
+            type: http
+            scheme: bearer
+
+
+        """
+        # Decode tokens, load/check users and etc
+        # ...
+        # in the example we just ensure that the authorization header exists
+        return request.headers.get('authorization', '')
+
+    @api.route('/token', methods='get')
+    async def token(request) -> str:
+        """Get user token."""
+        return 'TOKEN'
+
+    @api.route('/pets', '/pets/{pet}')
+    class Pet(Endpoint):
+
+        methods = 'get', 'post'
+
+        class Meta:
+
+            class Schema(ma.Schema):
+                name = ma.fields.String(required=True)
+
+    async with client.lifespan():
+
+        res = await client.get('/api/swagger')
+        assert res.status_code == 200
+        assert 'swagger' in await res.text()
+
+        res = await client.get('/api/openapi.json')
+        assert res.status_code == 200
+        spec = await res.json()
+        assert spec
+        assert spec['paths']
+        assert spec['paths']['/token']
+        assert spec['paths']['/token']['get']
+        assert spec['paths']['/token']['get']['responses']
