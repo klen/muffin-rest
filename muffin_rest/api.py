@@ -12,8 +12,8 @@ from .openapi import render_openapi
 
 
 AUTH = t.TypeVar('AUTH', bound=t.Callable[[muffin.Request], t.Awaitable])
-SWAGGER_TEMPLATE = Path(__file__).parent.joinpath('swagger.html').read_text()
 REDOC_TEMPLATE = Path(__file__).parent.joinpath('redoc.html').read_text()
+SWAGGER_TEMPLATE = Path(__file__).parent.joinpath('swagger.html').read_text()
 
 
 @dc.dataclass

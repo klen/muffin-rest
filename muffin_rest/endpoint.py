@@ -23,8 +23,8 @@ T = t.TypeVar('T')
 
 FILTERS_PARAM = 'where'
 LIMIT_PARAM = 'limit'
-SORT_PARAM = 'sort'
 OFFSET_PARAM = 'offset'
+SORT_PARAM = 'sort'
 
 
 class EndpointOpts:
