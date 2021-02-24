@@ -4,11 +4,17 @@ import inspect
 import re
 from http import HTTPStatus
 
-from apispec import APISpec, yaml_utils, utils
+from apispec import APISpec, utils
 from apispec.ext.marshmallow import MarshmallowPlugin
 from http_router.routes import DynamicRoute, Route
 from asgi_tools.response import CAST_RESPONSE
 from muffin import Response
+
+try:
+    from apispec import yaml_utils
+except ImportError:
+    yaml_utils = None
+
 
 SKIP_PATH = {'/openapi.json', '/swagger'}
 DEFAULT_METHODS = 'get',
@@ -52,6 +58,9 @@ def render_openapi(api, request):
 
 def parse_docs(cb: t.Callable) -> t.Tuple[str, str, t.Dict]:
     """Parse docs from the given callback."""
+    if yaml_utils is None:
+        return '', '', {}
+
     docs = cb.__doc__ or ''
     schema = yaml_utils.load_yaml_from_docstring(docs)
     docs = docs.split('---')[0]

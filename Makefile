@@ -57,7 +57,7 @@ upload: clean $(VIRTUAL_ENV)
 
 $(VIRTUAL_ENV): setup.cfg
 	@[ -d $(VIRTUAL_ENV) ] || python -m venv $(VIRTUAL_ENV)
-	@$(VIRTUAL_ENV)/bin/pip install -e .[apispec,tests,build,example]
+	@$(VIRTUAL_ENV)/bin/pip install -e .[tests,build,example,yaml]
 	@touch $(VIRTUAL_ENV)
 
 .PHONY: t test
