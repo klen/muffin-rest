@@ -8,3 +8,4 @@ __license__ = "MIT"
 
 from .api import API            # noqa
 from .endpoint import Endpoint  # noqa
+from .errors import APIError    # noqa
