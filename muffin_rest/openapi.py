@@ -45,46 +45,6 @@ def render_openapi(api, request):
         if route.path in SKIP_PATH:
             continue
 
-        #  route_to_spec(route, spec)
-
-        #  cb = route.target
-        #  summary, desc, gschema = parse_docs(cb)
-        #  is_endpoint = inspect.isclass(cb) and issubclass(cb, Endpoint)
-        #  if cb not in tags:
-        #      tags[cb] = cb.meta.name if is_endpoint else cb.__name__
-        #      spec.tag({'name': tags[cb], 'description': summary})
-        #      if is_endpoint and cb.meta.Schema:
-        #          spec.components.schema(cb.meta.Schema.__name__, schema=cb.meta.Schema)
-
-        #  parameters = []
-        #  if isinstance(route, DynamicRoute):
-        #      for param in route.convertors:
-        #          parameters.append({'in': 'path', 'name': param})
-
-        #  operations = {}
-        #  methods = [m for m in HTTP_METHODS if m in route.methods]
-        #  for method in methods or DEFAULT_METHODS:
-        #      method = method.lower()
-
-        #      operations[method] = {
-        #          'summary': summary,
-        #          'description': desc,
-        #          'tags': [tags[cb]],
-        #      }
-
-        #      if not hasattr(cb, method):
-        #          continue
-
-        #      operations[method]['summary'], operations[method]['desc'], schema = parse_docs(
-        #          getattr(cb, method)
-        #      )
-        #      operations[method] = merge_dicts(operations[method], update_operation(cb, method))
-        #      if schema:
-        #          operations = merge_dicts(operations, schema)
-
-        #  operations = merge_dicts(operations, gschema or {})
-
-        #  #  spec.path(RE_URL.sub('{\1}', route.path), operations=operations)
         spec.path(route.path, **route_to_spec(route, spec))
 
     return spec.to_dict()
@@ -150,9 +110,12 @@ def route_to_methods(route: Route) -> t.List[str]:
 
 def return_type_to_response(fn: t.Callable) -> t.Dict:
     """Generate reponses specs based on the given function's return type."""
-    responses = {}
+    responses: t.Dict[int, t.Dict] = {}
     return_type = fn.__annotations__.get('return')
-    return_type = CAST_RESPONSE.get(return_type, return_type)
+    return_type = CAST_RESPONSE.get(return_type, return_type)  # type: ignore
+    if return_type is None:
+        return responses
+
     if inspect.isclass(return_type) and issubclass(return_type, Response) and \
             return_type.content_type:
 
@@ -164,35 +127,3 @@ def return_type_to_response(fn: t.Callable) -> t.Dict:
             }
         }
     return responses
-
-
-def update_operation(cb, method):
-    """Update operation for a method."""
-    operation = {
-        'responses': {
-            200: {
-                'description': 'Successful Operation',
-                'content': {
-                    'application/json': {
-                    }
-                }
-            }
-        }
-    }
-    if not cb.meta.Schema:
-        return
-
-    schema = {'$ref': f"#/components/schemas/{ cb.meta.Schema.__name__ }"}
-
-    if method in {'post', 'put', 'patch'}:
-        operation['requestBody'] = {
-            'required': True,
-            'content': {
-                'application/json': {'schema': schema}
-            }
-        }
-
-    if method != 'delete':
-        operation['responses'][200]['content']['application/json']['schema'] = schema
-
-    return operation
