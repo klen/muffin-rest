@@ -65,17 +65,11 @@ class EndpointOpts:
 class EndpointMeta(HandlerMeta):
     """Create class options."""
 
-    __abc__ = True
-
     def __new__(mcs, name, bases, params):
         """Prepare options for the endpoint."""
         cls = super().__new__(mcs, name, bases, params)
         cls.meta = cls.meta_class(cls)
         cls.meta.filters = cls.meta.filters_cls(*cls.meta.filters, endpoint=cls)
-        if not (mcs.__abc__ or cls.meta.Schema):
-            raise RuntimeError('Endpoint.meta.Schema is required.')
-
-        mcs.__abc__ = False
         return cls
 
 
@@ -208,6 +202,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
 
     async def get_schema(self, request: Request, resource=None) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
+        assert self.meta.Schema, 'Endpoint.meta.Schema is required.'
         return self.meta.Schema(
             only=request.url.query.get('schema_only'),
             exclude=request.url.query.get('schema_exclude', ()),

@@ -1,6 +1,5 @@
 import pytest
 import marshmallow as ma
-import muffin
 
 
 @pytest.fixture
