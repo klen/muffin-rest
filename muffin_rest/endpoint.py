@@ -151,7 +151,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
                 if limit and offset >= 0:
                     self.collection, total = await self.paginate(
                         request, limit=limit, offset=offset)
-                    headers = {'x-total': total, 'x-limit': limit, 'x-offset': offset}
+                    headers = self.paginate_prepare_headers(limit, offset, total)
 
             except ValueError:
                 raise APIError.BAD_REQUEST('Pagination params are invalid')
@@ -173,6 +173,10 @@ class Endpoint(Handler, metaclass=EndpointMeta):
                        offset: int = 0) -> t.Tuple[t.Any, int]:
         """Paginate the results."""
         raise NotImplementedError
+
+    def paginate_prepare_headers(self, limit, offset, total):
+        """Prepare pagination headers."""
+        return {'x-total': total, 'x-limit': limit, 'x-offset': offset}
 
     @abc.abstractmethod
     async def save(self, request: Request, *, resource: T = None) -> T:
