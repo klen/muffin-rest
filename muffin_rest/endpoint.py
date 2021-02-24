@@ -7,8 +7,8 @@ import typing as t
 
 import marshmallow as ma
 from apispec import APISpec
-from http_router.routes import Route, DynamicRoute
 from asgi_tools.response import parse_response
+from http_router.routes import Route, DynamicRoute
 from muffin import Request
 from muffin._types import JSONType
 from muffin.handler import Handler, HandlerMeta
