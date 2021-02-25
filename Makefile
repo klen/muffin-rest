@@ -70,12 +70,12 @@ t test: $(VIRTUAL_ENV)
 mypy: $(VIRTUAL_ENV)
 	@$(VIRTUAL_ENV)/bin/mypy muffin_rest
 
-.PHONY: example
-# target: example - Run example
-example: $(VIRTUAL_ENV)
-	@$(VIRTUAL_ENV)/bin/uvicorn example:app --reload --port=5000
+.PHONY: example-peewee
+# target: example-peewee - Run example
+example-peewee: $(VIRTUAL_ENV)
+	@$(VIRTUAL_ENV)/bin/uvicorn examples.peewee_orm:app --reload --port=5000
 
-.PHONY: example-shell
-# target: example-shell - Run example
-example-shell: $(VIRTUAL_ENV)
-	@$(VIRTUAL_ENV)/bin/muffin example:app shell
+.PHONY: example-sqlalchemy
+# target: example-sqlalchemy - Run example
+example-sqlalchemy: $(VIRTUAL_ENV)
+	@$(VIRTUAL_ENV)/bin/uvicorn examples.sqlalchemy_core:app --reload --port=5000

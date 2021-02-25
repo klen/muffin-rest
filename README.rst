@@ -55,6 +55,37 @@ Installation
 Usage
 =====
 
+Create an API:
+
+.. code-block:: python
+
+   from muffin_rest import API
+
+   api = API()
+
+Create endpoints and connect them to the API (example for sqlalchemy):
+
+.. code-block:: python
+
+   from muffin_rest.sqlalchemy import SAEndpoint
+   from project.api import api
+
+   @api.route
+   class MyEndpoint(SAEndpoint):
+
+        class Meta:
+            table = MyTable
+            database = db
+
+Connect it to your Muffin_ application:
+
+.. code-block:: python
+
+   from project.api import api
+
+   api.setup(app, prefix='/api/v1')
+
+
 .. _bugtracker:
 
 Bug tracker

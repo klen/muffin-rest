@@ -76,9 +76,9 @@ class API:
         async def redoc(request):
             return REDOC_TEMPLATE
 
+        self.apispec_params.setdefault('openapi_version', "3.0.2")
         self.apispec_params.setdefault('title', f"{ app.name.title() } API")
         self.apispec_params.setdefault('version', "1.0.0")
-        self.apispec_params.setdefault('openapi_version', "3.0.2")
 
         @self.router.route('/openapi.json')
         async def openapi(request):

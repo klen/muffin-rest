@@ -2,7 +2,7 @@ import datetime as dt
 
 import peewee as pw
 
-from example import db
+from . import db
 
 
 @db.register
