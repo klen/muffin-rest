@@ -1,13 +1,21 @@
 """Support for Peewee ORM (https://github.com/coleifer/peewee)."""
 import typing as t
-import peewee as pw
+
 import marshmallow as ma
-from marshmallow_peewee import ModelSchema
 import muffin
+import peewee as pw
+from apispec import APISpec
+from apispec.ext.marshmallow import MarshmallowPlugin
+from http_router.routes import Route
+from marshmallow_peewee import ModelSchema, ForeignKey
 
 from ..endpoint import Endpoint, EndpointOpts
 from ..errors import APIError
 from ..filters import Filter, Filters
+
+
+# XXX: Patch apispec.MarshmallowPlugin to support ForeignKeyField
+MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 
 
 class PeeweeFilter(Filter):
@@ -62,10 +70,11 @@ class PeeweeEndpointOpts(EndpointOpts):
         if not self.model:
             return
 
+        self.model_pk = self.model_pk or self.model._meta.primary_key
+
         if noname:
             self.name = self.model._meta.table_name
-
-        self.model_pk = self.model_pk or self.model._meta.primary_key
+            self.name_id = self.model_pk.name
 
         # Setup a schema
         if self.Schema is ModelSchema:
@@ -105,7 +114,7 @@ class PeeweeEndpoint(Endpoint):
 
     async def prepare_resource(self, request: muffin.Request) -> t.Optional[pw.Model]:
         """Load a resource."""
-        pk = request['path_params'].get(self.meta.name)
+        pk = request['path_params'].get(self.meta.name_id)
         if not pk:
             return None
 
@@ -161,8 +170,9 @@ class PeeweeEndpoint(Endpoint):
 
         else:
             data = await request.data()
-            if data:
-                resources = list(self.collection.where(self.meta.model_pk << data))
+            if not data:
+                return
+            resources = list(self.collection.where(self.meta.model_pk << data))
 
         if not resources:
             raise APIError.NOT_FOUND()
@@ -179,3 +189,18 @@ class PeeweeEndpoint(Endpoint):
             only=request.url.query.get('schema_only'),
             exclude=request.url.query.get('schema_exclude', ()),
         ) if self.meta.Schema else None
+
+    @classmethod
+    def openapi(cls, route: Route, spec: APISpec) -> t.Dict:
+        """Get openapi specs for the endpoint."""
+        operations = super(PeeweeEndpoint, cls).openapi(route, spec)
+        is_resource_route = getattr(route, 'params', {}).get(cls.meta.name_id)
+        if not is_resource_route and 'delete' in operations:
+            operations['delete'].setdefault('parameters', [])
+            operations['delete']['requestBody'] = {
+                'required': True,
+                'content': {
+                    'application/json': {'schema': {'type': 'array', 'items': {'type': 'string'}}}
+                }
+            }
+        return operations

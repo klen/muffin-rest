@@ -111,7 +111,7 @@ class MongoEndpoint(Endpoint):
 
     async def prepare_resource(self, request: muffin.Request) -> t.Optional[dict]:
         """Load a resource."""
-        pk = request['path_params'].get(self.meta.name)
+        pk = request['path_params'].get(self.meta.name_id)
         if not pk:
             return None
 

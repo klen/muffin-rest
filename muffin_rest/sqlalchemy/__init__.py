@@ -85,10 +85,11 @@ class SAEndpointOpts(EndpointOpts):
         if self.database is None:
             raise RuntimeError('SAEndpoint.meta.database is required')
 
+        self.table_pk = self.table_pk or self.table.c.id
+
         if noname:
             self.name = self.table.name
-
-        self.table_pk = self.table_pk or self.table.c.id
+            self.name_id = self.table_pk.name
 
         if self.Schema is SQLAlchemyAutoSchema:
             meta = type('Meta', (object,), dict({'table': self.table}, **self.schema_meta))
@@ -141,7 +142,7 @@ class SAEndpoint(Endpoint):
 
     async def prepare_resource(self, request: muffin.Request) -> t.Optional[dict]:
         """Load a resource."""
-        pk = request['path_params'].get(self.meta.name)
+        pk = request['path_params'].get(self.meta.name_id)
         if not pk:
             return None
 

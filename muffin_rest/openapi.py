@@ -16,10 +16,10 @@ except ImportError:
     yaml_utils = None
 
 
-SKIP_PATH = {'/openapi.json', '/swagger', '/redoc'}
 DEFAULT_METHODS = 'get',
-RE_URL = re.compile(r'<(?:[^:<>]+:)?([^<>]+)>')
 HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT']
+RE_URL = re.compile(r'<(?:[^:<>]+:)?([^<>]+)>')
+SKIP_PATH = {'/openapi.json', '/swagger', '/redoc'}
 
 
 def render_openapi(api, request):

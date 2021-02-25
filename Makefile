@@ -74,3 +74,8 @@ mypy: $(VIRTUAL_ENV)
 # target: example - Run example
 example: $(VIRTUAL_ENV)
 	@$(VIRTUAL_ENV)/bin/uvicorn example:app --reload --port=5000
+
+.PHONY: example-shell
+# target: example-shell - Run example
+example-shell: $(VIRTUAL_ENV)
+	@$(VIRTUAL_ENV)/bin/muffin example:app shell

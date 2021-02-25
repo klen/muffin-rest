@@ -4,7 +4,8 @@ import string
 import random
 from muffin import ResponseText
 
-from example.models import Pet
+from .models import Pet
+from .schemas import PetSchema
 
 
 api = API(apispec_params={
@@ -28,6 +29,7 @@ async def authorization(request):
     Auth:
         type: http
         scheme: bearer
+        description: Use any value
     """
     # Decode tokens, load/check users and etc
     # ...
@@ -65,7 +67,18 @@ class Pets(PeeweeEndpoint):
     """Everything about your Pets."""
 
     class Meta:
+
+        # ORM Model
         model = Pet
+
+        # Schema for serialization (it can be created automatically)
+        Schema = PetSchema
+
+        # Pagination
         limit = 10
+
+        # Avalable sort params
         sorting = 'id', 'name'
+
+        # Available filters
         filters = 'status', 'category'

@@ -33,6 +33,7 @@ class EndpointOpts:
 
     if t.TYPE_CHECKING:
         name: str
+        name_id: str
         filters: Filters
         Schema: t.Type[ma.Schema]
         limit: int = 0
@@ -52,6 +53,7 @@ class EndpointOpts:
         # Generate name
         self.name = self.name or cls.__name__.lower().split('endpoint', 1)[0] or\
             cls.__name__.lower()
+        self.name_id = self.name_id or self.name
 
         # Setup sorting
         if not isinstance(self.sorting, dict):
@@ -90,6 +92,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
         """Tune the endpoint."""
 
         name: str = ''  # Resource's name
+        name_id: str = ''  # Resource ID's name
 
         # Tune Schema
         Schema: t.Optional[t.Type[ma.Schema]] = None
@@ -115,7 +118,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
         else:
             router.bind(cls, f"/{ cls.meta.name }",
                         methods=methods & {'GET', 'POST', 'DELETE'}, **params)
-            router.bind(cls, f"/{ cls.meta.name }/{{{ cls.meta.name }}}",
+            router.bind(cls, f"/{ cls.meta.name }/{{{ cls.meta.name_id }}}",
                         methods=methods & {'GET', 'PUT', 'DELETE'}, **params)
 
         for _, method in inspect.getmembers(cls, lambda m: hasattr(m, '__route__')):
@@ -271,7 +274,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
 
     async def prepare_resource(self, request: Request) -> t.Any:
         """Load a resource."""
-        return request['path_params'].get(self.meta.name)
+        return request['path_params'].get(self.meta.name_id)
 
     async def load(self, request: Request, *, resource: t.Any = None) -> t.Any:
         """Load data from request and create/update a resource."""
@@ -295,7 +298,6 @@ class Endpoint(Handler, metaclass=EndpointMeta):
     def openapi(cls, route: Route, spec: APISpec) -> t.Dict:
         """Get openapi specs for the endpoint."""
         operations: t.Dict = {}
-        schema_ref = None
         summary, desc, schema = openapi.parse_docs(cls)
         if cls not in spec.tags:
             spec.tags[cls] = cls.meta.name
@@ -303,10 +305,10 @@ class Endpoint(Handler, metaclass=EndpointMeta):
             spec.components.schema(cls.meta.Schema.__name__, schema=cls.meta.Schema)
 
         schema_ref = {'$ref': f"#/components/schemas/{ cls.meta.Schema.__name__ }"}
-
         for method in openapi.route_to_methods(route):
             operations[method] = {'tags': [spec.tags[cls]]}
-            is_resource_route = isinstance(route, DynamicRoute) and route.params.get(cls.meta.name)
+            is_resource_route = isinstance(route, DynamicRoute) and \
+                route.params.get(cls.meta.name_id)
 
             if method == 'get' and not is_resource_route:
                 operations[method]['parameters'] = []
@@ -338,10 +340,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
 
             if method in {'post', 'put'}:
                 operations[method]['requestBody'] = {
-                    'required': True,
-                    'content': {
-                        'application/json': {'schema': schema_ref}
-                    }
+                    'required': True, 'content': {'application/json': {'schema': schema_ref}}
                 }
 
             # Update from the method
