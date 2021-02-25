@@ -23,7 +23,7 @@ class API:
     app: t.Optional[muffin.Application] = dc.field(default=None, repr=False)
     prefix: str = ''
     apispec: bool = True
-    apispec_params: t.Dict[str, str] = dc.field(default_factory=dict, repr=False)
+    apispec_params: t.Dict[str, t.Any] = dc.field(default_factory=dict, repr=False)
     router: Router = dc.field(default_factory=Router, repr=False)
 
     def __post_init__(self):
@@ -45,10 +45,17 @@ class API:
 
         return self.app.logger
 
-    def setup(self, app: muffin.Application, prefix: str = ''):
+    def setup(self, app: muffin.Application, prefix: str = '',
+              apispec: bool = None, apispec_params: t.Dict[str, t.Any] = None):
         """Initialize the API."""
         self.app = app
         self.prefix = prefix.rstrip('/')
+
+        if apispec is not None:
+            self.apispec = apispec
+
+        if apispec_params is not None:
+            self.apispec_params = apispec_params
 
         # Setup routing
         self.router.trim_last_slash = self.app.router.trim_last_slash
