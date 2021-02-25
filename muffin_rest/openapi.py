@@ -71,14 +71,16 @@ def parse_docs(cb: t.Callable) -> t.Tuple[str, str, t.Dict]:
 
 def merge_dicts(source: t.Dict, merge: t.Dict) -> t.Dict:
     """Merge dicts."""
-    result = dict(source)
-    result.update({
-        key: merge_dicts(source[key], merge[key])
-        if isinstance(source.get(key), dict) and isinstance(merge[key], dict)
-        else merge[key]
-        for key in merge.keys()
-    })
-    return result
+    return dict(source, **{
+        key: ((
+            merge_dicts(source[key], merge[key])
+            if isinstance(source[key], dict) and isinstance(merge[key], dict)
+            else (
+                source[key] + merge[key]
+                if isinstance(source[key], list) and isinstance(merge[key], list)
+                else merge[key]
+            )
+        ) if key in source else merge[key]) for key in merge})
 
 
 def route_to_spec(route: Route, spec: APISpec) -> t.Dict:
