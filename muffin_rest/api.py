@@ -90,14 +90,11 @@ class API:
 
         if isinstance(path, str):
             paths = (path, *paths)
+            return wrapper
 
         # Generate URL paths automatically
-        elif issubclass(path, Endpoint):
-            endpoint = path
-            paths = (f'/{ endpoint.meta.name }',
-                     f'/{ endpoint.meta.name }/{{{ endpoint.meta.name }}}')
-            return wrapper(endpoint)
+        if issubclass(path, Endpoint):
+            path._api = self
+            return self.router.route(path, *paths, **params)
 
-        else:
-            raise Exception("Invalid endpoint")  # TODO
-        return wrapper
+        raise Exception("Invalid endpoint")  # TODO

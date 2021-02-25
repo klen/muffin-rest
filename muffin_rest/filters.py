@@ -92,6 +92,10 @@ class Filters:
         """Iterate through self filters."""
         return iter(self.filters)
 
+    def __str__(self) -> str:
+        """Describe the filters."""
+        return ", ".join(f.name for f in self)
+
     def convert(self, args, endpoint=None):
         """Prepare filters."""
         name = args

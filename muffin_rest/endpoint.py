@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import abc
+import inspect
 import json
 import typing as t
 
@@ -104,6 +105,25 @@ class Endpoint(Handler, metaclass=EndpointMeta):
         # Define allowed resource sorting params
         sorting: t.Union[t.Dict[str, bool], t.Sequence[t.Union[str, t.Tuple[str, bool]]]] = {}
 
+    @classmethod
+    def __route__(cls, router, *paths, **params):
+        """Bind the class to the given router."""
+        methods = params.pop('methods') or cls.methods
+        if paths:
+            router.bind(cls, *paths, methods=methods, **params)
+
+        else:
+            router.bind(cls, f"/{ cls.meta.name }",
+                        methods=methods & {'GET', 'POST', 'DELETE'}, **params)
+            router.bind(cls, f"/{ cls.meta.name }/{{{ cls.meta.name }}}",
+                        methods=methods & {'GET', 'PUT', 'DELETE'}, **params)
+
+        for _, method in inspect.getmembers(cls, lambda m: hasattr(m, '__route__')):
+            cpaths, cparams = method.__route__
+            router.bind(cls, *cpaths, __meth__=method.__name__, **cparams)
+
+        return cls
+
     async def __call__(self, request: Request, *args, **options) -> t.Any:
         """Dispatch the given request by HTTP method."""
         method = getattr(self, options.get('__meth__') or request.method.lower())
@@ -140,7 +160,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
         limit = request.url.query.get(LIMIT_PARAM) or self.meta.limit
         if self.meta.limit and limit:
             try:
-                limit = int(limit)
+                limit = min(abs(int(limit)), self.meta.limit)
                 offset = int(request.url.query.get(OFFSET_PARAM, 0))
                 if limit and offset >= 0:
                     self.collection, total = await self.paginate(
@@ -273,7 +293,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
 
     @classmethod
     def openapi(cls, route: Route, spec: APISpec) -> t.Dict:
-        """Prepare the endpoint for openapi specs."""
+        """Get openapi specs for the endpoint."""
         operations: t.Dict = {}
         schema_ref = None
         summary, desc, schema = openapi.parse_docs(cls)
@@ -285,13 +305,37 @@ class Endpoint(Handler, metaclass=EndpointMeta):
         schema_ref = {'$ref': f"#/components/schemas/{ cls.meta.Schema.__name__ }"}
 
         for method in openapi.route_to_methods(route):
-            if not isinstance(route, DynamicRoute):
-                if method in {'put', 'patch', 'delete'}:
-                    continue
-            elif route.params.get(cls.meta.name) and method == 'post':
-                continue
+            operations[method] = {'tags': [spec.tags[cls]]}
+            is_resource_route = isinstance(route, DynamicRoute) and route.params.get(cls.meta.name)
 
-            operations[method] = {}
+            if method == 'get' and not is_resource_route:
+                operations[method]['parameters'] = []
+                if cls.meta.sorting:
+                    sorting = list(cls.meta.sorting.keys())
+                    operations[method]['parameters'].append({
+                        'name': SORT_PARAM, 'in': 'query', 'style': 'form', 'explode': False,
+                        'schema': {'type': 'array', 'items': {'type': 'string', 'enum': sorting}},
+                        'description': ",".join(sorting),
+                    })
+
+                if cls.meta.filters.filters:
+                    operations[method]['parameters'].append({
+                        'name': FILTERS_PARAM, 'in': 'query', 'description': str(cls.meta.filters),
+                        'content': {'application/json': {'schema': {'type': 'object'}}}
+                    })
+
+                if cls.meta.limit:
+                    operations[method]['parameters'].append({
+                        'name': LIMIT_PARAM, 'in': 'query',
+                        'schema': {'type': 'integer', 'minimum': 1, 'maximum': cls.meta.limit},
+                        'description': 'The number of items to return',
+                    })
+                    operations[method]['parameters'].append({
+                        'name': OFFSET_PARAM, 'in': 'query',
+                        'schema': {'type': 'integer', 'minimum': 0},
+                        'description': 'The offset of items to return',
+                    })
+
             if method in {'post', 'put'}:
                 operations[method]['requestBody'] = {
                     'required': True,
@@ -300,22 +344,18 @@ class Endpoint(Handler, metaclass=EndpointMeta):
                     }
                 }
 
+            # Update from the method
             meth = getattr(cls, method, None)
-            if meth is None:
-                continue
+            if meth:
+                operations[method]['summary'], operations[method]['description'], _ = openapi.parse_docs(meth)  # noqa
+                return_type = meth.__annotations__.get('return')
+                if return_type == 'JSONType':
+                    responses = {200: {'description': 'Request is successfull', 'content': {
+                        'application/json': {'schema': schema_ref}
+                    }}}
+                else:
+                    responses = openapi.return_type_to_response(meth)
 
-            operations[method]['summary'], operations[method]['description'], _ = openapi.parse_docs(meth)  # noqa
-            operations[method]['tags'] = [spec.tags[cls]]
-            return_type = meth.__annotations__.get('return')
-            if return_type == 'JSONType':
-                responses = {200: {'description': 'Request is successfull', 'content': {
-                    'application/json': {'schema': schema_ref}
-                }}}
-            else:
-                responses = openapi.return_type_to_response(meth)
+                operations[method]['responses'] = responses
 
-            operations[method]['responses'] = responses
-
-        operations = openapi.merge_dicts(operations, schema)
-
-        return operations
+        return openapi.merge_dicts(operations, schema)

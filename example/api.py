@@ -4,11 +4,10 @@ import string
 import random
 from muffin import ResponseText
 
-from example import app
 from example.models import Pet
 
 
-api = API(app, prefix='/api', apispec_params={
+api = API(apispec_params={
     'version': __version__,
     'info': {
         'title': 'PetStore API',
@@ -67,3 +66,6 @@ class Pets(PeeweeEndpoint):
 
     class Meta:
         model = Pet
+        limit = 10
+        sorting = 'id', 'name'
+        filters = 'status', 'category'
