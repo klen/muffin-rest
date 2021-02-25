@@ -74,7 +74,7 @@ async def test_endpoints(api, client):
     assert Simple.meta.filters
     assert Simple.meta.sorting == {}
     assert Simple.methods == {'GET', 'PUT'}
-    assert api.router.routes()[1].methods == Simple.methods
+    assert api.router.routes()[2].methods == Simple.methods
 
     res = await client.get('/api/simple')
     assert res.status_code == 200
