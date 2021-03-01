@@ -9,13 +9,7 @@ from .models import Pet
 from .schemas import PetSchema
 
 
-api = API(apispec_params={
-    'version': __version__,
-    'info': {
-        'title': 'PetStore API',
-        'description': 'Example Petstore API',
-    }
-})
+api = API(version=__version__, title='PetStore API', description='Example Petstore API')
 
 
 @api.authorization

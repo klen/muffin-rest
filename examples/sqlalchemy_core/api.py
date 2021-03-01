@@ -10,13 +10,7 @@ from . import db
 from .tables import Pet, Category
 
 
-api = API(apispec_params={
-    'version': __version__,
-    'info': {
-        'title': 'PetStore API',
-        'description': 'Example Petstore API',
-    }
-})
+api = API(version=__version__, title='PetStore API', description='Example Petstore API')
 
 
 @api.authorization

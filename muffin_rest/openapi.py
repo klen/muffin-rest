@@ -26,15 +26,15 @@ SKIP_PATH = {'/openapi.json', '/swagger', '/redoc'}
 def render_openapi(api, request):
     """Prepare openapi specs."""
     # Setup Specs
-    options = dict(api.apispec_params)
+    options = dict(api.openapi_options)
     options.setdefault('servers', [{
         'url': str(request.url.with_query('').with_path(api.prefix))
     }])
 
     spec = APISpec(
-        options.pop('title', f"{ api.app.name.title() } API"),
-        options.pop('version', '1.0.0'),
-        options.pop('openapi_version', '3'),
+        options['info'].pop('title', f"{ api.app.name.title() } API"),
+        options['info'].pop('version', '1.0.0'),
+        options.pop('openapi_version', '3.0.0'),
         **options, plugins=[MarshmallowPlugin()])
     spec.tags = {}
 

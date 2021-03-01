@@ -20,17 +20,26 @@ SWAGGER_TEMPLATE = Path(__file__).parent.joinpath('swagger.html').read_text()
 class API:
     """Initialize an API."""
 
-    app: t.Optional[muffin.Application] = dc.field(default=None, repr=False)
-    prefix: str = ''
-    apispec: bool = True
-    apispec_params: t.Dict[str, t.Any] = dc.field(default_factory=dict, repr=False)
-    router: Router = dc.field(default_factory=Router, repr=False)
-
-    def __post_init__(self):
+    def __init__(self, app: muffin.Application = None, prefix: str = '',
+                 openapi: bool = True, *, servers: t.List = None, **openapi_info):
         """Post initialize the API if we have an application already."""
-        if self.app:
-            self.setup(self.app, prefix=self.prefix)
+        self.app = app
+        self.prefix = prefix
+
+        self.openapi = openapi
+        self.openapi_options = {'info': openapi_info}
+        if servers:
+            self.openapi_options['servers'] = servers
+
         self.authorize: t.Callable[[muffin.Request], t.Awaitable] = to_awaitable(lambda r: True)
+        self.router = Router()
+
+        if app:
+            self.setup(app, prefix=prefix)
+
+    def __repr__(self):
+        """Stringify the API."""
+        return f"<API { self.prefix }>"
 
     def authorization(self, auth: AUTH) -> AUTH:
         """Bind an authorization flow to self API."""
@@ -46,16 +55,10 @@ class API:
         return self.app.logger
 
     def setup(self, app: muffin.Application, prefix: str = '',
-              apispec: bool = None, apispec_params: t.Dict[str, t.Any] = None):
+              openapi: bool = None, *, servers: t.List = None, **openapi_info):
         """Initialize the API."""
         self.app = app
-        self.prefix = prefix.rstrip('/')
-
-        if apispec is not None:
-            self.apispec = apispec
-
-        if apispec_params is not None:
-            self.apispec_params = apispec_params
+        self.prefix = (prefix or self.prefix).rstrip('/')
 
         # Setup routing
         self.router.trim_last_slash = self.app.router.trim_last_slash
@@ -64,8 +67,17 @@ class API:
         self.router.NotFound = self.app.router.NotFound                     # type: ignore
         self.app.router.route(self.prefix)(self.router)
 
+        if openapi is not None:
+            self.openapi = openapi
+
+        if servers:
+            self.openapi_options['servers'] = servers
+
+        if openapi_info:
+            self.openapi_options['info'] = openapi_info
+
         # Setup API Docs
-        if not self.apispec:
+        if not self.openapi:
             return
 
         @self.router.route('/swagger')
@@ -75,10 +87,6 @@ class API:
         @self.router.route('/redoc')
         async def redoc(request):
             return REDOC_TEMPLATE
-
-        self.apispec_params.setdefault('openapi_version', "3.0.2")
-        self.apispec_params.setdefault('title', f"{ app.name.title() } API")
-        self.apispec_params.setdefault('version', "1.0.0")
 
         @self.router.route('/openapi.json')
         async def openapi(request):

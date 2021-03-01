@@ -6,7 +6,7 @@ import marshmallow as ma
 def api(app):
     from muffin_rest import API
 
-    api = API(app, prefix='/api')
+    api = API(app, prefix='/api', title='API Title')
 
     @api.authorization
     async def fake_auth(request):
