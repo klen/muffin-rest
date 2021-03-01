@@ -27,7 +27,7 @@ class API:
         self.prefix = prefix
 
         self.openapi = openapi
-        self.openapi_options = {'info': openapi_info}
+        self.openapi_options: t.Dict[str, t.Any] = {'info': openapi_info}
         if servers:
             self.openapi_options['servers'] = servers
 
@@ -70,11 +70,11 @@ class API:
         if openapi is not None:
             self.openapi = openapi
 
-        if servers:
-            self.openapi_options['servers'] = servers
-
         if openapi_info:
             self.openapi_options['info'] = openapi_info
+
+        if servers:
+            self.openapi_options['servers'] = servers
 
         # Setup API Docs
         if not self.openapi:
@@ -89,7 +89,7 @@ class API:
             return REDOC_TEMPLATE
 
         @self.router.route('/openapi.json')
-        async def openapi(request):
+        async def openapi_json(request):
             return render_openapi(self, request=request)
 
     def route(self, path: t.Union[str, t.Any], *paths: str, **params):
