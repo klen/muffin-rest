@@ -40,7 +40,7 @@ jobs:
       uses: actions/cache@v2.1.4
       with:
         path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
+        key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
 
     - name: Install dependencies
       run: |
