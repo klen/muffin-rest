@@ -2,7 +2,7 @@ import datetime as dt
 
 import peewee as pw
 
-from . import db
+from . import app, db
 
 
 @db.register
@@ -23,5 +23,8 @@ class Pet(pw.Model):
 
 
 # don't do on production, this is only for the example
-Category.create_table()
-Pet.create_table()
+@app.on_startup
+async def create_schema():
+    async with db:
+        Category.create_table()
+        Pet.create_table()

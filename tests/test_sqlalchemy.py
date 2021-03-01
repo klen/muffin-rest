@@ -48,6 +48,7 @@ async def test_base(app, client):
     assert ResourceEndpoint
     assert ResourceEndpoint.meta.name == 'resource'
     assert ResourceEndpoint.meta.Schema
+    assert ResourceEndpoint.meta.Schema.opts.dump_only == ('id',)
 
     assert api.router.plain['/resource']
     assert api.router.dynamic[0].pattern.pattern == '^/resource/(?P<id>[^/]+)$'

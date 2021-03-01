@@ -2,10 +2,11 @@
 
 import typing as t
 
+import marshmallow as ma
 import muffin
 import sqlalchemy as sa
-import marshmallow as ma
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSchema, ModelConverter
+from muffin._types import JSONType
 from muffin_databases import Plugin as DB
 
 from ..endpoint import Endpoint, EndpointOpts
@@ -96,7 +97,9 @@ class SAEndpointOpts(EndpointOpts):
             self.name_id = self.table_pk.name
 
         if self.Schema is SQLAlchemyAutoSchema:
-            meta = type('Meta', (object,), dict({'table': self.table}, **self.schema_meta))
+            meta = type('Meta', (object,), dict(
+                {'table': self.table, 'include_fk': True, 'dump_only': (self.name_id,)},
+                **self.schema_meta))
             self.Schema = type(
                 self.name.title() + 'Schema', (SQLAlchemyAutoSchema,),
                 dict({'Meta': meta}))
@@ -136,7 +139,7 @@ class SAEndpoint(Endpoint):
         total = await self.meta.database.fetch_val(qs)
         return self.collection.offset(offset).limit(limit), total
 
-    async def get(self, request, *, resource=None):
+    async def get(self, request, *, resource=None) -> JSONType:
         """Get resource or collection of resources."""
         if resource is not None and resource != '':
             return await self.dump(request, resource, many=False)

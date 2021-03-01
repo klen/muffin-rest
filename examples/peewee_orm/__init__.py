@@ -13,7 +13,7 @@ async def home(request):
     return muffin.ResponseRedirect('/api/swagger')
 
 db = muffin_peewee.Plugin(
-    app, connection=f"sqlite:///{ Path(__file__).parent.joinpath('db.sqlite')}")
+    app, connection=f"sqlite+async:///{ Path(__file__).parent.joinpath('db.sqlite')}")
 
 # Register the API
 from .api import api # noqa

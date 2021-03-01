@@ -4,9 +4,10 @@ import string
 from muffin import ResponseText
 from muffin_rest import API, __version__
 from muffin_rest.sqlalchemy import SAEndpoint
+from pathlib import Path
 
 from . import db
-from .tables import Pet
+from .tables import Pet, Category
 
 
 api = API(apispec_params={
@@ -81,3 +82,39 @@ class Pets(SAEndpoint):
 
         # Available filters
         filters = 'status', 'category'
+
+    @SAEndpoint.route('/pet/{id}/uploadImage', methods='post')
+    async def upload_image(self, request, resource=None):
+        """Uploads an image.
+
+        ---
+
+        requestBody:
+            required: true
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        properties:
+                            file:
+                                type: string
+                                format: binary
+
+        """
+        formdata = await request.form(upload_to=Path(__file__).parent)
+        resource['image'] = formdata['file'].name
+        await self.save(request, resource)
+        return resource['image']
+
+
+@api.route
+class Categories(SAEndpoint):
+    """Pets' categories."""
+
+    methods = 'get', 'post'
+
+    class Meta:
+
+        # ORM table
+        table = Category
+        database = db

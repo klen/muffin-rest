@@ -349,7 +349,7 @@ class Endpoint(Handler, metaclass=EndpointMeta):
             if meth:
                 operations[method]['summary'], operations[method]['description'], mschema = openapi.parse_docs(meth)  # noqa
                 return_type = meth.__annotations__.get('return')
-                if return_type == 'JSONType':
+                if return_type == 'JSONType' or return_type == JSONType:
                     responses = {200: {'description': 'Request is successfull', 'content': {
                         'application/json': {'schema': schema_ref}
                     }}}

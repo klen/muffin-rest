@@ -3,6 +3,7 @@ from muffin_rest.peewee import PeeweeEndpoint
 import string
 import random
 from muffin import ResponseText
+from pathlib import Path
 
 from .models import Pet
 from .schemas import PetSchema
@@ -101,5 +102,7 @@ class Pets(PeeweeEndpoint):
                                 format: binary
 
         """
-        formdata = await request.form()
-        pass
+        formdata = await request.form(upload_to=Path(__file__).parent)
+        resource.image = formdata['file'].name
+        resource.save()
+        return resource.image
