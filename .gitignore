@@ -44,5 +44,5 @@ docs/_build
 /todo.txt
 /.ropeproject
 /.cache
-/*.sqlite
+*.sqlite
 /env

@@ -82,3 +82,24 @@ class Pets(PeeweeEndpoint):
 
         # Available filters
         filters = 'status', 'category'
+
+    @PeeweeEndpoint.route('/pet/{id}/uploadImage', methods='post')
+    async def upload_image(self, request, resource=None):
+        """Uploads an image.
+
+        ---
+
+        requestBody:
+            required: true
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        properties:
+                            file:
+                                type: string
+                                format: binary
+
+        """
+        formdata = await request.form()
+        pass

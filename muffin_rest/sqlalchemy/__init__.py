@@ -5,12 +5,16 @@ import typing as t
 import muffin
 import sqlalchemy as sa
 import marshmallow as ma
-from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSchema
+from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSchema, ModelConverter
 from muffin_databases import Plugin as DB
 
 from ..endpoint import Endpoint, EndpointOpts
 from ..errors import APIError
 from ..filters import Filter, Filters
+
+
+# XXX: Monkey patch ModelConverter
+ModelConverter._get_field_name = lambda s, prop_or_column: str(prop_or_column.key)
 
 
 class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):

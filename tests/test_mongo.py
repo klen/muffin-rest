@@ -4,7 +4,7 @@ import marshmallow as ma
 from bson import ObjectId
 
 
-@pytest.mark.parametrize('anyio_backend', ['asyncio'])
+@pytest.mark.parametrize('aiolib', ['asyncio'])
 async def test_base(app, client):
     from muffin_rest import API
     from muffin_rest.mongo import MongoEndpoint

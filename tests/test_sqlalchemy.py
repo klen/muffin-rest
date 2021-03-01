@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from muffin_databases import Plugin as DB
 
 
-@pytest.mark.parametrize('anyio_backend', ['asyncio'])
+@pytest.mark.parametrize('aiolib', ['asyncio'])
 async def test_base(app, client):
     from muffin_rest import API
     from muffin_rest.sqlalchemy import SAEndpoint
@@ -192,5 +192,11 @@ async def test_base(app, client):
     assert res.status_code == 200
 
     assert not await db.fetch_all(Resource.select().where(Resource.c.id.in_([11, 12, 13])))
+
+    # Test openapi
+    res = await client.get('/api/openapi.json')
+    assert res.status_code == 200
+    json = await res.json()
+    assert json
 
     await db.disconnect()

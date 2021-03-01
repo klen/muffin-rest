@@ -15,7 +15,7 @@ class Pet(pw.Model):
 
     created = pw.DateTimeField(default=dt.datetime.utcnow)
     name = pw.CharField()
-    photoUrls = pw.CharField()
+    image = pw.CharField(null=True)
     status = pw.CharField(choices=[
         ('available', 'available'), ('pending', 'pending'), ('sold', 'sold')])
 

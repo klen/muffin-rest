@@ -5,6 +5,7 @@ import abc
 import inspect
 import json
 import typing as t
+from functools import partial
 
 import marshmallow as ma
 from apispec import APISpec
@@ -127,14 +128,11 @@ class Endpoint(Handler, metaclass=EndpointMeta):
 
         return cls
 
-    async def __call__(self, request: Request, *args, **options) -> t.Any:
+    async def __call__(self, request: Request, *args, __meth__: str = None, **options) -> t.Any:
         """Dispatch the given request by HTTP method."""
-        method = getattr(self, options.get('__meth__') or request.method.lower())
+        method = getattr(self, __meth__ or request.method.lower())
         await self.authorize(request)
         self.collection = await self.prepare_collection(request)
-        if request.method == 'POST':
-            return await self.post(request, **options)
-
         resource = await self.prepare_resource(request)
         if resource or request.method != 'GET':
             return await method(request, resource=resource)
@@ -338,15 +336,18 @@ class Endpoint(Handler, metaclass=EndpointMeta):
                         'description': 'The offset of items to return',
                     })
 
-            if method in {'post', 'put'}:
+            # Update from the method
+            meth = getattr(cls, method, None)
+            if isinstance(route.target, partial) and '__meth__' in route.target.keywords:
+                meth = getattr(cls, route.target.keywords['__meth__'], None)
+
+            elif method in {'post', 'put'}:
                 operations[method]['requestBody'] = {
                     'required': True, 'content': {'application/json': {'schema': schema_ref}}
                 }
 
-            # Update from the method
-            meth = getattr(cls, method, None)
             if meth:
-                operations[method]['summary'], operations[method]['description'], _ = openapi.parse_docs(meth)  # noqa
+                operations[method]['summary'], operations[method]['description'], mschema = openapi.parse_docs(meth)  # noqa
                 return_type = meth.__annotations__.get('return')
                 if return_type == 'JSONType':
                     responses = {200: {'description': 'Request is successfull', 'content': {
@@ -356,5 +357,6 @@ class Endpoint(Handler, metaclass=EndpointMeta):
                     responses = openapi.return_type_to_response(meth)
 
                 operations[method]['responses'] = responses
+                operations[method] = openapi.merge_dicts(operations[method], mschema)
 
         return openapi.merge_dicts(operations, schema)

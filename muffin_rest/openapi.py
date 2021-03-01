@@ -3,6 +3,7 @@ import typing as t
 import inspect
 import re
 from http import HTTPStatus
+from functools import partial
 
 from apispec import APISpec, utils
 from apispec.ext.marshmallow import MarshmallowPlugin
@@ -90,22 +91,20 @@ def route_to_spec(route: Route, spec: APISpec) -> t.Dict:
         for param in route.params:
             results['parameters'].append({'in': 'path', 'name': param})
 
-    if hasattr(route.target, 'openapi'):
-        results['operations'] = route.target.openapi(route, spec)
+    target = route.target
+    if isinstance(target, partial):
+        target = target.func
+
+    if hasattr(target, 'openapi'):
+        results['operations'] = target.openapi(route, spec)
         return results
 
-    cb = route.target
-    summary, desc, schema = parse_docs(cb)
-    if cb not in spec.tags:
-        spec.tags[cb] = cb.__name__
-        spec.tag({'name': cb.__name__, 'description': summary})
-
-    responses = return_type_to_response(cb)
+    summary, desc, schema = parse_docs(target)
+    responses = return_type_to_response(target)
     for method in route_to_methods(route):
         results['operations'][method] = {
             'summary': summary,
             'description': desc,
-            'tags': [spec.tags[cb]],
             'responses': responses
         }
 

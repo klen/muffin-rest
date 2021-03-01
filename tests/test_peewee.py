@@ -6,7 +6,7 @@ async def test_base(app, client):
     from muffin_rest import API
     from muffin_rest.peewee import PeeweeEndpoint
 
-    db = Peewee(app, connection='sqlite:///:memory:')
+    db = Peewee(app, connection='sqlite+async:///:memory:', manage_connections=False)
     api = API(app, '/api')
 
     @db.register
@@ -29,6 +29,7 @@ async def test_base(app, client):
 
         @PeeweeEndpoint.route('/resource/action')
         async def action(self, request, resource=None):
+            """Description for the action."""
             return await self.dump(request, list(self.collection))
 
     assert ResourceEndpoint
@@ -179,3 +180,10 @@ async def test_base(app, client):
     assert res.status_code == 200
 
     assert not Resource.select().where(Resource.id << ('11', '12', '13')).count()
+
+    # Test openapi
+    res = await client.get('/api/openapi.json')
+    assert res.status_code == 200
+    json = await res.json()
+    assert json
+
