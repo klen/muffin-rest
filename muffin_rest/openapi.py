@@ -32,7 +32,7 @@ def render_openapi(api, request):
     }])
 
     spec = APISpec(
-        options['info'].pop('title', f"{ api.app.name.title() } API"),
+        options['info'].pop('title', f"{ api.app.cfg.name.title() } API"),
         options['info'].pop('version', '1.0.0'),
         options.pop('openapi_version', '3.0.0'),
         **options, plugins=[MarshmallowPlugin()])

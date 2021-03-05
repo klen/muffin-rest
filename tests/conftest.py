@@ -13,7 +13,7 @@ def aiolib(request):
 
 @pytest.fixture
 def app():
-    app = muffin.Application('muffin-rest', debug=True)
+    app = muffin.Application(debug=True)
 
     @app.route('/')
     async def index(request):
