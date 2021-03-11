@@ -10,6 +10,9 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from http_router.routes import DynamicRoute, Route
 from asgi_tools.response import CAST_RESPONSE
 from muffin import Response
+from muffin._types import JSONType
+
+from . import FILTERS_PARAM, LIMIT_PARAM, OFFSET_PARAM, SORT_PARAM, openapi
 
 try:
     from apispec import yaml_utils
@@ -137,3 +140,81 @@ def return_type_to_response(fn: t.Callable) -> t.Dict:
             }
         }
     return responses
+
+
+class OpenAPIMixin:
+    """Render an endpoint to openapi specs."""
+
+    if t.TYPE_CHECKING:
+        from .endpoint import EndpointOpts
+
+        meta: EndpointOpts
+
+    @classmethod
+    def openapi(cls, route: Route, spec: APISpec) -> t.Dict:
+        """Get openapi specs for the endpoint."""
+        operations: t.Dict = {}
+        summary, desc, schema = parse_docs(cls)
+        if cls not in spec.tags:
+            spec.tags[cls] = cls.meta.name
+            spec.tag({'name': cls.meta.name, 'description': summary})
+            spec.components.schema(cls.meta.Schema.__name__, schema=cls.meta.Schema)
+
+        schema_ref = {'$ref': f"#/components/schemas/{ cls.meta.Schema.__name__ }"}
+        for method in route_to_methods(route):
+            operations[method] = {'tags': [spec.tags[cls]]}
+            is_resource_route = isinstance(route, DynamicRoute) and \
+                route.params.get(cls.meta.name_id)
+
+            if method == 'get' and not is_resource_route:
+                operations[method]['parameters'] = []
+                if cls.meta.sorting:
+                    sorting = list(cls.meta.sorting.keys())
+                    operations[method]['parameters'].append({
+                        'name': SORT_PARAM, 'in': 'query', 'style': 'form', 'explode': False,
+                        'schema': {'type': 'array', 'items': {'type': 'string', 'enum': sorting}},
+                        'description': ",".join(sorting),
+                    })
+
+                if cls.meta.filters.filters:
+                    operations[method]['parameters'].append({
+                        'name': FILTERS_PARAM, 'in': 'query', 'description': str(cls.meta.filters),
+                        'content': {'application/json': {'schema': {'type': 'object'}}}
+                    })
+
+                if cls.meta.limit:
+                    operations[method]['parameters'].append({
+                        'name': LIMIT_PARAM, 'in': 'query',
+                        'schema': {'type': 'integer', 'minimum': 1, 'maximum': cls.meta.limit},
+                        'description': 'The number of items to return',
+                    })
+                    operations[method]['parameters'].append({
+                        'name': OFFSET_PARAM, 'in': 'query',
+                        'schema': {'type': 'integer', 'minimum': 0},
+                        'description': 'The offset of items to return',
+                    })
+
+            # Update from the method
+            meth = getattr(cls, method, None)
+            if isinstance(route.target, partial) and '__meth__' in route.target.keywords:
+                meth = getattr(cls, route.target.keywords['__meth__'], None)
+
+            elif method in {'post', 'put'}:
+                operations[method]['requestBody'] = {
+                    'required': True, 'content': {'application/json': {'schema': schema_ref}}
+                }
+
+            if meth:
+                operations[method]['summary'], operations[method]['description'], mschema = openapi.parse_docs(meth)  # noqa
+                return_type = meth.__annotations__.get('return')
+                if return_type == 'JSONType' or return_type == JSONType:
+                    responses = {200: {'description': 'Request is successfull', 'content': {
+                        'application/json': {'schema': schema_ref}
+                    }}}
+                else:
+                    responses = return_type_to_response(meth)
+
+                operations[method]['responses'] = responses
+                operations[method] = merge_dicts(operations[method], mschema)
+
+        return merge_dicts(operations, schema)

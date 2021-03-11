@@ -4,14 +4,14 @@ import typing as t
 import marshmallow as ma
 import muffin
 import peewee as pw
-from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
-from http_router.routes import Route
 from marshmallow_peewee import ModelSchema, ForeignKey
 
-from ..endpoint import Endpoint, EndpointOpts
+from ..endpoint import EndpointBase, EndpointOpts
 from ..errors import APIError
 from ..filters import Filter, Filters
+
+from .openapi import PeeweeOpenAPIMixin
 
 
 # XXX: Patch apispec.MarshmallowPlugin to support ForeignKeyField
@@ -89,7 +89,7 @@ class PeeweeEndpointOpts(EndpointOpts):
             for (n, prop) in self.sorting.items())
 
 
-class PeeweeEndpoint(Endpoint):
+class PeeweeEndpointBase(EndpointBase):
     """Support Peeweee."""
 
     collection: pw.Query
@@ -190,17 +190,8 @@ class PeeweeEndpoint(Endpoint):
             exclude=request.url.query.get('schema_exclude', ()),
         ) if self.meta.Schema else None
 
-    @classmethod
-    def openapi(cls, route: Route, spec: APISpec) -> t.Dict:
-        """Get openapi specs for the endpoint."""
-        operations = super(PeeweeEndpoint, cls).openapi(route, spec)
-        is_resource_route = getattr(route, 'params', {}).get(cls.meta.name_id)
-        if not is_resource_route and 'delete' in operations:
-            operations['delete'].setdefault('parameters', [])
-            operations['delete']['requestBody'] = {
-                'required': True,
-                'content': {
-                    'application/json': {'schema': {'type': 'array', 'items': {'type': 'string'}}}
-                }
-            }
-        return operations
+
+class PeeweeEndpoint(PeeweeEndpointBase, PeeweeOpenAPIMixin):  # type: ignore
+    """Support peewee."""
+
+    pass

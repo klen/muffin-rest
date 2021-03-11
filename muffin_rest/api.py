@@ -94,7 +94,7 @@ class API:
 
     def route(self, path: t.Union[str, t.Any], *paths: str, **params):
         """Route an endpoint by the API."""
-        from .endpoint import Endpoint
+        from .endpoint import EndpointBase
 
         def wrapper(cb):
             cb._api = self
@@ -105,7 +105,7 @@ class API:
             return wrapper
 
         # Generate URL paths automatically
-        if issubclass(path, Endpoint):
+        if issubclass(path, EndpointBase):
             path._api = self
             return self.router.route(path, *paths, **params)
 
