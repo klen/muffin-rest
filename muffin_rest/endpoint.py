@@ -24,34 +24,46 @@ T = t.TypeVar('T')
 class EndpointOpts:
     """Endpoints' options."""
 
+    name: str = ''
+    name_id: str = ''
+
     if t.TYPE_CHECKING:
-        name: str
-        name_id: str
         filters: Filters
-        Schema: t.Type[ma.Schema]
         limit: int = 0
         sorting: t.Dict[str, bool] = {}
+        Schema: t.Type[ma.Schema]
 
     def __init__(self, cls):
-        """Prepare meta options."""
+        """Inherit meta options."""
         for base in reversed(cls.mro()):
-            if not hasattr(base, "Meta"):
-                continue
+            if hasattr(base, "Meta"):
+                for k, v in base.Meta.__dict__.items():
+                    if not k.startswith('_'):
+                        setattr(self, k, v)
 
-            for k, v in base.Meta.__dict__.items():
-                if k.startswith('__'):
-                    continue
-                setattr(self, k, v)
+        self.setup(cls)
 
-        # Generate name
-        self.name = self.name or cls.__name__.lower().split('endpoint', 1)[0] or\
-            cls.__name__.lower()
+    def setup(self, cls):
+        """Setup the options."""
+        # Setup names
+        cls_name = cls.__name__
+        self.name = self.name or cls_name.lower().split('endpoint', 1)[0] or cls_name.lower()
         self.name_id = self.name_id or self.name
 
         # Setup sorting
         if not isinstance(self.sorting, dict):
             self.sorting = dict(
                 n if isinstance(n, (list, tuple)) else (n, bool(n)) for n in self.sorting)
+
+        # Setup schema
+        if not self.Schema:
+            self.Schema = type(
+                self.name.title() + 'Schema', (self.schema_base,),
+                dict(self.schema_fields, Meta=self.setup_schema_meta(cls)))
+
+    def setup_schema_meta(self, cls):
+        """Generate meta for schemas."""
+        return type('Meta', (object,), dict({'unknown': self.schema_unknown}, **self.schema_meta))
 
     def __repr__(self):
         """Represent self as a string."""
@@ -64,8 +76,9 @@ class EndpointMeta(HandlerMeta):
     def __new__(mcs, name, bases, params):
         """Prepare options for the endpoint."""
         cls = super().__new__(mcs, name, bases, params)
-        cls.meta = cls.meta_class(cls)
-        cls.meta.filters = cls.meta.filters_cls(*cls.meta.filters, endpoint=cls)
+        if not getattr(cls.Meta, 'abc', False):
+            cls.meta = cls.meta_class(cls)
+            cls.meta.filters = cls.meta.filters_cls(*cls.meta.filters, endpoint=cls)
         return cls
 
 
@@ -84,12 +97,10 @@ class EndpointBase(Handler, metaclass=EndpointMeta):
     class Meta:
         """Tune the endpoint."""
 
-        name: str = ''  # Resource's name
-        name_id: str = ''  # Resource ID's name
+        abc: bool = True                        # The class is abstract, meta wouldn't be generated
 
-        # Tune Schema
-        Schema: t.Optional[t.Type[ma.Schema]] = None
-        schema_meta: t.Dict = {}
+        name: str = ''                          # Resource's name
+        name_id: str = ''                       # Resource ID's name
 
         # limit: Paginate results (set to None for disable pagination)
         limit: int = 0
@@ -100,6 +111,14 @@ class EndpointBase(Handler, metaclass=EndpointMeta):
 
         # Define allowed resource sorting params
         sorting: t.Union[t.Dict[str, bool], t.Sequence[t.Union[str, t.Tuple[str, bool]]]] = {}
+
+        # Auto generation for schemas
+        schema_base: t.Type[ma.Schema] = ma.Schema
+        schema_fields: t.Dict = {}
+        schema_meta: t.Dict = {}
+        schema_unknown: str = ma.EXCLUDE
+
+        Schema: t.Optional[t.Type[ma.Schema]] = None
 
     @classmethod
     def __route__(cls, router, *paths, **params):
@@ -288,4 +307,7 @@ class EndpointBase(Handler, metaclass=EndpointMeta):
 class Endpoint(EndpointBase, openapi.OpenAPIMixin):
     """Basic endpoint class."""
 
-    pass
+    class Meta:
+        """Tune the endpoint."""
+
+        abc: bool = True                        # The class is abstract, meta wouldn't be generated

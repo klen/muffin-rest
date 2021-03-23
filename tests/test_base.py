@@ -63,7 +63,7 @@ async def test_endpoints(api, client):
         methods = 'get', 'put'
 
         class Meta:
-            Schema = FakeSchema
+            schema_base = FakeSchema
 
         async def prepare_collection(self, request):
             return f'SIMPLE {request.method}'
@@ -75,6 +75,10 @@ async def test_endpoints(api, client):
     assert Simple.meta.sorting == {}
     assert Simple.methods == {'GET', 'PUT'}
     assert api.router.routes()[2].methods == Simple.methods
+    assert Simple.meta.Schema
+    assert issubclass(Simple.meta.Schema, FakeSchema)
+    assert Simple.meta.Schema.opts
+    assert Simple.meta.Schema.opts.unknown == 'exclude'
 
     res = await client.get('/api/simple')
     assert res.status_code == 200

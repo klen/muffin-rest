@@ -78,7 +78,7 @@ async def test_base(app, client):
     assert json['errors']
     assert 'name' in json['errors']
 
-    res = await client.post('/api/resource', data={'name': 'test2', 'active': True})
+    res = await client.post('/api/resource', data={'name': 'test2', 'active': True, 'unknown': 22})
     assert res.status_code == 200
     json = await res.json()
     assert json['id'] == '2'

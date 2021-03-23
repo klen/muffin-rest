@@ -45,23 +45,19 @@ class MongoFilters(Filters):
 class MongoEndpointOpts(EndpointOpts):
     """Support Mongo DB."""
 
+    aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
+    collection_id: str = ''
+
     if t.TYPE_CHECKING:
-        collection: motor.AsyncIOMotorCollection
-        collection_id: str
-        aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
         Schema: t.Type[MongoSchema]
+        collection: motor.AsyncIOMotorCollection
 
-    def __init__(self, cls):
+    def setup(self, cls):
         """Prepare meta options."""
-        super().__init__(cls)
+        if not self.collection:
+            raise ValueError("'MongoEndpoint.Meta.collection' is required")
 
-        if self.collection is None:
-            return
-
-        if self.Schema is MongoSchema:
-            meta = type('Meta', (object,), self.schema_meta)
-            self.Schema = type(self.name.title() + 'Schema', (MongoSchema,), dict(
-                {'Meta': meta}, **(self.schema_fields or {})))
+        super(MongoEndpointOpts, self).setup(cls)
 
 
 class MongoEndpoint(Endpoint):
@@ -73,13 +69,16 @@ class MongoEndpoint(Endpoint):
     class Meta:
         """Tune mongo endpoints."""
 
+        abc = True
+
         filters_cls = MongoFilters
 
         # Mongo options
         collection: t.Optional[motor.AsyncIOMotorCollection] = None
         collection_id = '_id'
         aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
-        Schema = MongoSchema
+
+        schema_base = MongoSchema
         schema_fields = None
 
     async def prepare_collection(self, request: muffin.Request) -> MongoChain:

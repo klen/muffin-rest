@@ -1,4 +1,5 @@
 """Support for Peewee ORM (https://github.com/coleifer/peewee)."""
+
 import typing as t
 
 import marshmallow as ma
@@ -58,35 +59,34 @@ class PeeweeFilters(Filters):
 class PeeweeEndpointOpts(EndpointOpts):
     """Support Peewee."""
 
+    noninherited = {'name', 'name_id', 'Schema', 'model', 'model_pk'}
+
     if t.TYPE_CHECKING:
         model: pw.Model
         model_pk: pw.Field
         Schema: t.Type[ModelSchema]
 
-    def __init__(self, cls):
+    def setup(self, cls):
         """Prepare meta options."""
-        noname = getattr(cls.Meta, 'name', None) is None
-        super(PeeweeEndpointOpts, self).__init__(cls)
         if not self.model:
-            return
+            raise ValueError("'PeeweeEndpoint.Meta.model' is required")
 
         self.model_pk = self.model_pk or self.model._meta.primary_key
 
-        if noname:
-            self.name = self.model._meta.table_name
-            self.name_id = self.model_pk.name
+        self.name = self.name or self.model._meta.table_name
+        self.name_id = self.name_id or self.model_pk.name
 
-        # Setup a schema
-        if self.Schema is ModelSchema:
-            meta = type('Meta', (object,), dict({'model': self.model}, **self.schema_meta))
-            self.Schema = type(
-                self.name.title() + 'Schema', (ModelSchema,),
-                dict({'Meta': meta}))
+        super(PeeweeEndpointOpts, self).setup(cls)
 
         # Setup sorting
         self.sorting = dict(
             (isinstance(n, pw.Field) and n.name or n, prop)
             for (n, prop) in self.sorting.items())
+
+    def setup_schema_meta(self, cls):
+        """Prepare a schema."""
+        return type('Meta', (object,), dict(
+            {'unknown': self.schema_unknown, 'model': self.model}, **self.schema_meta))
 
 
 class PeeweeEndpointBase(EndpointBase):
@@ -100,13 +100,16 @@ class PeeweeEndpointBase(EndpointBase):
     class Meta:
         """Tune peewee endpoints."""
 
+        abc: bool = True
+
         filters_cls = PeeweeFilters
 
         # Peewee options
         model = None
         model_pk = None
 
-        Schema = ModelSchema
+        # Schema auto generation params
+        schema_base = ModelSchema
 
     async def prepare_collection(self, request: muffin.Request) -> pw.Query:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
@@ -194,4 +197,7 @@ class PeeweeEndpointBase(EndpointBase):
 class PeeweeEndpoint(PeeweeEndpointBase, PeeweeOpenAPIMixin):  # type: ignore
     """Support peewee."""
 
-    pass
+    class Meta:
+        """Tune peewee endpoints."""
+
+        abc: bool = True

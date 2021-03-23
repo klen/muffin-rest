@@ -79,35 +79,32 @@ class SAEndpointOpts(EndpointOpts):
         database: DB
         Schema: t.Type[SQLAlchemyAutoSchema]
 
-    def __init__(self, cls):
+    def setup(self, cls):
         """Prepare meta options."""
-        noname = getattr(cls.Meta, 'name', None) is None
-        super().__init__(cls)
-
         if self.table is None:
-            return
+            raise ValueError("'SAEndpoint.Meta.table' is required")
 
         if self.database is None:
-            raise RuntimeError('SAEndpoint.meta.database is required')
+            raise ValueError("'SAEndpoint.Meta.database' is required")
 
         self.table_pk = self.table_pk or self.table.c.id
 
-        if noname:
-            self.name = self.table.name
-            self.name_id = self.table_pk.name
+        self.name = self.name or self.table.name
+        self.name_id = self.name_id or self.table_pk.name
 
-        if self.Schema is SQLAlchemyAutoSchema:
-            meta = type('Meta', (object,), dict(
-                {'table': self.table, 'include_fk': True, 'dump_only': (self.name_id,)},
-                **self.schema_meta))
-            self.Schema = type(
-                self.name.title() + 'Schema', (SQLAlchemyAutoSchema,),
-                dict({'Meta': meta}))
+        super(SAEndpointOpts, self).setup(cls)
 
         # Setup sorting
         self.sorting = dict(
             (isinstance(n, sa.Column) and n.name or n, prop)
             for (n, prop) in self.sorting.items())
+
+    def setup_schema_meta(self, cls):
+        """Prepare a schema."""
+        return type('Meta', (object,), dict({
+            'unknown': self.schema_unknown, 'table': self.table,
+            'include_fk': True, 'dump_only': (self.name_id,)
+        }, **self.schema_meta))
 
 
 class SAEndpoint(Endpoint):
@@ -119,6 +116,8 @@ class SAEndpoint(Endpoint):
     class Meta:
         """Tune sqlalchemy endpoints."""
 
+        abc = True
+
         filters_cls = SAFilters
 
         # Sqlalchemy options
@@ -126,7 +125,8 @@ class SAEndpoint(Endpoint):
         table_pk = None
         database = None
 
-        Schema = SQLAlchemyAutoSchema
+        # Schema auto generation params
+        schema_base = SQLAlchemyAutoSchema
 
     async def prepare_collection(self, request: muffin.Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""

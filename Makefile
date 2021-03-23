@@ -63,6 +63,7 @@ $(VIRTUAL_ENV): setup.cfg
 .PHONY: t test
 # target: test - Runs tests
 t test: $(VIRTUAL_ENV)
+	docker start mongo
 	@$(VIRTUAL_ENV)/bin/pytest tests
 
 .PHONY: mypy
