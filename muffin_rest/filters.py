@@ -79,14 +79,14 @@ class Filter:
 
 class Filters:
 
-    """Build filters for given endpoint."""
+    """Build filters for given handler."""
 
     FILTER_CLASS = Filter
 
-    def __init__(self, *filters, endpoint=None):
+    def __init__(self, *filters, handler=None):
         """Initialize object."""
         self.filters = tuple(
-            f if isinstance(f, Filter) else self.convert(f, endpoint) for f in filters)
+            f if isinstance(f, Filter) else self.convert(f, handler) for f in filters)
 
     def __iter__(self):
         """Iterate through self filters."""
@@ -96,7 +96,7 @@ class Filters:
         """Describe the filters."""
         return ", ".join(f.name for f in self)
 
-    def convert(self, args, endpoint=None):
+    def convert(self, args, handler=None):
         """Prepare filters."""
         name = args
         field = attr = None
@@ -108,8 +108,8 @@ class Filters:
             if opts:
                 field = opts.pop()
 
-        if not field and endpoint and endpoint.meta.Schema:
-            field = endpoint.meta.Schema._declared_fields.get(attr or name) or \
+        if not field and handler and handler.meta.Schema:
+            field = handler.meta.Schema._declared_fields.get(attr or name) or \
                 self.FILTER_CLASS.field_cls()
             field.attribute = field.attribute or attr or name
         return self.FILTER_CLASS(name, attr=attr, field=field, *opts)

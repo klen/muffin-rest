@@ -7,7 +7,7 @@ from bson import ObjectId
 @pytest.mark.parametrize('aiolib', ['asyncio'])
 async def test_base(app, client):
     from muffin_rest import API
-    from muffin_rest.mongo import MongoEndpoint
+    from muffin_rest.mongo import MongoRESTHandler
 
     mongo = Mongo(app)
     api = API(app, '/api')
@@ -19,7 +19,7 @@ async def test_base(app, client):
     await resources.drop()
 
     @api.route
-    class ResourceEndpoint(MongoEndpoint):
+    class ResourceHandler(MongoRESTHandler):
 
         class Meta:
             collection = resources
@@ -32,14 +32,14 @@ async def test_base(app, client):
                 'count': ma.fields.Integer(),
             }
 
-        @MongoEndpoint.route('/resource/action')
+        @MongoRESTHandler.route('/resource/action')
         async def action(self, request, resource=None):
             rows = await self.meta.collection.find().to_list(None)
             return await self.dump(request, rows)
 
-    assert ResourceEndpoint
-    assert ResourceEndpoint.meta.name == 'resource'
-    assert ResourceEndpoint.meta.Schema
+    assert ResourceHandler
+    assert ResourceHandler.meta.name == 'resource'
+    assert ResourceHandler.meta.Schema
 
     assert api.router.plain['/resource']
     assert api.router.dynamic[0].pattern.pattern == '^/resource/(?P<resource>[^/]+)$'

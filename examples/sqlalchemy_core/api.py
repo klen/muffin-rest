@@ -3,7 +3,7 @@ import string
 
 from muffin import ResponseText
 from muffin_rest import API, __version__
-from muffin_rest.sqlalchemy import SAEndpoint
+from muffin_rest.sqlalchemy import SARESTHandler
 from pathlib import Path
 
 from . import db
@@ -59,7 +59,7 @@ async def token(request) -> ResponseText:
 
 
 @api.route
-class Pets(SAEndpoint):
+class Pets(SARESTHandler):
     """Everything about your Pets."""
 
     class Meta:
@@ -77,7 +77,7 @@ class Pets(SAEndpoint):
         # Available filters
         filters = 'status', 'category'
 
-    @SAEndpoint.route('/pet/{id}/uploadImage', methods='post')
+    @SARESTHandler.route('/pet/{id}/uploadImage', methods='post')
     async def upload_image(self, request, resource=None):
         """Uploads an image.
 
@@ -102,7 +102,7 @@ class Pets(SAEndpoint):
 
 
 @api.route
-class Categories(SAEndpoint):
+class Categories(SARESTHandler):
     """Pets' categories."""
 
     methods = 'get', 'post'

@@ -1,5 +1,5 @@
 from muffin_rest import API, __version__
-from muffin_rest.peewee import PeeweeEndpoint
+from muffin_rest.peewee import PWRESTHandler
 import string
 import random
 from muffin import ResponseText
@@ -58,7 +58,7 @@ async def token(request) -> ResponseText:
 
 
 @api.route
-class Pets(PeeweeEndpoint):
+class Pets(PWRESTHandler):
     """Everything about your Pets."""
 
     class Meta:
@@ -78,7 +78,7 @@ class Pets(PeeweeEndpoint):
         # Available filters
         filters = 'status', 'category'
 
-    @PeeweeEndpoint.route('/pet/{id}/uploadImage', methods='post')
+    @PWRESTHandler.route('/pet/{id}/uploadImage', methods='post')
     async def upload_image(self, request, resource=None):
         """Uploads an image.
 

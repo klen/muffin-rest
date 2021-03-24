@@ -1,4 +1,4 @@
-"""Base class for API Endpoints."""
+"""Base class for API REST Handlers."""
 from __future__ import annotations
 
 import abc
@@ -21,8 +21,8 @@ from .filters import Filters, Filter
 T = t.TypeVar('T')
 
 
-class EndpointOpts:
-    """Endpoints' options."""
+class RESTOptions:
+    """Handler Options."""
 
     name: str = ''
     name_id: str = ''
@@ -47,7 +47,7 @@ class EndpointOpts:
         """Setup the options."""
         # Setup names
         cls_name = cls.__name__
-        self.name = self.name or cls_name.lower().split('endpoint', 1)[0] or cls_name.lower()
+        self.name = self.name or cls_name.lower().split('handler', 1)[0] or cls_name.lower()
         self.name_id = self.name_id or self.name
 
         # Setup sorting
@@ -70,32 +70,32 @@ class EndpointOpts:
         return "<Options %s>" % self.name
 
 
-class EndpointMeta(HandlerMeta):
+class RESTHandlerMeta(HandlerMeta):
     """Create class options."""
 
     def __new__(mcs, name, bases, params):
-        """Prepare options for the endpoint."""
+        """Prepare options for the handler."""
         cls = super().__new__(mcs, name, bases, params)
         if not getattr(cls.Meta, 'abc', False):
             cls.meta = cls.meta_class(cls)
-            cls.meta.filters = cls.meta.filters_cls(*cls.meta.filters, endpoint=cls)
+            cls.meta.filters = cls.meta.filters_cls(*cls.meta.filters, handler=cls)
         return cls
 
 
-class EndpointBase(Handler, metaclass=EndpointMeta):
+class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
     """Load/save resources."""
 
     if t.TYPE_CHECKING:
         collection: t.Any
         resource: t.Any
-        meta: EndpointOpts
+        meta: RESTOptions
 
-    meta_class: t.Type[EndpointOpts] = EndpointOpts
+    meta_class: t.Type[RESTOptions] = RESTOptions
     _api: t.Optional[API] = None
 
     class Meta:
-        """Tune the endpoint."""
+        """Tune the handler."""
 
         abc: bool = True                        # The class is abstract, meta wouldn't be generated
 
@@ -153,7 +153,7 @@ class EndpointBase(Handler, metaclass=EndpointMeta):
         if filters:
             try:
                 data = json.loads(filters)
-                _, self.collection = self.meta.filters.filter(data, self.collection, endpoint=self)
+                _, self.collection = self.meta.filters.filter(data, self.collection, handler=self)
 
             except (ValueError, TypeError):
                 self.api.logger.warning('Invalid filters data: request.url')
@@ -221,9 +221,9 @@ class EndpointBase(Handler, metaclass=EndpointMeta):
 
     @property
     def api(self) -> API:
-        """Check if the endpoint bind to an API."""
+        """Check if the handler is binded to an API."""
         if self._api is None:
-            raise Exception('The endpoint is not routed by any API')  # TODO
+            raise Exception('The handler is not routed by any API')  # TODO
         return self._api
 
     async def authorize(self, request: Request):
@@ -234,7 +234,7 @@ class EndpointBase(Handler, metaclass=EndpointMeta):
 
     async def get_schema(self, request: Request, resource=None) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
-        assert self.meta.Schema, 'Endpoint.meta.Schema is required.'
+        assert self.meta.Schema, 'RESTHandler.meta.Schema is required.'
         return self.meta.Schema(
             only=request.url.query.get('schema_only'),
             exclude=request.url.query.get('schema_exclude', ()),
@@ -304,10 +304,10 @@ class EndpointBase(Handler, metaclass=EndpointMeta):
         return resource
 
 
-class Endpoint(EndpointBase, openapi.OpenAPIMixin):
-    """Basic endpoint class."""
+class RESTHandler(RESTBase, openapi.OpenAPIMixin):
+    """Basic Handler Class."""
 
     class Meta:
-        """Tune the endpoint."""
+        """Tune the handler."""
 
         abc: bool = True                        # The class is abstract, meta wouldn't be generated

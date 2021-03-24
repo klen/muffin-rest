@@ -146,9 +146,9 @@ class OpenAPIMixin:
     """Render an endpoint to openapi specs."""
 
     if t.TYPE_CHECKING:
-        from .endpoint import EndpointOpts
+        from .endpoint import RESTOptions
 
-        meta: EndpointOpts
+        meta: RESTOptions
 
     @classmethod
     def openapi(cls, route: Route, spec: APISpec) -> t.Dict:

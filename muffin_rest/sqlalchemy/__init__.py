@@ -1,5 +1,7 @@
 """SQLAlchemy Core support."""
 
+from __future__ import annotations  # py37
+
 import typing as t
 
 import marshmallow as ma
@@ -9,7 +11,7 @@ from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSch
 from muffin._types import JSONType
 from muffin_databases import Plugin as DB
 
-from ..endpoint import Endpoint, EndpointOpts
+from ..handler import RESTHandler, RESTOptions
 from ..errors import APIError
 from ..filters import Filter, Filters
 
@@ -55,9 +57,9 @@ class SAFilter(Filter):
         self.column = column
 
     def apply(self, collection: sa.sql.Select, ops: t.Tuple[t.Tuple[t.Callable, t.Any], ...],
-              endpoint: 'SAEndpoint' = None, **kwargs) -> sa.sql.Select:
+              handler: SARESTHandler = None, **kwargs) -> sa.sql.Select:
         """Apply the filters to SQLAlchemy Select."""
-        column = (self.column or endpoint and endpoint.meta.table.c.get(self.field.attribute))
+        column = (self.column or handler and handler.meta.table.c.get(self.field.attribute))
         if ops and column is not None:
             collection = collection.where(*[op(column, val) for op, val in ops])
 
@@ -70,7 +72,7 @@ class SAFilters(Filters):
     FILTER_CLASS = SAFilter
 
 
-class SAEndpointOpts(EndpointOpts):
+class SARESTOptions(RESTOptions):
     """Support SQLAlchemy Core."""
 
     if t.TYPE_CHECKING:
@@ -82,17 +84,17 @@ class SAEndpointOpts(EndpointOpts):
     def setup(self, cls):
         """Prepare meta options."""
         if self.table is None:
-            raise ValueError("'SAEndpoint.Meta.table' is required")
+            raise ValueError("'SARESTHandler.Meta.table' is required")
 
         if self.database is None:
-            raise ValueError("'SAEndpoint.Meta.database' is required")
+            raise ValueError("'SARESTHandler.Meta.database' is required")
 
         self.table_pk = self.table_pk or self.table.c.id
 
         self.name = self.name or self.table.name
         self.name_id = self.name_id or self.table_pk.name
 
-        super(SAEndpointOpts, self).setup(cls)
+        super(SARESTOptions, self).setup(cls)
 
         # Setup sorting
         self.sorting = dict(
@@ -107,14 +109,14 @@ class SAEndpointOpts(EndpointOpts):
         }, **self.schema_meta))
 
 
-class SAEndpoint(Endpoint):
+class SARESTHandler(RESTHandler):
     """Support SQLAlchemy Core."""
 
-    meta: SAEndpointOpts
-    meta_class: t.Type[SAEndpointOpts] = SAEndpointOpts
+    meta: SARESTOptions
+    meta_class: t.Type[SARESTOptions] = SARESTOptions
 
     class Meta:
-        """Tune sqlalchemy endpoints."""
+        """Tune the handler."""
 
         abc = True
 

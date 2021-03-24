@@ -1,5 +1,7 @@
 """Support for Peewee ORM (https://github.com/coleifer/peewee)."""
 
+from __future__ import annotations
+
 import typing as t
 
 import marshmallow as ma
@@ -8,7 +10,7 @@ import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ModelSchema, ForeignKey
 
-from ..endpoint import EndpointBase, EndpointOpts
+from ..handler import RESTBase, RESTOptions
 from ..errors import APIError
 from ..filters import Filter, Filters
 
@@ -41,10 +43,10 @@ class PeeweeFilter(Filter):
         self.mfield = mfield
 
     def apply(self, collection: pw.Query, ops: t.Tuple[t.Tuple[t.Callable, t.Any], ...],
-              endpoint: 'PeeweeEndpoint' = None, **kwargs) -> pw.Query:
+              handler: PWRESTBase = None, **kwargs) -> pw.Query:
         """Apply the filters to Peewee QuerySet.."""
         mfield = (
-            self.mfield or endpoint and endpoint.meta.model._meta.fields.get(self.field.attribute))
+            self.mfield or handler and handler.meta.model._meta.fields.get(self.field.attribute))
         if mfield and ops:
             collection = collection.where(*[op(mfield, val) for op, val in ops])
         return collection
@@ -56,7 +58,7 @@ class PeeweeFilters(Filters):
     FILTER_CLASS = PeeweeFilter
 
 
-class PeeweeEndpointOpts(EndpointOpts):
+class PWRESTOptions(RESTOptions):
     """Support Peewee."""
 
     noninherited = {'name', 'name_id', 'Schema', 'model', 'model_pk'}
@@ -69,14 +71,14 @@ class PeeweeEndpointOpts(EndpointOpts):
     def setup(self, cls):
         """Prepare meta options."""
         if not self.model:
-            raise ValueError("'PeeweeEndpoint.Meta.model' is required")
+            raise ValueError("'PWRESTHandler.Meta.model' is required")
 
         self.model_pk = self.model_pk or self.model._meta.primary_key
 
         self.name = self.name or self.model._meta.table_name
         self.name_id = self.name_id or self.model_pk.name
 
-        super(PeeweeEndpointOpts, self).setup(cls)
+        super(PWRESTOptions, self).setup(cls)
 
         # Setup sorting
         self.sorting = dict(
@@ -89,16 +91,16 @@ class PeeweeEndpointOpts(EndpointOpts):
             {'unknown': self.schema_unknown, 'model': self.model}, **self.schema_meta))
 
 
-class PeeweeEndpointBase(EndpointBase):
+class PWRESTBase(RESTBase):
     """Support Peeweee."""
 
     collection: pw.Query
     resource: pw.Model
-    meta: PeeweeEndpointOpts
-    meta_class: t.Type[PeeweeEndpointOpts] = PeeweeEndpointOpts
+    meta: PWRESTOptions
+    meta_class: t.Type[PWRESTOptions] = PWRESTOptions
 
     class Meta:
-        """Tune peewee endpoints."""
+        """Tune the handler."""
 
         abc: bool = True
 
@@ -194,10 +196,10 @@ class PeeweeEndpointBase(EndpointBase):
         ) if self.meta.Schema else None
 
 
-class PeeweeEndpoint(PeeweeEndpointBase, PeeweeOpenAPIMixin):  # type: ignore
+class PWRESTHandler(PWRESTBase, PeeweeOpenAPIMixin):  # type: ignore
     """Support peewee."""
 
     class Meta:
-        """Tune peewee endpoints."""
+        """Tune the handler."""
 
         abc: bool = True

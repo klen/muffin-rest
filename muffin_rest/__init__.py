@@ -12,6 +12,9 @@ OFFSET_PARAM = 'offset'
 SORT_PARAM = 'sort'
 
 
-from .api import API            # noqa
-from .endpoint import Endpoint  # noqa
-from .errors import APIError    # noqa
+from .api import API                # noqa
+from .handler import RESTHandler    # noqa
+from .errors import APIError        # noqa
+
+# Just an alias to support legacy style
+Api = API

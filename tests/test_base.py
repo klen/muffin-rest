@@ -45,9 +45,9 @@ async def test_api(app, client):
 
 async def test_endpoints(api, client):
 
-    from muffin_rest import Endpoint
+    from muffin_rest import RESTHandler
 
-    assert Endpoint
+    assert RESTHandler
 
     class FakeSchema(ma.Schema):
 
@@ -58,7 +58,7 @@ async def test_endpoints(api, client):
             return data
 
     @api.route('/simple')
-    class Simple(Endpoint):
+    class Simple(RESTHandler):
 
         methods = 'get', 'put'
 
@@ -97,7 +97,7 @@ async def test_endpoints(api, client):
         'error': True, 'message': 'No permission -- see authorization schemes'}
 
     @api.route('/simple2')
-    class Simple2(Endpoint):
+    class Simple2(RESTHandler):
 
         class Meta:
             sorting = 'test',
@@ -109,7 +109,7 @@ async def test_endpoints(api, client):
     source = [1, 2, 3]
 
     @api.route
-    class Source(Endpoint):
+    class Source(RESTHandler):
 
         class Meta:
             filters = 'val',
@@ -136,7 +136,7 @@ async def test_endpoints(api, client):
         async def remove(self, request, resource=None):
             source.remove(source[int(resource)])
 
-        @Endpoint.route('/source/custom', methods='get')
+        @RESTHandler.route('/source/custom', methods='get')
         async def custom(self, request, resource=None):
             return 'source: custom'
 
@@ -195,12 +195,12 @@ async def test_endpoints(api, client):
 
 
 async def test_endpoints_with_schema(api, client):
-    from muffin_rest import Endpoint
+    from muffin_rest import RESTHandler
 
     pets = []
 
     @api.route('/pets', '/pets/{pet}')
-    class Pet(Endpoint):
+    class Pet(RESTHandler):
 
         methods = 'get', 'post'
 
@@ -234,7 +234,7 @@ async def test_endpoints_with_schema(api, client):
 
 
 async def test_apispec(api, client):
-    from muffin_rest import Endpoint
+    from muffin_rest import RESTHandler
 
     @api.authorization
     async def authorization(request):
@@ -261,7 +261,7 @@ async def test_apispec(api, client):
         return 'TOKEN'
 
     @api.route('/pets', '/pets/{pet}')
-    class Pet(Endpoint):
+    class Pet(RESTHandler):
 
         methods = 'get', 'post'
 

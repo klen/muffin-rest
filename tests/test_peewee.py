@@ -4,7 +4,7 @@ from muffin_peewee import Plugin as Peewee, JSONField
 
 async def test_base(app, client):
     from muffin_rest import API
-    from muffin_rest.peewee import PeeweeEndpoint
+    from muffin_rest.peewee import PWRESTHandler
 
     db = Peewee(app, connection='sqlite+async:///:memory:', manage_connections=False)
     api = API(app, '/api')
@@ -19,7 +19,7 @@ async def test_base(app, client):
     await db.conftest()
 
     @api.route
-    class ResourceEndpoint(PeeweeEndpoint):
+    class ResourceEndpoint(PWRESTHandler):
 
         class Meta:
             filters = 'active', 'name', ('oid', 'id'),
@@ -27,7 +27,7 @@ async def test_base(app, client):
             model = Resource
             sorting = 'name', Resource.count
 
-        @PeeweeEndpoint.route('/resource/action')
+        @PWRESTHandler.route('/resource/action')
         async def action(self, request, resource=None):
             """Description for the action."""
             return await self.dump(request, list(self.collection))

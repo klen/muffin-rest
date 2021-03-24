@@ -12,9 +12,9 @@ class PeeweeOpenAPIMixin(OpenAPIMixin):
     """Render openapi."""
 
     if t.TYPE_CHECKING:
-        from . import PeeweeEndpointOpts
+        from . import PWRESTOptions
 
-        meta: PeeweeEndpointOpts
+        meta: PWRESTOptions
 
     @classmethod
     def openapi(cls, route: Route, spec: APISpec) -> t.Dict:

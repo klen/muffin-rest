@@ -6,7 +6,7 @@ from muffin_databases import Plugin as DB
 @pytest.mark.parametrize('aiolib', ['asyncio'])
 async def test_base(app, client):
     from muffin_rest import API
-    from muffin_rest.sqlalchemy import SAEndpoint
+    from muffin_rest.sqlalchemy import SARESTHandler
 
     db = DB(app, url='sqlite:///:memory:', params={'force_rollback': True})
     api = API(app, '/api')
@@ -31,7 +31,7 @@ async def test_base(app, client):
     )
 
     @api.route
-    class ResourceEndpoint(SAEndpoint):
+    class ResourceEndpoint(SARESTHandler):
 
         class Meta:
             database = db
@@ -40,7 +40,7 @@ async def test_base(app, client):
             sorting = 'name', 'count'
             table = Resource
 
-        @SAEndpoint.route('/resource/action')
+        @SARESTHandler.route('/resource/action')
         async def action(self, request, resource=None):
             rows = await self.meta.database.fetch_all(self.collection)
             return await self.dump(request, rows)

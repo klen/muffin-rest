@@ -7,7 +7,7 @@ import marshmallow as ma
 import muffin
 from motor import motor_asyncio as motor
 
-from ..endpoint import Endpoint, EndpointOpts
+from ..handler import RESTHandler, RESTOptions
 from ..errors import APIError
 from ..filters import Filter, Filters
 from .schema import MongoSchema
@@ -42,7 +42,7 @@ class MongoFilters(Filters):
     FILTER_CLASS = MongoFilter
 
 
-class MongoEndpointOpts(EndpointOpts):
+class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
 
     aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
@@ -55,19 +55,19 @@ class MongoEndpointOpts(EndpointOpts):
     def setup(self, cls):
         """Prepare meta options."""
         if not self.collection:
-            raise ValueError("'MongoEndpoint.Meta.collection' is required")
+            raise ValueError("'MongoRESTHandler.Meta.collection' is required")
 
-        super(MongoEndpointOpts, self).setup(cls)
+        super(MongoRESTOptions, self).setup(cls)
 
 
-class MongoEndpoint(Endpoint):
+class MongoRESTHandler(RESTHandler):
     """Support Mongo DB."""
 
-    meta: MongoEndpointOpts
-    meta_class: t.Type[MongoEndpointOpts] = MongoEndpointOpts
+    meta: MongoRESTOptions
+    meta_class: t.Type[MongoRESTOptions] = MongoRESTOptions
 
     class Meta:
-        """Tune mongo endpoints."""
+        """Tune the handler."""
 
         abc = True
 
