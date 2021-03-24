@@ -75,6 +75,7 @@ class RESTHandlerMeta(HandlerMeta):
 
     def __new__(mcs, name, bases, params):
         """Prepare options for the handler."""
+        params.setdefault('Meta', type("Meta", (object,), {})) # Every handler has uniq meta
         cls = super().__new__(mcs, name, bases, params)
         if not getattr(cls.Meta, 'abc', False):
             cls.meta = cls.meta_class(cls)

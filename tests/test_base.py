@@ -2,6 +2,15 @@ import pytest
 import marshmallow as ma
 
 
+class FakeSchema(ma.Schema):
+
+    def dump(self, data, **kwargs):
+        return data
+
+    def load(self, data, **kwargs):
+        return data
+
+
 @pytest.fixture
 def api(app):
     from muffin_rest import API
@@ -34,6 +43,9 @@ async def test_api(app, client):
     res = await client.get('/api')
     assert res.status_code == 404
 
+
+async def test_api_methods(api, client):
+
     @api.route('/simple')
     async def simple_endpoint(request):
         return {'data': 'simple'}
@@ -43,19 +55,10 @@ async def test_api(app, client):
     assert await res.json() == {'data': 'simple'}
 
 
-async def test_endpoints(api, client):
-
+async def test_handler(api, client):
     from muffin_rest import RESTHandler
 
     assert RESTHandler
-
-    class FakeSchema(ma.Schema):
-
-        def dump(self, data, **kwargs):
-            return data
-
-        def load(self, data, **kwargs):
-            return data
 
     @api.route('/simple')
     class Simple(RESTHandler):
@@ -63,6 +66,7 @@ async def test_endpoints(api, client):
         methods = 'get', 'put'
 
         class Meta:
+            sorting = 'test',
             schema_base = FakeSchema
 
         async def prepare_collection(self, request):
@@ -72,7 +76,7 @@ async def test_endpoints(api, client):
     assert Simple.meta.name == 'simple'
     assert Simple.meta.limit == 0
     assert Simple.meta.filters
-    assert Simple.meta.sorting == {}
+    assert Simple.meta.sorting == {'test': True}
     assert Simple.methods == {'GET', 'PUT'}
     assert api.router.routes()[2].methods == Simple.methods
     assert Simple.meta.Schema
@@ -96,15 +100,9 @@ async def test_endpoints(api, client):
     assert await res.json() == {
         'error': True, 'message': 'No permission -- see authorization schemes'}
 
-    @api.route('/simple2')
-    class Simple2(RESTHandler):
 
-        class Meta:
-            sorting = 'test',
-            Schema = FakeSchema
-
-    assert Simple2.methods == {'POST', 'PUT', 'GET', 'DELETE'}
-    assert Simple2.meta.sorting == {'test': True}
+async def test_handler2(api, client):
+    from muffin_rest import RESTHandler
 
     source = [1, 2, 3]
 
@@ -194,7 +192,7 @@ async def test_endpoints(api, client):
     assert res.status_code == 405
 
 
-async def test_endpoints_with_schema(api, client):
+async def test_handlers_with_schema(api, client):
     from muffin_rest import RESTHandler
 
     pets = []
@@ -231,6 +229,15 @@ async def test_endpoints_with_schema(api, client):
     assert res.status_code == 200
     json = await res.json()
     assert json == [{'name': 'muffin'}]
+
+
+async def test_handler_without_meta(api, client):
+    from muffin_rest import RESTHandler
+
+    class Resource(RESTHandler):
+        pass
+
+    assert Resource.meta.name
 
 
 async def test_apispec(api, client):
