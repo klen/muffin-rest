@@ -88,9 +88,10 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
     """Load/save resources."""
 
     if t.TYPE_CHECKING:
+        auth: t.Any
         collection: t.Any
-        resource: t.Any
         meta: RESTOptions
+        resource: t.Any
 
     meta_class: t.Type[RESTOptions] = RESTOptions
     _api: t.Optional[API] = None
@@ -143,7 +144,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
     async def __call__(self, request: Request, *args, __meth__: str = None, **options) -> t.Any:
         """Dispatch the given request by HTTP method."""
         method = getattr(self, __meth__ or request.method.lower())
-        await self.authorize(request)
+        self.auth = await self.authorize(request)
         self.collection = await self.prepare_collection(request)
         resource = await self.prepare_resource(request)
         if resource or request.method != 'GET':
@@ -232,6 +233,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         auth = await self.api.authorize(request)
         if not auth:
             raise APIError.UNAUTHORIZED()
+        return auth
 
     async def get_schema(self, request: Request, resource=None) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
