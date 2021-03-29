@@ -21,7 +21,7 @@ from .openapi import PeeweeOpenAPIMixin
 MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 
 
-class PeeweeFilter(Filter):
+class PWFilter(Filter):
     """Support Peewee."""
 
     operators = Filter.operators
@@ -39,7 +39,7 @@ class PeeweeFilter(Filter):
     def __init__(self, name: str, attr: str = None,
                  field: ma.fields.Field = None, mfield: pw.Field = None):
         """Support custom model fields."""
-        super(PeeweeFilter, self).__init__(name, attr, field)
+        super(PWFilter, self).__init__(name, attr, field)
         self.mfield = mfield
 
     def apply(self, collection: pw.Query, ops: t.Tuple[t.Tuple[t.Callable, t.Any], ...],
@@ -52,10 +52,10 @@ class PeeweeFilter(Filter):
         return collection
 
 
-class PeeweeFilters(Filters):
+class PWFilters(Filters):
     """Bind Peewee filter class."""
 
-    FILTER_CLASS = PeeweeFilter
+    FILTER_CLASS = PWFilter
 
 
 class PWRESTOptions(RESTOptions):
@@ -104,7 +104,7 @@ class PWRESTBase(RESTBase):
 
         abc: bool = True
 
-        filters_cls = PeeweeFilters
+        filters_cls = PWFilters
 
         # Peewee options
         model = None
