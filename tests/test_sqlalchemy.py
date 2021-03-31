@@ -136,6 +136,11 @@ async def test_base(app, client):
     json = await res.json()
     assert len(json) == 2
 
+    res = await client.get('/api/resource?where={"oid": {"$in": [2, 4]}}')
+    assert res.status_code == 200
+    json = await res.json()
+    assert [d['id'] for d in json] == [2, 4]
+
     res = await client.get('/api/resource?where={"name": {"$starts": "test"}}')
     assert res.status_code == 200
     json = await res.json()

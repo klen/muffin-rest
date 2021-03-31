@@ -62,7 +62,7 @@ class SAFilter(Filter):
     """Custom filter for sqlalchemy."""
 
     operators = Filter.operators
-    operators['$between'] = lambda f, v: f.between(*v)
+    operators['$between'] = lambda c, v: c.between(*v)
     operators['$ends'] = lambda c, v: c.endswith(v)
     operators['$ilike'] = lambda c, v: c.ilike(v)
     operators['$in'] = lambda c, v: c.in_(v)
@@ -84,7 +84,9 @@ class SAFilter(Filter):
     def apply(self, collection: sa.sql.Select, ops: t.Tuple[t.Tuple[t.Callable, t.Any], ...],
               handler: SARESTHandler = None, **kwargs) -> sa.sql.Select:
         """Apply the filters to SQLAlchemy Select."""
-        column = (self.column or handler and handler.meta.table.c.get(self.field.attribute))
+        column = self.column
+        if column is None and handler:
+            column = handler.meta.table.c.get(self.field.attribute or self.field.name)
         if ops and column is not None:
             collection = collection.where(*[op(column, val) for op, val in ops])
 

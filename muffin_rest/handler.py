@@ -158,7 +158,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
                 _, self.collection = self.meta.filters.filter(data, self.collection, handler=self)
 
             except (ValueError, TypeError):
-                self.api.logger.warning('Invalid filters data: request.url')
+                self.api.logger.warning(f'Invalid filters data: { request.url }')
 
         # Sort resources
         if SORT_PARAM in request.url.query:
