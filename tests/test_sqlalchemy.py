@@ -1,9 +1,11 @@
+import datetime as dt
+
 import pytest
 import sqlalchemy as sa
 from muffin_databases import Plugin as DB
 
 
-@pytest.mark.parametrize('aiolib', ['asyncio'])
+@pytest.mark.parametrize('aiolib', [('asyncio', {'use_uvloop': False})])
 async def test_base(app, client):
     from muffin_rest import API
     from muffin_rest.sqlalchemy import SARESTHandler
@@ -17,17 +19,19 @@ async def test_base(app, client):
     Resource = sa.Table(
         'resource', meta,
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('active', sa.Boolean, default=False, nullable=False),
+        sa.Column('active', sa.Boolean, server_default='0', nullable=False),
         sa.Column('name', sa.String, nullable=False),
+        sa.Column('created', sa.DateTime, server_default=sa.func.datetime(), nullable=False),
         sa.Column('count', sa.Integer),
     )
 
     await db.execute(
-        'create table resource ('
-        'id integer primary key,'
-        'active integer default 0,'
-        'name varchar(256) not null,'
-        'count integer)'
+        "create table resource ("
+        "id integer primary key,"
+        "active integer default 0,"
+        "name varchar(256) not null,"
+        "created timestamp default (datetime('now')),"
+        "count integer)"
     )
 
     @api.route
@@ -67,12 +71,13 @@ async def test_base(app, client):
 
     res = await client.get('/api/resource/1')
     assert res.status_code == 200
-    assert await res.json() == {
-        'active': None,
-        'count': None,
-        'id': 1,
-        'name': 'test',
-    }
+    json = await res.json()
+    assert json
+    assert json['active'] == False
+    assert json['count'] == None
+    assert json['created']
+    assert json['id'] == 1
+    assert json['name'] == 'test'
 
     res = await client.get('/api/resource/unknown')
     assert res.status_code == 404

@@ -23,6 +23,31 @@ ModelConverter._get_field_name = lambda s, prop_or_column: str(prop_or_column.ke
 class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
     """Allow partial updates for tables."""
 
+    @ma.pre_load
+    def fill_defaults(self, data, partial=False, **kwargs):
+        """Insert default params for SQLAlchemy because databases don't.
+
+        https://github.com/encode/databases/issues/72
+        """
+        cols_to_fields = {
+            f.attribute or f.name: f for f in self.declared_fields.values()}
+        if not partial:
+            for column in self.opts.table.columns:
+                field = cols_to_fields.get(column.name)
+                if not field:
+                    continue
+
+                data_key = field.data_key or field.name
+                if data_key not in data and column.default is not None:
+                    value = column.default.arg
+                    if callable(value):
+                        value = value(column)
+
+                    data[data_key] = field._serialize(value, field.attribute or field.name, None)
+
+        return data
+
+
     @ma.post_load
     def make_instance(self, data, **kwargs):
         """Update a table instance."""
