@@ -1,4 +1,6 @@
-"""To run the example you have to install:
+"""Muffin-Rest example for SQLAlchemy ORM.
+
+To run the example you have to install:
 
     $ pip install muffin-rest[sqlalchemy] uvicorn
 
