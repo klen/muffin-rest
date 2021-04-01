@@ -61,7 +61,11 @@ class PWFilters(Filters):
 class PWRESTOptions(RESTOptions):
     """Support Peewee."""
 
-    noninherited = {'name', 'name_id', 'Schema', 'model', 'model_pk'}
+    # Base filters class
+    filters_cls: t.Type[PWFilters] = PWFilters
+
+    # Schema auto generation params
+    schema_base: t.Type[ModelSchema] = ModelSchema
 
     if t.TYPE_CHECKING:
         model: pw.Model
@@ -104,14 +108,9 @@ class PWRESTBase(RESTBase):
 
         abc: bool = True
 
-        filters_cls = PWFilters
-
         # Peewee options
         model = None
         model_pk = None
-
-        # Schema auto generation params
-        schema_base = ModelSchema
 
     async def prepare_collection(self, request: muffin.Request) -> pw.Query:
         """Initialize Peeewee QuerySet for a binded to the resource model."""

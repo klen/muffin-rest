@@ -27,9 +27,20 @@ class RESTOptions:
     name: str = ''
     name_id: str = ''
 
+    # limit: Paginate results (set to None for disable pagination)
+    limit: int = 0
+
+    # Base class for filters
+    filters_cls: t.Type[Filters] = Filters
+
+    # Auto generation for schemas
+    schema_base: t.Type[ma.Schema] = ma.Schema
+    schema_fields: t.Dict = {}
+    schema_meta: t.Dict = {}
+    schema_unknown: str = ma.EXCLUDE
+
     if t.TYPE_CHECKING:
         filters: Filters
-        limit: int = 0
         sorting: t.Dict[str, bool] = {}
         Schema: t.Type[ma.Schema]
 
@@ -75,7 +86,7 @@ class RESTHandlerMeta(HandlerMeta):
 
     def __new__(mcs, name, bases, params):
         """Prepare options for the handler."""
-        params.setdefault('Meta', type("Meta", (object,), {})) # Every handler has uniq meta
+        params.setdefault('Meta', type("Meta", (object,), {}))  # Every handler has uniq meta
         cls = super().__new__(mcs, name, bases, params)
         if not getattr(cls.Meta, 'abc', False):
             cls.meta = cls.meta_class(cls)
@@ -99,27 +110,15 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
     class Meta:
         """Tune the handler."""
 
-        abc: bool = True                        # The class is abstract, meta wouldn't be generated
-
-        name: str = ''                          # Resource's name
-        name_id: str = ''                       # Resource ID's name
-
-        # limit: Paginate results (set to None for disable pagination)
-        limit: int = 0
+        abc: bool = True  # The class is abstract, meta wouldn't be generated
 
         # Resource filters
         filters: t.Sequence[t.Union[str, t.Tuple[str, str], Filter]] = ()
-        filters_cls: t.Type[Filters] = Filters
 
         # Define allowed resource sorting params
         sorting: t.Union[t.Dict[str, bool], t.Sequence[t.Union[str, t.Tuple[str, bool]]]] = {}
 
-        # Auto generation for schemas
-        schema_base: t.Type[ma.Schema] = ma.Schema
-        schema_fields: t.Dict = {}
-        schema_meta: t.Dict = {}
-        schema_unknown: str = ma.EXCLUDE
-
+        # Serialize/Deserialize Schema class
         Schema: t.Optional[t.Type[ma.Schema]] = None
 
     @classmethod

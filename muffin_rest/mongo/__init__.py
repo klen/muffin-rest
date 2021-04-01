@@ -45,8 +45,11 @@ class MongoFilters(Filters):
 class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
 
+    filters_cls: t.Type[MongoFilters] = MongoFilters
+    schema_base: t.Type[MongoSchema] = MongoSchema
+
     aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
-    collection_id: str = ''
+    collection_id: str = '_id'
 
     if t.TYPE_CHECKING:
         Schema: t.Type[MongoSchema]
@@ -71,15 +74,9 @@ class MongoRESTHandler(RESTHandler):
 
         abc = True
 
-        filters_cls = MongoFilters
-
         # Mongo options
         collection: t.Optional[motor.AsyncIOMotorCollection] = None
-        collection_id = '_id'
         aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
-
-        schema_base = MongoSchema
-        schema_fields = None
 
     async def prepare_collection(self, request: muffin.Request) -> MongoChain:
         """Initialize Peeewee QuerySet for a binded to the resource model."""

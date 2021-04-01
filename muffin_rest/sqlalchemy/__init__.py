@@ -47,7 +47,6 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
 
         return data
 
-
     @ma.post_load
     def make_instance(self, data, **kwargs):
         """Update a table instance."""
@@ -102,6 +101,12 @@ class SAFilters(Filters):
 class SARESTOptions(RESTOptions):
     """Support SQLAlchemy Core."""
 
+    # Base filters class
+    filters_cls: t.Type[SAFilters] = SAFilters
+
+    # Schema auto generation params
+    schema_base: t.Type[SQLAlchemyAutoSchema] = SQLAlchemyAutoSchema
+
     if t.TYPE_CHECKING:
         table: sa.Table
         table_pk: sa.Column
@@ -147,15 +152,10 @@ class SARESTHandler(RESTHandler):
 
         abc = True
 
-        filters_cls = SAFilters
-
         # Sqlalchemy options
         table = None
         table_pk = None
         database = None
-
-        # Schema auto generation params
-        schema_base = SQLAlchemyAutoSchema
 
     async def prepare_collection(self, request: muffin.Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""

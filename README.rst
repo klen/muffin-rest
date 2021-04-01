@@ -16,6 +16,10 @@ Muffin-REST
     :target: https://pypi.org/project/muffin-rest/
     :alt: PYPI Version
 
+.. image:: https://img.shields.io/pypi/pyversions/muffin-rest
+    :target: https://pypi.org/project/muffin-rest/
+    :alt: Python Versions
+
 ----------
 
 .. _features:
