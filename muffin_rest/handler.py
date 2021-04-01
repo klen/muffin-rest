@@ -101,9 +101,9 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
     if t.TYPE_CHECKING:
         auth: t.Any
         collection: t.Any
-        meta: RESTOptions
         resource: t.Any
 
+    meta: RESTOptions
     meta_class: t.Type[RESTOptions] = RESTOptions
     _api: t.Optional[API] = None
 
