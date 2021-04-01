@@ -50,6 +50,18 @@ Installation
 
     pip install muffin-rest
 
+With `SQLAlchemy Core`_ support: ::
+
+    pip install muffin-rest[sqlalchemy]
+
+With `Peewee ORM`_ support: ::
+
+    pip install muffin-rest[peewee]
+
+With YAML support for autodocumentation: ::
+
+    pip install muffin-rest[yaml]
+
 .. _usage:
 
 Usage
