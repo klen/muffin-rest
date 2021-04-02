@@ -30,8 +30,7 @@ class MongoFilter(Filter):
         '$ends': lambda n, v: ('$regex', f"{ v }$"),
     }
 
-    def apply(self, collection: MongoChain,
-              ops: t.Tuple[t.Tuple[t.Callable, t.Any]], **kwargs) -> MongoChain:
+    def apply(self, collection: MongoChain, *ops: t.Tuple[t.Callable, t.Any], **kwargs) -> MongoChain:
         """Filter mongo."""
         return collection.find({self.attr: dict(op(self.name, v) for op, v in ops)})
 

@@ -80,16 +80,21 @@ class SAFilter(Filter):
         super().__init__(name, attr, field)
         self.column = column
 
-    def apply(self, collection: sa.sql.Select, ops: t.Tuple[t.Tuple[t.Callable, t.Any], ...],
+    def apply(self, collection: sa.sql.Select, *ops: t.Tuple[t.Callable, t.Any],
               handler: SARESTHandler = None, **kwargs) -> sa.sql.Select:
         """Apply the filters to SQLAlchemy Select."""
         column = self.column
         if column is None and handler:
             column = handler.meta.table.c.get(self.field.attribute or self.field.name)
+
         if ops and column is not None:
-            collection = collection.where(*[op(column, val) for op, val in ops])
+            return self.query(collection, column, *ops, **kwargs)
 
         return collection
+
+    def query(self, select: sa.sql.Select, column: sa.Column, *ops, **kwargs) -> sa.sql.Select:
+        """Filter a select."""
+        return select.where(*[op(column, val) for op, val in ops])
 
 
 class SAFilters(Filters):

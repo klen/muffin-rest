@@ -54,7 +54,7 @@ class Filter:
         except ma.ValidationError:
             return None, collection
 
-        collection = self.apply(collection, ops, **kwargs)
+        collection = self.apply(collection, *ops, **kwargs)
         return ops, collection
 
     def parse(self, data: t.Mapping) -> t.Tuple[t.Tuple[t.Callable, t.Any], ...]:
@@ -71,7 +71,7 @@ class Filter:
             for (op, val) in val.items() if op in self.operators
         )
 
-    def apply(self, collection, ops, **kwargs):
+    def apply(self, collection, *ops: t.Tuple[t.Callable, t.Any], **kwargs):
         """Apply the filter to collection."""
         validator = lambda obj: all(op(get_value(obj, self.name), val) for (op, val) in ops)  # noqa
         return [o for o in collection if validator(o)]
