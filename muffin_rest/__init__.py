@@ -18,3 +18,21 @@ from .errors import APIError        # noqa
 
 # Just an alias to support legacy style
 Api = API
+
+
+try:
+    from .peewee import PWRESTHandler, PWFilter
+except ImportError:
+    pass
+
+
+try:
+    from .sqlalchemy import SARESTHandler, SAFilter
+except ImportError:
+    pass
+
+
+try:
+    from .mongo import MongoRESTHandler, MongoFilter
+except ImportError:
+    pass
