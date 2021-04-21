@@ -4,7 +4,7 @@ import typing as t
 from http import HTTPStatus
 
 from muffin import ResponseError
-from muffin._types import JSONType
+from muffin.typing import JSONType
 
 
 class APIError(ResponseError):
