@@ -94,12 +94,12 @@ def route_to_spec(route: Route, spec: APISpec) -> t.Dict:
         for param in route.params:
             results['parameters'].append({'in': 'path', 'name': param})
 
-    target = route.target
+    target = t.cast(t.Callable, route.target)
     if isinstance(target, partial):
         target = target.func
 
     if hasattr(target, 'openapi'):
-        results['operations'] = target.openapi(route, spec)
+        results['operations'] = target.openapi(route, spec) # type: ignore
         return results
 
     summary, desc, schema = parse_docs(target)
