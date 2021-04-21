@@ -9,7 +9,7 @@ import typing as t
 import marshmallow as ma
 from asgi_tools.response import parse_response
 from muffin import Request
-from muffin._types import JSONType
+from muffin.typing import JSONType
 from muffin.handler import Handler, HandlerMeta
 
 from . import FILTERS_PARAM, LIMIT_PARAM, OFFSET_PARAM, SORT_PARAM, openapi

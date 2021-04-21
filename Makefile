@@ -41,16 +41,6 @@ patch:
 major:
 	make release VERSION=major
 
-# ===============
-#  Build package
-# ===============
-
-.PHONY: upload
-# target: upload - Upload module on PyPi
-upload: clean $(VIRTUAL_ENV)
-	@$(VIRTUAL_ENV)/bin/python setup.py bdist_wheel
-	@$(VIRTUAL_ENV)/bin/twine upload dist/* || true
-
 # =============
 #  Development
 # =============

@@ -10,7 +10,7 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from http_router.routes import DynamicRoute, Route
 from asgi_tools.response import CAST_RESPONSE
 from muffin import Response
-from muffin._types import JSONType
+from muffin.typing import JSONType
 
 from . import FILTERS_PARAM, LIMIT_PARAM, OFFSET_PARAM, SORT_PARAM, openapi
 
@@ -117,7 +117,7 @@ def route_to_spec(route: Route, spec: APISpec) -> t.Dict:
 
 def route_to_methods(route: Route) -> t.List[str]:
     """Get sorted methods from the route."""
-    methods = [m for m in HTTP_METHODS if m in route.methods]
+    methods = [m for m in HTTP_METHODS if m in (route.methods or [])]
     return [m.lower() for m in methods or DEFAULT_METHODS]
 
 

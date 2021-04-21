@@ -8,7 +8,7 @@ import marshmallow as ma
 import muffin
 import sqlalchemy as sa
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSchema, ModelConverter
-from muffin._types import JSONType
+from muffin.typing import JSONType
 from muffin_databases import Plugin as DB
 
 from ..handler import RESTHandler, RESTOptions
