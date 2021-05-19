@@ -30,8 +30,10 @@ class Filter:
     list_ops = ['$in', '<<']
 
     field_cls: t.Type[ma.fields.Field] = ma.fields.Raw
+    default_operator: str = '$eq'
 
-    def __init__(self, name: str, attr: str = None, field: ma.fields.Field = None):
+    def __init__(self, name: str, *, attr: str = None,
+                 field: ma.fields.Field = None, operator: str = None):
         """Initialize filter.
 
         :param name: The filter's name
@@ -42,6 +44,8 @@ class Filter:
         self.name = name
         self.attr = attr or name
         self.field = field or self.field_cls(attribute=self.attr)
+        if operator:
+            self.default_operator = operator
 
     def __repr__(self) -> str:
         """Represent self as a string."""
@@ -61,7 +65,7 @@ class Filter:
         """Parse operator and value from filter's data."""
         val = data.get(self.name, ma.missing)
         if not isinstance(val, dict):
-            return (self.operators['$eq'], self.field.deserialize(val)),
+            return (self.operators[self.default_operator], self.field.deserialize(val)),
 
         return tuple(
             (
