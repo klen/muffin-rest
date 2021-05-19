@@ -74,10 +74,9 @@ class SAFilter(Filter):
 
     list_ops = Filter.list_ops + ['$between']
 
-    def __init__(self, name: str, attr: str = None,
-                 field: ma.fields.Field = None, column: sa.Column = None):
+    def __init__(self, name: str, *, column: sa.Column = None, **kwargs):
         """Support custom model fields."""
-        super().__init__(name, attr, field)
+        super().__init__(name, **kwargs)
         self.column = column
 
     def apply(self, collection: sa.sql.Select, *ops: t.Tuple[t.Callable, t.Any],

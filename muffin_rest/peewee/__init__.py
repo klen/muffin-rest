@@ -28,6 +28,7 @@ class PWFilter(Filter):
     operators['$in'] = lambda f, v: f << v
     operators['$none'] = lambda f, v: f >> v
     operators['$like'] = lambda f, v: f % v
+    operators['$ilike'] = lambda f, v: f ** v
     operators['$contains'] = lambda f, v: f.contains(v)
     operators['$starts'] = lambda f, v: f.startswith(v)
     operators['$ends'] = lambda f, v: f.endswith(v)
@@ -36,10 +37,9 @@ class PWFilter(Filter):
 
     list_ops = Filter.list_ops + ['$between']
 
-    def __init__(self, name: str, attr: str = None,
-                 field: ma.fields.Field = None, pw_field: pw.Field = None):
+    def __init__(self, name: str, *, pw_field: pw.Field = None, **kwargs):
         """Support custom model fields."""
-        super(PWFilter, self).__init__(name, attr, field)
+        super(PWFilter, self).__init__(name, **kwargs)
         self.pw_field = pw_field
 
     def apply(self, collection: pw.Query, *ops: t.Tuple[t.Callable, t.Any],
