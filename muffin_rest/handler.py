@@ -129,10 +129,9 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
             router.bind(cls, *paths, methods=methods, **params)
 
         else:
-            router.bind(cls, f"/{ cls.meta.name }",
-                        methods=methods & {'GET', 'POST', 'DELETE'}, **params)
+            router.bind(cls, f"/{ cls.meta.name }", methods=methods, **params)
             router.bind(cls, f"/{ cls.meta.name }/{{{ cls.meta.name_id }}}",
-                        methods=methods & {'GET', 'PUT', 'DELETE'}, **params)
+                        methods=methods, **params)
 
         for _, method in inspect.getmembers(cls, lambda m: hasattr(m, '__route__')):
             cpaths, cparams = method.__route__

@@ -240,6 +240,27 @@ async def test_handler_without_meta(api, client):
     assert Resource.meta.name
 
 
+async def test_handler_with_path(api, client):
+    from muffin_rest import RESTHandler
+
+    @api.route
+    class Simple(RESTHandler):
+
+        methods = 'get', 'patch'
+
+        async def prepare_collection(self, request):
+            return [1, 2, 3, 4]
+
+        async def patch(self, request, **kwargs):
+            return True
+
+    res = await client.get('/api/simple')
+    assert res.status_code == 200
+
+    res = await client.patch('/api/simple')
+    assert res.status_code == 200
+
+
 async def test_apispec(api, client):
     from muffin_rest import RESTHandler
 
