@@ -192,6 +192,25 @@ async def test_handler2(api, client):
     assert res.status_code == 405
 
 
+async def test_bad_request(api, client):
+    from muffin_rest import RESTHandler
+
+    @api.route('/simple')
+    class Simple(RESTHandler):
+
+        methods = 'get', 'post'
+
+        async def prepare_collection(self, request):
+            return f'SIMPLE {request.method}'
+
+        async def save(self, request, resource=None):
+            pass
+
+    res = await client.post(
+        '/api/simple', data='invalid', headers={'content-type': 'application/json'})
+    assert res.status_code == 400
+
+
 async def test_handlers_with_schema(api, client):
     from muffin_rest import RESTHandler
 

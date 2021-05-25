@@ -189,6 +189,13 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
         return response
 
+    @property
+    def api(self) -> API:
+        """Check if the handler is binded to an API."""
+        if self._api is None:
+            raise Exception('The handler is not routed by any API')  # TODO
+        return self._api
+
     @abc.abstractmethod
     async def prepare_collection(self, request: Request) -> t.Any:
         """Prepare a collection of resources. Create queryset, db cursor and etc."""
@@ -199,10 +206,6 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
                        offset: int = 0) -> t.Tuple[t.Any, int]:
         """Paginate the results."""
         raise NotImplementedError
-
-    def paginate_prepare_headers(self, limit, offset, total):
-        """Prepare pagination headers."""
-        return {'x-total': total, 'x-limit': limit, 'x-offset': offset}
 
     @abc.abstractmethod
     async def save(self, request: Request, *, resource: T = None) -> T:
@@ -219,12 +222,13 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         """Remove the given resource."""
         raise NotImplementedError
 
-    @property
-    def api(self) -> API:
-        """Check if the handler is binded to an API."""
-        if self._api is None:
-            raise Exception('The handler is not routed by any API')  # TODO
-        return self._api
+    async def prepare_resource(self, request: Request) -> t.Any:
+        """Load a resource."""
+        return request['path_params'].get(self.meta.name_id)
+
+    def paginate_prepare_headers(self, limit, offset, total):
+        """Prepare pagination headers."""
+        return {'x-total': total, 'x-limit': limit, 'x-offset': offset}
 
     async def authorize(self, request: Request):
         """Default authorization method. Proxy auth to self.api."""
@@ -240,6 +244,27 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
             only=request.url.query.get('schema_only'),
             exclude=request.url.query.get('schema_exclude', ()),
         )
+
+    async def parse(self, request: Request):
+        """Parse data from the given request."""
+        try:
+            return await request.data(raise_errors=True)
+        except (ValueError, TypeError) as exc:
+            raise APIError.BAD_REQUEST(str(exc))
+
+    async def load(self, request: Request, *, resource: t.Any = None) -> t.Any:
+        """Load data from request and create/update a resource."""
+        data = await self.parse(request)
+        schema = await self.get_schema(request, resource=resource)
+        if not schema:
+            return data
+
+        try:
+            resource = schema.load(data, partial=resource is not None, many=isinstance(data, list))  # type: ignore # noqa
+        except ma.ValidationError as exc:
+            raise APIError.BAD_REQUEST('Invalid data', errors=exc.messages)
+
+        return resource
 
     async def dump(self, request: Request, response: t.Any, *, many=...) -> JSONType:
         """Serialize the given response."""
@@ -281,28 +306,6 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
             raise APIError.NOT_FOUND()
 
         return await self.remove(request, resource=resource)
-
-    async def prepare_resource(self, request: Request) -> t.Any:
-        """Load a resource."""
-        return request['path_params'].get(self.meta.name_id)
-
-    async def load(self, request: Request, *, resource: t.Any = None) -> t.Any:
-        """Load data from request and create/update a resource."""
-        try:
-            data = await request.data()
-        except (ValueError, TypeError) as exc:
-            raise APIError.BAD_REQUEST(str(exc))
-
-        schema = await self.get_schema(request, resource=resource)
-        if not schema:
-            return data
-
-        try:
-            resource = schema.load(data, partial=resource is not None, many=isinstance(data, list))  # type: ignore # noqa
-        except ma.ValidationError as exc:
-            raise APIError.BAD_REQUEST('Invalid data', errors=exc.messages)
-
-        return resource
 
 
 class RESTHandler(RESTBase, openapi.OpenAPIMixin):
