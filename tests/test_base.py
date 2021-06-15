@@ -102,7 +102,7 @@ async def test_handler(api, client):
 
 
 async def test_handler2(api, client):
-    from muffin_rest import RESTHandler
+    from muffin_rest import RESTHandler, APIError
 
     source = [1, 2, 3]
 
@@ -117,13 +117,24 @@ async def test_handler2(api, client):
         async def prepare_collection(self, request):
             return source
 
+        async def prepare_resource(self, request):
+            pk = request['path_params'].get(self.meta.name_id)
+            if not pk:
+                return
+
+            try:
+                return source[int(pk)]
+            except IndexError:
+                raise APIError.NOT_FOUND('Resource not found')
+
         async def paginate(self, request, limit, offset):
             return self.collection[offset: offset + limit], len(source)
 
         async def load(self, request, resource=None):
             data = await super().load(request, resource=resource)
             if resource:
-                source[int(resource)] = data
+                idx = source.index(resource)
+                source[idx] = data
             return data
 
         async def save(self, request, resource=None):
@@ -132,7 +143,7 @@ async def test_handler2(api, client):
             return resource
 
         async def remove(self, request, resource=None):
-            source.remove(source[int(resource)])
+            source.remove(resource)
 
         @RESTHandler.route('/source/custom', methods='get')
         async def custom(self, request, resource=None):
@@ -145,6 +156,16 @@ async def test_handler2(api, client):
     res = await client.get('/api/source')
     assert res.status_code == 200
     assert await res.json() == source
+
+    # Get a resource
+    res = await client.get('/api/source/1')
+    assert res.status_code == 200
+    assert await res.json() == 2
+
+    # Get an unknown resource
+    res = await client.get('/api/source/99')
+    assert res.status_code == 404
+    assert await res.json() == {'error': True, 'message': 'Resource not found'}
 
     # Create a resource
     res = await client.post('/api/source', json=42)

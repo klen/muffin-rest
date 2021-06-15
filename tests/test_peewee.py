@@ -66,6 +66,7 @@ async def test_base(app, client):
 
     res = await client.get('/api/resource/unknown')
     assert res.status_code == 404
+    assert await res.json() == {'error': True, 'message': 'Resource not found'}
 
     res = await client.get('/api/resource/action?custom=123')
     assert res.status_code == 200
