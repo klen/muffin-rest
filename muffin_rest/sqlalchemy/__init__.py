@@ -134,8 +134,24 @@ class SARESTOptions(RESTOptions):
 
         # Setup sorting
         self.sorting = dict(
-            (isinstance(n, sa.Column) and n.name or n, prop)
-            for (n, prop) in self.sorting.items())
+            (sort.name, sort) if isinstance(sort, sa.Column) else (
+                sort, self.table.columns.get(sort))
+            for sort in self.sorting
+        )
+
+        sorting_default = []
+        for sort in (isinstance(self.sorting_default, t.Sequence) and
+                     self.sorting_default or [self.sorting_default]):
+            if isinstance(sort, str):
+                name, desc = sort.strip('-'), sort.startswith('-')
+                sort = self.table.columns.get(name)
+                if sort is not None and desc:
+                    sort = sort.desc()
+
+            if isinstance(sort, sa.Column):
+                sorting_default.append(sort)
+
+        self.sorting_default = sorting_default
 
     def setup_schema_meta(self, cls):
         """Prepare a schema."""
@@ -163,7 +179,10 @@ class SARESTHandler(RESTHandler):
 
     async def prepare_collection(self, request: muffin.Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
-        return self.meta.table.select()
+        qs = self.meta.table.select()
+        if self.meta.sorting_default:
+            qs = qs.order_by(*self.meta.sorting_default)
+        return qs
 
     async def paginate(self, request: muffin.Request, *, limit: int = 0,
                        offset: int = 0) -> t.Tuple[sa.sql.Select, int]:
@@ -235,16 +254,10 @@ class SARESTHandler(RESTHandler):
         """Sort the current collection."""
         order_by = []
         for name, desc in sorting:
-            column = self.meta.table.c.get(name)
-            if column is None:
-                continue
-
+            column = self.meta.sorting.get(name)
             if desc:
                 column = column.desc()  # type: ignore
 
             order_by.append(column)
 
-        if order_by:
-            return self.collection.order_by(*order_by)
-
-        return self.collection
+        return self.collection.order_by(*order_by)

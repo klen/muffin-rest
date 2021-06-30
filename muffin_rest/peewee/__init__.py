@@ -90,8 +90,24 @@ class PWRESTOptions(RESTOptions):
 
         # Setup sorting
         self.sorting = dict(
-            (isinstance(n, pw.Field) and n.name or n, prop)
-            for (n, prop) in self.sorting.items())
+            (sort.name, sort) if isinstance(sort, pw.Field) else (
+                sort, self.model._meta.fields.get(sort))
+            for sort in self.sorting
+        )
+
+        sorting_default = []
+        for sort in (isinstance(self.sorting_default, t.Sequence) and
+                     self.sorting_default or [self.sorting_default]):
+            if isinstance(sort, str):
+                name, desc = sort.strip('-'), sort.startswith('-')
+                sort = self.model._meta.fields.get(name)
+                if sort and desc:
+                    sort = sort.desc()
+
+            if isinstance(sort, pw.Node):
+                sorting_default.append(sort)
+
+        self.sorting_default = sorting_default
 
     def setup_schema_meta(self, cls):
         """Prepare a schema."""
@@ -118,7 +134,11 @@ class PWRESTBase(RESTBase):
 
     async def prepare_collection(self, request: muffin.Request) -> pw.Query:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
-        return self.meta.model.select()
+        qs = self.meta.model.select()
+        if self.meta.sorting_default:
+            qs = qs.order_by(*self.meta.sorting_default)
+
+        return qs
 
     async def prepare_resource(self, request: muffin.Request) -> t.Optional[pw.Model]:
         """Load a resource."""
@@ -137,21 +157,12 @@ class PWRESTBase(RESTBase):
         order_by = []
         for name, desc in sorting:
             field = self.meta.sorting.get(name)
-            if field and not isinstance(field, pw.Field):
-                field = self.meta.model._meta.fields.get(name)
-
-            if field is None:
-                continue
-
             if desc:
                 field = field.desc()  # type: ignore
 
             order_by.append(field)
 
-        if order_by:
-            return self.collection.order_by(*order_by)
-
-        return self.collection
+        return self.collection.order_by(*order_by)
 
     async def paginate(self, request: muffin.Request, *, limit: int = 0,
                        offset: int = 0) -> t.Tuple[pw.Query, int]:

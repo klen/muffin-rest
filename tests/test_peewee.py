@@ -26,6 +26,7 @@ async def test_base(app, client):
             limit = 10
             model = Resource
             sorting = 'name', Resource.count
+            sorting_default = Resource.id.desc(), '-active'
 
         @PWRESTHandler.route('/resource/action')
         async def action(self, request, resource=None):
@@ -187,4 +188,3 @@ async def test_base(app, client):
     assert res.status_code == 200
     json = await res.json()
     assert json
-

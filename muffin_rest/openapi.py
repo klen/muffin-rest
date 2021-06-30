@@ -99,7 +99,7 @@ def route_to_spec(route: Route, spec: APISpec) -> t.Dict:
         target = target.func
 
     if hasattr(target, 'openapi'):
-        results['operations'] = target.openapi(route, spec) # type: ignore
+        results['operations'] = target.openapi(route, spec)  # type: ignore
         return results
 
     summary, desc, schema = parse_docs(target)
@@ -169,7 +169,7 @@ class OpenAPIMixin:
             if method == 'get' and not is_resource_route:
                 operations[method]['parameters'] = []
                 if cls.meta.sorting:
-                    sorting = list(cls.meta.sorting.keys())
+                    sorting = list(cls.meta.sorting)
                     operations[method]['parameters'].append({
                         'name': SORT_PARAM, 'in': 'query', 'style': 'form', 'explode': False,
                         'schema': {'type': 'array', 'items': {'type': 'string', 'enum': sorting}},

@@ -41,7 +41,8 @@ class RESTOptions:
 
     if t.TYPE_CHECKING:
         filters: Filters
-        sorting: t.Dict[str, bool] = {}
+        sorting: t.Dict[str, t.Any]
+        sorting_default: t.Sequence
         Schema: t.Type[ma.Schema]
 
     def __init__(self, cls):
@@ -62,9 +63,12 @@ class RESTOptions:
         self.name_id = self.name_id or self.name
 
         # Setup sorting
+        if not isinstance(self.sorting, set):
+            self.sorting = set(self.sorting)
+
         if not isinstance(self.sorting, dict):
             self.sorting = dict(
-                n if isinstance(n, (list, tuple)) else (n, bool(n)) for n in self.sorting)
+                n if isinstance(n, (list, tuple)) else (n, True) for n in self.sorting)
 
         # Setup schema
         if not self.Schema:
@@ -116,7 +120,8 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         filters: t.Sequence[t.Union[str, t.Tuple[str, str], Filter]] = ()
 
         # Define allowed resource sorting params
-        sorting: t.Union[t.Dict[str, bool], t.Sequence[t.Union[str, t.Tuple[str, bool]]]] = {}
+        sorting: t.Union[t.Dict[str, bool], t.Sequence[t.Union[str, t.Tuple]]] = {}
+        sorting_default: t.Sequence = ()
 
         # Serialize/Deserialize Schema class
         Schema: t.Optional[t.Type[ma.Schema]] = None
@@ -148,8 +153,9 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         if resource or request.method != 'GET':
             return await method(request, resource=resource)
 
+        query = request.url.query
         # Filter the collection
-        filters = request.url.query.get(FILTERS_PARAM)
+        filters = query.get(FILTERS_PARAM)
         if filters:
             try:
                 data = json.loads(filters)
@@ -159,21 +165,19 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
                 self.api.logger.warning(f'Invalid filters data: { request.url }')
 
         # Sort resources
-        if SORT_PARAM in request.url.query:
+        if SORT_PARAM in query:
             sorting = [
-                (name.strip('-'), name.startswith('-'))
-                for name in request.url.query[SORT_PARAM].split(',')
-                if name.strip('-') in self.meta.sorting]
-
+                (sort, desc) for (sort, desc) in to_sort(query[SORT_PARAM].split(','))
+                if self.meta.sorting.get(sort) is not None]
             self.collection = await self.sort(request, *sorting, **options)
 
         # Paginate the collection
         headers = {}
-        limit = request.url.query.get(LIMIT_PARAM) or self.meta.limit
+        limit = query.get(LIMIT_PARAM) or self.meta.limit
         if self.meta.limit and limit:
             try:
                 limit = min(abs(int(limit)), self.meta.limit)
-                offset = int(request.url.query.get(OFFSET_PARAM, 0))
+                offset = int(query.get(OFFSET_PARAM, 0))
                 if limit and offset >= 0:
                     self.collection, total = await self.paginate(
                         request, limit=limit, offset=offset)
@@ -315,3 +319,11 @@ class RESTHandler(RESTBase, openapi.OpenAPIMixin):
         """Tune the handler."""
 
         abc: bool = True                        # The class is abstract, meta wouldn't be generated
+
+
+def to_sort(sort_params: t.Sequence[str]) -> t.Generator[t.Tuple[str, bool], None, None]:
+    """Generate sort params."""
+    for name in sort_params:
+        n, desc = name.strip('-'), name.startswith('-')
+        if n:
+            yield n, desc

@@ -74,6 +74,7 @@ class Pets(PWRESTHandler):
 
         # Avalable sort params
         sorting = 'id', 'name'
+        sorting_default = '-id',
 
         # Available filters
         filters = 'status', 'category'
