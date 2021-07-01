@@ -1,3 +1,5 @@
+"""Setup API for Sqlalchemy tables."""
+
 import random
 import string
 
@@ -63,6 +65,7 @@ class Pets(SARESTHandler):
     """Everything about your Pets."""
 
     class Meta:
+        """Tune the ednpoint."""
 
         # ORM table
         table = Pet
@@ -72,7 +75,7 @@ class Pets(SARESTHandler):
         limit = 10
 
         # Avalable sort params
-        sorting = 'id', 'name'
+        sorting = ('id', {'default': 'desc'}), 'name'
 
         # Available filters
         filters = 'status', 'category'
@@ -108,6 +111,7 @@ class Categories(SARESTHandler):
     methods = 'get', 'post'
 
     class Meta:
+        """Tune the resource."""
 
         # ORM table
         table = Category

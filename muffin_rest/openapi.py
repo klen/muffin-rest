@@ -169,18 +169,10 @@ class OpenAPIMixin:
             if method == 'get' and not is_resource_route:
                 operations[method]['parameters'] = []
                 if cls.meta.sorting:
-                    sorting = list(cls.meta.sorting)
-                    operations[method]['parameters'].append({
-                        'name': SORT_PARAM, 'in': 'query', 'style': 'form', 'explode': False,
-                        'schema': {'type': 'array', 'items': {'type': 'string', 'enum': sorting}},
-                        'description': ",".join(sorting),
-                    })
+                    operations[method]['parameters'].append(cls.meta.sorting.openapi)
 
-                if cls.meta.filters.filters:
-                    operations[method]['parameters'].append({
-                        'name': FILTERS_PARAM, 'in': 'query', 'description': str(cls.meta.filters),
-                        'content': {'application/json': {'schema': {'type': 'object'}}}
-                    })
+                if cls.meta.filters:
+                    operations[method]['parameters'].append(cls.meta.filters.openapi)
 
                 if cls.meta.limit:
                     operations[method]['parameters'].append({

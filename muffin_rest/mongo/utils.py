@@ -31,7 +31,7 @@ class MongoChain:
         self.collection = collection
         self.query: t.List = []
         self.projection = None
-        self.sorting = None
+        self.sorting: t.List[t.Tuple[str, int]] = []
 
     def find(self, query: t.Union[t.List, t.Dict] = None, projection=None) -> MongoChain:
         """Store filters in self."""
@@ -69,7 +69,8 @@ class MongoChain:
     def sort(self, key, direction=1):
         """Save ordering properties."""
         if isinstance(key, str):
-            self.sorting = [(key, direction)]
+            self.sorting.append((key, direction))
+
         else:
             self.sorting = key
 

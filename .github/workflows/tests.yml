@@ -44,5 +44,8 @@ jobs:
         env/bin/pip install -e .[tests]
       if: steps.cache-env.outputs.cache-hit != 'true'
 
+    - name: Check typing
+      run: env/bin/mypy --install-types --non-interactive muffin_rest
+
     - name: Test with pytest
       run: env/bin/pytest tests

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import abc
 import inspect
-import json
 import typing as t
 
 import marshmallow as ma
@@ -12,10 +11,11 @@ from muffin import Request
 from muffin.typing import JSONType
 from muffin.handler import Handler, HandlerMeta
 
-from . import FILTERS_PARAM, LIMIT_PARAM, OFFSET_PARAM, SORT_PARAM, openapi
+from . import LIMIT_PARAM, OFFSET_PARAM, openapi
 from .api import API
 from .errors import APIError
 from .filters import Filters, Filter
+from .sorting import Sorting, Sort
 
 
 T = t.TypeVar('T')
@@ -33,6 +33,9 @@ class RESTOptions:
     # Base class for filters
     filters_cls: t.Type[Filters] = Filters
 
+    # Base class for sorting
+    sorting_cls: t.Type[Sorting] = Sorting
+
     # Auto generation for schemas
     schema_base: t.Type[ma.Schema] = ma.Schema
     schema_fields: t.Dict = {}
@@ -41,8 +44,7 @@ class RESTOptions:
 
     if t.TYPE_CHECKING:
         filters: Filters
-        sorting: t.Dict[str, t.Any]
-        sorting_default: t.Sequence
+        sorting: Sorting
         Schema: t.Type[ma.Schema]
 
     def __init__(self, cls):
@@ -61,14 +63,6 @@ class RESTOptions:
         cls_name = cls.__name__
         self.name = self.name or cls_name.lower().split('handler', 1)[0] or cls_name.lower()
         self.name_id = self.name_id or self.name
-
-        # Setup sorting
-        if not isinstance(self.sorting, set):
-            self.sorting = set(self.sorting)
-
-        if not isinstance(self.sorting, dict):
-            self.sorting = dict(
-                n if isinstance(n, (list, tuple)) else (n, True) for n in self.sorting)
 
         # Setup schema
         if not self.Schema:
@@ -92,9 +86,12 @@ class RESTHandlerMeta(HandlerMeta):
         """Prepare options for the handler."""
         params.setdefault('Meta', type("Meta", (object,), {}))  # Every handler has uniq meta
         cls = super().__new__(mcs, name, bases, params)
+
         if not getattr(cls.Meta, 'abc', False):
             cls.meta = cls.meta_class(cls)
-            cls.meta.filters = cls.meta.filters_cls(*cls.meta.filters, handler=cls)
+            cls.meta.filters = cls.meta.filters_cls(cls, cls.meta.filters)
+            cls.meta.sorting = cls.meta.sorting_cls(cls, cls.meta.sorting)
+
         return cls
 
 
@@ -120,8 +117,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         filters: t.Sequence[t.Union[str, t.Tuple[str, str], Filter]] = ()
 
         # Define allowed resource sorting params
-        sorting: t.Union[t.Dict[str, bool], t.Sequence[t.Union[str, t.Tuple]]] = {}
-        sorting_default: t.Sequence = ()
+        sorting: t.Sequence[t.Union[str, t.Tuple[str, t.Dict], Sort]] = ()
 
         # Serialize/Deserialize Schema class
         Schema: t.Optional[t.Type[ma.Schema]] = None
@@ -153,30 +149,23 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         if resource or request.method != 'GET':
             return await method(request, resource=resource)
 
+        meta = self.meta
         query = request.url.query
-        # Filter the collection
-        filters = query.get(FILTERS_PARAM)
-        if filters:
-            try:
-                data = json.loads(filters)
-                _, self.collection = self.meta.filters.filter(data, self.collection, handler=self)
 
-            except (ValueError, TypeError):
-                self.api.logger.warning(f'Invalid filters data: { request.url }')
+        # Filter collection
+        if meta.filters:
+            self.collection = meta.filters.apply(request, self.collection, **options)
 
-        # Sort resources
-        if SORT_PARAM in query:
-            sorting = [
-                (sort, desc) for (sort, desc) in to_sort(query[SORT_PARAM].split(','))
-                if self.meta.sorting.get(sort) is not None]
-            self.collection = await self.sort(request, *sorting, **options)
+        # Sort collection
+        if meta.sorting:
+            self.collection = meta.sorting.apply(request, self.collection, **options)
 
         # Paginate the collection
         headers = {}
-        limit = query.get(LIMIT_PARAM) or self.meta.limit
-        if self.meta.limit and limit:
+        if meta.limit:
+            limit = query.get(LIMIT_PARAM) or meta.limit
             try:
-                limit = min(abs(int(limit)), self.meta.limit)
+                limit = min(abs(int(limit)), meta.limit)
                 offset = int(query.get(OFFSET_PARAM, 0))
                 if limit and offset >= 0:
                     self.collection, total = await self.paginate(
@@ -218,11 +207,6 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
     @abc.abstractmethod
     async def remove(self, request: Request, *, resource: t.Any = None):
-        """Remove the given resource."""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    async def sort(self, request: Request, *sorting: t.Tuple[str, bool], **options) -> t.Any:
         """Remove the given resource."""
         raise NotImplementedError
 

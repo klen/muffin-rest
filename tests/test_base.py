@@ -57,6 +57,8 @@ async def test_api_methods(api, client):
 
 async def test_handler(api, client):
     from muffin_rest import RESTHandler
+    from muffin_rest.filters import Filters
+    from muffin_rest.sorting import Sorting
 
     assert RESTHandler
 
@@ -75,8 +77,10 @@ async def test_handler(api, client):
     assert Simple.meta
     assert Simple.meta.name == 'simple'
     assert Simple.meta.limit == 0
-    assert Simple.meta.filters
-    assert Simple.meta.sorting == {'test': True}
+    assert Simple.meta.filters is not None
+    assert isinstance(Simple.meta.filters, Filters)
+    assert Simple.meta.sorting is not None
+    assert isinstance(Simple.meta.sorting, Sorting)
     assert Simple.methods == {'GET', 'PUT'}
     assert api.router.routes()[2].methods == Simple.methods
     assert Simple.meta.Schema
@@ -150,7 +154,7 @@ async def test_handler2(api, client):
             return 'source: custom'
 
     assert Source.meta.filters
-    assert Source.meta.filters.filters
+    assert Source.meta.filters.mutations
 
     # Get collection
     res = await client.get('/api/source')
@@ -334,6 +338,7 @@ async def test_apispec(api, client):
         methods = 'get', 'post'
 
         class Meta:
+            sorting = 'name',
 
             class Schema(ma.Schema):
                 name = ma.fields.String(required=True)
@@ -352,3 +357,5 @@ async def test_apispec(api, client):
         assert spec['paths']['/token']
         assert spec['paths']['/token']['get']
         assert spec['paths']['/token']['get']['responses']
+        assert spec['paths']['/pets']['get']['parameters']
+        assert spec['paths']['/pets']['get']['parameters'][0]['name'] == 'sort'

@@ -9,42 +9,18 @@ from motor import motor_asyncio as motor
 
 from ..handler import RESTHandler, RESTOptions
 from ..errors import APIError
-from ..filters import Filter, Filters
+
 from .schema import MongoSchema
 from .utils import MongoChain
-
-
-class MongoFilter(Filter):
-    """Custom filter for sqlalchemy."""
-
-    operators = {
-        '$eq': lambda n, v: ('$eq', v),
-        '$ge': lambda n, v: ('$ge', v),
-        '$gt': lambda n, v: ('$gt', v),
-        '$in': lambda n, v: ('$in', v),
-        '$le': lambda n, v: ('$le', v),
-        '$lt': lambda n, v: ('$lt', v),
-        '$ne': lambda n, v: ('$ne', v),
-        '$nin': lambda n, v: ('$nin', v),
-        '$starts': lambda n, v: ('$regex', f"^{ v }"),
-        '$ends': lambda n, v: ('$regex', f"{ v }$"),
-    }
-
-    def apply(self, collection: MongoChain, *ops: t.Tuple[t.Callable, t.Any], **kwargs) -> MongoChain:
-        """Filter mongo."""
-        return collection.find({self.attr: dict(op(self.name, v) for op, v in ops)})
-
-
-class MongoFilters(Filters):
-    """Bind MongoFilter class."""
-
-    FILTER_CLASS = MongoFilter
+from .filters import MongoFilters
+from .sorting import MongoSorting
 
 
 class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
 
     filters_cls: t.Type[MongoFilters] = MongoFilters
+    sorting_cls: t.Type[MongoSorting] = MongoSorting
     schema_base: t.Type[MongoSchema] = MongoSchema
 
     aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
@@ -154,8 +130,3 @@ class MongoRESTHandler(RESTHandler):
         await self.meta.collection.delete_many({self.meta.collection_id: {'$in': oids}})
 
     delete = remove  # noqa
-
-    async def sort(self, request: muffin.Request,
-                   *sorting: t.Tuple[str, bool], **options) -> MongoChain:
-        """Sort the current collection."""
-        return self.collection.sort([(n, -1 if desc else 1) for n, desc in sorting])

@@ -20,3 +20,10 @@ def app():
         return 'OK'
 
     return app
+
+
+@pytest.fixture
+async def api(app):
+    from muffin_rest import API
+
+    return API(app, '/api')

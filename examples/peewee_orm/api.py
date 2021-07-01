@@ -1,3 +1,5 @@
+"""Setup API for Peewee ORM models."""
+
 from muffin_rest import API, __version__
 from muffin_rest.peewee import PWRESTHandler
 import string
@@ -62,6 +64,7 @@ class Pets(PWRESTHandler):
     """Everything about your Pets."""
 
     class Meta:
+        """Tune the endpoint."""
 
         # ORM Model
         model = Pet
@@ -73,8 +76,7 @@ class Pets(PWRESTHandler):
         limit = 10
 
         # Avalable sort params
-        sorting = 'id', 'name'
-        sorting_default = '-id',
+        sorting = ('id', {'default': 'desc'}), 'name'
 
         # Available filters
         filters = 'status', 'category'

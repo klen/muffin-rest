@@ -3,9 +3,14 @@ import operator
 import typing as t
 
 import marshmallow as ma
+from muffin import Request
+from asgi_tools._compat import json_loads
+
+from . import FILTERS_PARAM, API
+from .utils import Mutate, Mutator, TCOLLECTION
 
 
-class Filter:
+class Filter(Mutate):
 
     """Base filter class."""
 
@@ -29,11 +34,11 @@ class Filter:
 
     list_ops = ['$in', '<<']
 
-    field_cls: t.Type[ma.fields.Field] = ma.fields.Raw
+    schema_field_cls: t.Type[ma.fields.Field] = ma.fields.Raw
     default_operator: str = '$eq'
 
-    def __init__(self, name: str, *, attr: str = None,
-                 field: ma.fields.Field = None, operator: str = None):
+    def __init__(self, name: str, *, field: t.Any = None,
+                 schema_field: ma.fields.Field = None, operator: str = None, **meta):
         """Initialize filter.
 
         :param name: The filter's name
@@ -41,15 +46,11 @@ class Filter:
         :param fields: Marshmallow Field instance
 
         """
-        self.name = name
-        self.attr = attr or name
-        self.field = field or self.field_cls(attribute=self.attr)
+        super(Filter, self).__init__(name, **meta)
+        self.field = field
+        self.schema_field = schema_field or self.schema_field_cls()
         if operator:
             self.default_operator = operator
-
-    def __repr__(self) -> str:
-        """Represent self as a string."""
-        return '<Filter %s>' % self.name
 
     def filter(self, collection: t.Any, data: t.Mapping, **kwargs):
         """Filter given collection."""
@@ -65,72 +66,61 @@ class Filter:
         """Parse operator and value from filter's data."""
         val = data.get(self.name, ma.missing)
         if not isinstance(val, dict):
-            return (self.operators[self.default_operator], self.field.deserialize(val)),
+            return (self.operators[self.default_operator], self.schema_field.deserialize(val)),
 
         return tuple(
             (
                 self.operators[op],
-                (self.field.deserialize(val)) if op not in self.list_ops else [
-                    self.field.deserialize(v) for v in val])
+                (self.schema_field.deserialize(val)) if op not in self.list_ops else [
+                    self.schema_field.deserialize(v) for v in val])
             for (op, val) in val.items() if op in self.operators
         )
 
-    def apply(self, collection, *ops: t.Tuple[t.Callable, t.Any], **kwargs):
+    def apply(self, collection, *ops: t.Tuple[t.Callable, t.Any], **options):
         """Apply the filter to collection."""
         validator = lambda obj: all(op(get_value(obj, self.name), val) for (op, val) in ops)  # noqa
         return [o for o in collection if validator(o)]
 
 
-class Filters:
+class Filters(Mutator):
 
-    """Build filters for given handler."""
+    """Build filters for handlers."""
 
-    FILTER_CLASS = Filter
+    MUTATE_CLASS = Filter
 
-    def __init__(self, *filters, handler=None):
-        """Initialize object."""
-        self.filters = tuple(
-            f if isinstance(f, Filter) else self.convert(f, handler) for f in filters)
+    def convert(self, name: str, **meta):
+        """Convert params to filters."""
+        field = meta.pop('field', None) or name
+        schema_field = meta.pop('schema_field', None)
+        if schema_field is None and field:
+            schema_field = self.handler.meta.Schema._declared_fields.get(field)
+        return self.MUTATE_CLASS(name, field=field, schema_field=schema_field, **meta)
 
-    def __iter__(self):
-        """Iterate through self filters."""
-        return iter(self.filters)
+    def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
+        """Filter the given collection."""
+        data = request.url.query.get(FILTERS_PARAM)
+        if data is not None:
+            try:
+                data = json_loads(data)
+                assert isinstance(data, dict)
+                mutations = self.mutations
+                for name in data:
+                    if name in mutations:
+                        _, collection = mutations[name].filter(collection, data, **options)
 
-    def __str__(self) -> str:
-        """Describe the filters."""
-        return ", ".join(f.name for f in self)
+            except (ValueError, TypeError, AssertionError):
+                api = t.cast(API, self.handler._api)
+                api.logger.warning(f'Invalid filters data: { request.url }')
 
-    def convert(self, args, handler=None):
-        """Prepare filters."""
-        name = args
-        field = attr = None
-        opts = ()
-        if isinstance(args, (list, tuple)):
-            name, *opts = args
-            if opts:
-                attr = opts.pop()
-            if opts:
-                field = opts.pop()
+        return collection
 
-        if not field and handler and handler.meta.Schema:
-            field = handler.meta.Schema._declared_fields.get(attr or name) or \
-                self.FILTER_CLASS.field_cls()
-            field.attribute = field.attribute or attr or name
-        return self.FILTER_CLASS(name, attr=attr, field=field, *opts)
-
-    def filter(self, data, collection, **kwargs):
-        """Filter given collection."""
-        if not data or self.filters is None:
-            return None, collection
-
-        filters = {}
-        for f in self.filters:
-            if f.name not in data:
-                continue
-            ops, collection = f.filter(collection, data, **kwargs)
-            filters[f.name] = ops
-
-        return filters, collection
+    @property
+    def openapi(self):
+        """Prepare OpenAPI params."""
+        return {
+            'name': FILTERS_PARAM, 'in': 'query', 'description': str(self),
+            'content': {'application/json': {'schema': {'type': 'object'}}}
+        }
 
 
 def get_value(obj, name):

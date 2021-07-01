@@ -20,19 +20,30 @@ from .errors import APIError        # noqa
 Api = API
 
 
+# Support Peewee ORM
 try:
-    from .peewee import PWRESTHandler, PWFilter
+    from .peewee import PWRESTHandler
+    from .peewee.filters import PWFilter, PWFilters
+    from .peewee.sorting import PWSort, PWSorting
 except ImportError:
     pass
 
 
+# Support SQLAlchemy ORM
 try:
-    from .sqlalchemy import SARESTHandler, SAFilter
+    from .sqlalchemy import SARESTHandler
+    from .sqlalchemy.filters import SAFilter, SAFilters
+    from .sqlalchemy.sorting import SASort, SASorting
 except ImportError:
     pass
 
 
+# Support Mongo ORM
 try:
-    from .mongo import MongoRESTHandler, MongoFilter
+    from .mongo import MongoRESTHandler
+    from .mongo.filters import MongoFilter, MongoFilters
+    from .mongo.sorting import MongoSort, MongoSorting
 except ImportError:
     pass
+
+# pylama:ignore=W0611

@@ -1,21 +1,29 @@
-import datetime as dt
-
 import pytest
 import sqlalchemy as sa
 from muffin_databases import Plugin as DB
 
 
-@pytest.mark.parametrize('aiolib', [('asyncio', {'use_uvloop': False})])
-async def test_base(app, client):
-    from muffin_rest import API
-    from muffin_rest.sqlalchemy import SARESTHandler
+@pytest.fixture(scope='module')
+def aiolib():
+    return 'asyncio', {'use_uvloop': False}
 
+
+@pytest.fixture
+async def db(app):
     db = DB(app, url='sqlite:///:memory:', params={'force_rollback': True})
-    api = API(app, '/api')
-
     await db.connect()
+    yield db
+    await db.disconnect()
 
+
+@pytest.fixture
+async def Resource(db):
     meta = sa.MetaData()
+    Category = sa.Table(
+        'category', meta,
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('name', sa.String(255), nullable=False),
+    )
     Resource = sa.Table(
         'resource', meta,
         sa.Column('id', sa.Integer, primary_key=True),
@@ -23,25 +31,33 @@ async def test_base(app, client):
         sa.Column('name', sa.String, nullable=False),
         sa.Column('created', sa.DateTime, server_default=sa.func.datetime(), nullable=False),
         sa.Column('count', sa.Integer),
+        sa.Column('category_id', sa.ForeignKey('category.id'), nullable=False, server_default='1'),
     )
 
-    await db.execute(
-        "create table resource ("
-        "id integer primary key,"
-        "active integer default 0,"
-        "name varchar(256) not null,"
-        "created timestamp default (datetime('now')),"
-        "count integer)"
-    )
+    await db.execute(sa.schema.CreateTable(Category))
+    await db.execute(Category.insert(), values={'name': 'test'})
+
+    await db.execute(sa.schema.CreateTable(Resource))
+    return Resource
+
+
+@pytest.fixture
+async def resource(Resource, db):
+    return await db.execute(Resource.insert(), values={'name': 'test'})
+
+
+@pytest.fixture
+def ResourceEndpoint(api, db, Resource):
+    from muffin_rest.sqlalchemy import SARESTHandler
 
     @api.route
     class ResourceEndpoint(SARESTHandler):
 
         class Meta:
             database = db
-            filters = 'active', 'name', ('oid', 'id'),
+            filters = 'active', 'name', ('oid', {'field': 'id'}), 'category'
             limit = 10
-            sorting = 'name', 'count'
+            sorting = ('name', {'default': 'asc'}), 'count'
             table = Resource
 
         @SARESTHandler.route('/resource/action')
@@ -49,19 +65,32 @@ async def test_base(app, client):
             rows = await self.meta.database.fetch_all(self.collection)
             return await self.dump(request, rows)
 
+    return ResourceEndpoint
+
+
+def test_imports():
+    from muffin_rest import SARESTHandler, SAFilter, SAFilters, SASort, SASorting
+
+    assert SARESTHandler
+    assert SAFilter
+    assert SAFilters
+    assert SASort
+    assert SASorting
+
+
+async def test_base(ResourceEndpoint, api):
     assert ResourceEndpoint
     assert ResourceEndpoint.meta.name == 'resource'
     assert ResourceEndpoint.meta.Schema
     assert ResourceEndpoint.meta.Schema.opts.dump_only == ('id',)
+    assert ResourceEndpoint.meta.sorting
+    assert ResourceEndpoint.meta.filters
 
     assert api.router.plain['/resource']
     assert api.router.dynamic[0].pattern.pattern == '^/resource/(?P<id>[^/]+)$'
 
-    res = await client.get('/api/resource')
-    assert res.status_code == 200
-    assert await res.json() == []
 
-    await db.execute(Resource.insert(), values={'name': 'test'})
+async def test_api_get(client, ResourceEndpoint, resource):
     res = await client.get('/api/resource')
     assert res.status_code == 200
     json = await res.json()
@@ -73,8 +102,8 @@ async def test_base(app, client):
     assert res.status_code == 200
     json = await res.json()
     assert json
-    assert json['active'] == False
-    assert json['count'] == None
+    assert json['active'] is False
+    assert json['count'] is None
     assert json['created']
     assert json['id'] == 1
     assert json['name'] == 'test'
@@ -87,6 +116,8 @@ async def test_base(app, client):
     json = await res.json()
     assert json
 
+
+async def test_api_create(client, ResourceEndpoint):
     res = await client.post('/api/resource', json={'active': True})
     assert res.status_code == 400
     json = await res.json()
@@ -96,62 +127,82 @@ async def test_base(app, client):
     res = await client.post('/api/resource', data={'name': 'test2', 'active': True})
     assert res.status_code == 200
     json = await res.json()
-    assert json['id'] == 2
+    assert json['id'] == 1
     assert json['name'] == 'test2'
     assert json['active']
 
-    res = await client.put('/api/resource/2', data={'name': 'new'})
+
+async def test_api_edit(client, resource, ResourceEndpoint):
+    res = await client.put('/api/resource/1', data={'name': 'new'})
     assert res.status_code == 200
     json = await res.json()
     assert json['name'] == 'new'
-    assert json['id'] == 2
+    assert json['id'] == 1
 
-    res = await client.delete('/api/resource/2')
+
+async def test_api_delete(client, resource, ResourceEndpoint, db, Resource):
+    res = await client.delete('/api/resource/1')
     assert res.status_code == 200
     json = await res.json()
     assert not json
 
-    assert await db.fetch_one(Resource.select().where(Resource.c.id == 1))
-    assert not await db.fetch_one(Resource.select().where(Resource.c.id == 2))
+    assert not await db.fetch_one(Resource.select().where(Resource.c.id == 1))
 
+
+async def test_api_sort(client, ResourceEndpoint, db, Resource):
     await db.execute_many(Resource.insert(), [
-        {'name': 'test2', 'count': 2},
+        {'name': 'test4', 'count': 2},
         {'name': 'test3', 'count': 3},
-        {'name': 'test4', 'count': 1},
+        {'name': 'test2', 'count': 1},
     ])
 
-    res = await client.get('/api/resource?sort=-count')
+    # Default sort
+    res = await client.get('/api/resource')
     assert res.status_code == 200
     json = await res.json()
     assert json[0]['id'] == 3
     assert json[1]['id'] == 2
 
+    res = await client.get('/api/resource?sort=-count')
+    assert res.status_code == 200
+    json = await res.json()
+    assert json[0]['id'] == 2
+    assert json[1]['id'] == 1
+
+
+async def test_api_filters(client, ResourceEndpoint, db, Resource):
+    await db.execute_many(Resource.insert(), [
+        {'name': 'test4', 'count': 2},
+        {'name': 'test3', 'count': 3},
+        {'name': 'test2', 'count': 1},
+    ])
+
     res = await client.get('/api/resource?where={"name":"test"}')
     assert res.status_code == 200
     json = await res.json()
-    assert len(json) == 1
+    assert len(json) == 0
 
-    res = await client.get('/api/resource?where={"name": {"$in": ["test", "test2"]}}')
+    res = await client.get('/api/resource?where={"name": {"$in": ["test3", "test2"]}}')
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 2
 
-    res = await client.get('/api/resource?where={"oid": {"$in": [2, 4]}}')
+    res = await client.get('/api/resource?where={"oid": {"$in": [2, 3]}}')
     assert res.status_code == 200
     json = await res.json()
-    assert [d['id'] for d in json] == [2, 4]
+    assert [d['id'] for d in json] == [3, 2]
 
     res = await client.get('/api/resource?where={"name": {"$starts": "test"}}')
     assert res.status_code == 200
     json = await res.json()
-    assert len(json) == 4
+    assert len(json) == 3
 
     res = await client.get('/api/resource?where={"name": {"$ends": "3"}}')
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 1
 
-    res = await client.get('/api/resource?where={"oid": {"$between": [2, 4]}}')
+    res = await client.get('/api/resource?where={"oid": {"$between": [1, 3]}}')
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 3
@@ -159,10 +210,12 @@ async def test_base(app, client):
     res = await client.get('/api/resource?where={"oid": {"$gt": "2"}}')
     assert res.status_code == 200
     json = await res.json()
-    assert len(json) == 2
+    assert len(json) == 1
 
+
+async def test_api_paginate(client, ResourceEndpoint, db, Resource):
     await db.execute_many(Resource.insert(), [
-        {'name': 'test%d' % n} for n in range(6)
+        {'name': 'test%d' % n} for n in range(12)
     ])
 
     res = await client.get('/api/resource')
@@ -170,22 +223,24 @@ async def test_base(app, client):
     json = await res.json()
     assert len(json) == 10
 
-    res = await client.get('/api/resource?limit=3')
+    res = await client.get('/api/resource?limit=5')
     assert res.status_code == 200
-    assert res.headers['x-total'] == '10'
-    assert res.headers['x-limit'] == '3'
+    assert res.headers['x-total'] == '12'
+    assert res.headers['x-limit'] == '5'
     assert res.headers['x-offset'] == '0'
     json = await res.json()
-    assert len(json) == 3
+    assert len(json) == 5
 
-    res = await client.get('/api/resource?limit=3&offset=4')
+    res = await client.get('/api/resource?limit=5&offset=9')
     assert res.status_code == 200
-    assert res.headers['x-total'] == '10'
-    assert res.headers['x-limit'] == '3'
-    assert res.headers['x-offset'] == '4'
+    assert res.headers['x-total'] == '12'
+    assert res.headers['x-limit'] == '5'
+    assert res.headers['x-offset'] == '9'
     json = await res.json()
     assert len(json) == 3
 
+
+async def test_batch_ops(client, ResourceEndpoint, db, Resource):
     # Batch operations (only POST/DELETE are supported for now)
     res = await client.post('/api/resource', json=[
         {'name': 'test3', 'active': True},
@@ -195,19 +250,18 @@ async def test_base(app, client):
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 3
-    assert json[0]['id'] == 11
-    assert json[1]['id'] == 12
-    assert json[2]['id'] == 13
+    assert json[0]['id'] == 1
+    assert json[1]['id'] == 2
+    assert json[2]['id'] == 3
 
-    res = await client.delete('/api/resource', json=[11, 12, 13])
+    res = await client.delete('/api/resource', json=[1, 2, 3])
     assert res.status_code == 200
 
-    assert not await db.fetch_all(Resource.select().where(Resource.c.id.in_([11, 12, 13])))
+    assert not await db.fetch_all(Resource.select().where(Resource.c.id.in_([1, 2, 3])))
 
-    # Test openapi
+
+async def test_openapi(client, ResourceEndpoint):
     res = await client.get('/api/openapi.json')
     assert res.status_code == 200
     json = await res.json()
     assert json
-
-    await db.disconnect()

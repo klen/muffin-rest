@@ -12,54 +12,14 @@ from marshmallow_peewee import ModelSchema, ForeignKey
 
 from ..handler import RESTBase, RESTOptions
 from ..errors import APIError
-from ..filters import Filter, Filters
 
 from .openapi import PeeweeOpenAPIMixin
+from .filters import PWFilters
+from .sorting import PWSorting
 
 
 # XXX: Patch apispec.MarshmallowPlugin to support ForeignKeyField
 MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
-
-
-class PWFilter(Filter):
-    """Support Peewee."""
-
-    operators = Filter.operators
-    operators['$in'] = lambda f, v: f << v
-    operators['$none'] = lambda f, v: f >> v
-    operators['$like'] = lambda f, v: f % v
-    operators['$ilike'] = lambda f, v: f ** v
-    operators['$contains'] = lambda f, v: f.contains(v)
-    operators['$starts'] = lambda f, v: f.startswith(v)
-    operators['$ends'] = lambda f, v: f.endswith(v)
-    operators['$between'] = lambda f, v: f.between(*v)
-    operators['$regexp'] = lambda f, v: f.regexp(v)
-
-    list_ops = Filter.list_ops + ['$between']
-
-    def __init__(self, name: str, *, pw_field: pw.Field = None, **kwargs):
-        """Support custom model fields."""
-        super(PWFilter, self).__init__(name, **kwargs)
-        self.pw_field = pw_field
-
-    def apply(self, collection: pw.Query, *ops: t.Tuple[t.Callable, t.Any],
-              handler: PWRESTBase = None, **kwargs) -> pw.Query:
-        """Apply the filters to Peewee QuerySet.."""
-        pw_field = (
-            self.pw_field or handler and handler.meta.model._meta.fields.get(self.field.attribute))
-        if pw_field and ops:
-            return self.query(collection, pw_field, *ops, **kwargs)
-        return collection
-
-    def query(self, query: pw.Query, column: pw.Field, *ops: t.Tuple, **kwargs) -> pw.Query:
-        """Filter a query."""
-        return query.where(*[op(column, val) for op, val in ops])
-
-
-class PWFilters(Filters):
-    """Bind Peewee filter class."""
-
-    FILTER_CLASS = PWFilter
 
 
 class PWRESTOptions(RESTOptions):
@@ -67,6 +27,9 @@ class PWRESTOptions(RESTOptions):
 
     # Base filters class
     filters_cls: t.Type[PWFilters] = PWFilters
+
+    # Base sorting class
+    sorting_cls: t.Type[PWSorting] = PWSorting
 
     # Schema auto generation params
     schema_base: t.Type[ModelSchema] = ModelSchema
@@ -87,27 +50,6 @@ class PWRESTOptions(RESTOptions):
         self.name_id = self.name_id or self.model_pk.name
 
         super(PWRESTOptions, self).setup(cls)
-
-        # Setup sorting
-        self.sorting = dict(
-            (sort.name, sort) if isinstance(sort, pw.Field) else (
-                sort, self.model._meta.fields.get(sort))
-            for sort in self.sorting
-        )
-
-        sorting_default = []
-        for sort in (isinstance(self.sorting_default, t.Sequence) and
-                     self.sorting_default or [self.sorting_default]):
-            if isinstance(sort, str):
-                name, desc = sort.strip('-'), sort.startswith('-')
-                sort = self.model._meta.fields.get(name)
-                if sort and desc:
-                    sort = sort.desc()
-
-            if isinstance(sort, pw.Node):
-                sorting_default.append(sort)
-
-        self.sorting_default = sorting_default
 
     def setup_schema_meta(self, cls):
         """Prepare a schema."""
@@ -134,11 +76,7 @@ class PWRESTBase(RESTBase):
 
     async def prepare_collection(self, request: muffin.Request) -> pw.Query:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
-        qs = self.meta.model.select()
-        if self.meta.sorting_default:
-            qs = qs.order_by(*self.meta.sorting_default)
-
-        return qs
+        return self.meta.model.select()
 
     async def prepare_resource(self, request: muffin.Request) -> t.Optional[pw.Model]:
         """Load a resource."""
@@ -150,19 +88,6 @@ class PWRESTBase(RESTBase):
             return self.collection.where(self.meta.model_pk == pk).get()
         except self.meta.model.DoesNotExist:
             raise APIError.NOT_FOUND('Resource not found')
-
-    async def sort(self, request: muffin.Request,
-                   *sorting: t.Tuple[str, bool], **options) -> pw.Query:
-        """Sort the current collection."""
-        order_by = []
-        for name, desc in sorting:
-            field = self.meta.sorting.get(name)
-            if desc:
-                field = field.desc()  # type: ignore
-
-            order_by.append(field)
-
-        return self.collection.order_by(*order_by)
 
     async def paginate(self, request: muffin.Request, *, limit: int = 0,
                        offset: int = 0) -> t.Tuple[pw.Query, int]:
