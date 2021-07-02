@@ -41,7 +41,7 @@ class Mutator:
         self.mutations = {}
         for param in params:
             obj, meta = param if isinstance(param, tuple) else (param, {})
-            mut = obj if isinstance(obj, self.MUTATE_CLASS) else self.convert(obj, **meta)
+            mut = self.convert(obj, **meta)
             if mut:
                 self.mutations[mut.name] = mut
 
@@ -59,9 +59,12 @@ class Mutator:
     def __bool__(self):
         return bool(self.mutations)
 
-    def convert(self, name: str, **meta):
+    def convert(self, obj, **meta):
         """Convert params to mutations."""
-        return self.MUTATE_CLASS(name, **meta)
+        if isinstance(obj, self.MUTATE_CLASS):
+            return obj
+
+        return self.MUTATE_CLASS(obj, **meta)
 
     def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
         """Mutate a collection."""

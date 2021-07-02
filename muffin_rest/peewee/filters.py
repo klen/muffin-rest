@@ -52,15 +52,25 @@ class PWFilters(Filters):
 
     MUTATE_CLASS = PWFilter
 
-    def convert(self, name: str, **meta):
+    def convert(self, obj: t.Union[str, Field, PWFilter], **meta):
         """Convert params to filters."""
         from . import PWRESTHandler
 
         handler = t.cast(PWRESTHandler, self.handler)
+        if isinstance(obj, PWFilter):
+            if obj.field is None:
+                obj.field = handler.meta.model._meta.fields.get(obj.name)
+            return obj
 
-        field = meta.pop('field', None) or name
-        if isinstance(field, str):
-            field = handler.meta.model._meta.fields.get(field)
+        if isinstance(obj, Field):
+            name = obj.name
+            field = obj
+
+        else:
+            name = obj
+            field = meta.pop('field', None) or name
+            if isinstance(field, str):
+                field = handler.meta.model._meta.fields.get(field)
 
         schema_field = meta.pop('schema_field', None)
         if schema_field is None and field:

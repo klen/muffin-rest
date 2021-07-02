@@ -28,9 +28,9 @@ class Sorting(Mutator):
         self.default: t.List = []
         super(Sorting, self).__init__(handler, params)
 
-    def convert(self, name: str, **meta):
+    def convert(self, obj, **meta):
         """Prepare sorters."""
-        sort = super(Sorting, self).convert(name, **meta)
+        sort = super(Sorting, self).convert(obj, **meta)
         if sort.meta.get('default'):
             self.default.append(sort)
         return sort

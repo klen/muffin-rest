@@ -23,16 +23,20 @@ class PWSorting(Sorting):
 
     MUTATE_CLASS = PWSort
 
-    def convert(self, name: t.Union[str, Field], **meta):
+    def convert(self, obj: t.Union[str, Field, PWSort], **meta):
         """Prepare sorters."""
         from . import PWRESTHandler
 
+        if isinstance(obj, PWSort):
+            return obj
+
         handler = t.cast(PWRESTHandler, self.handler)
 
-        if isinstance(name, Field):
-            name, field = name.name, name
+        if isinstance(obj, Field):
+            name, field = obj.name, obj
 
         else:
+            name = obj
             field = meta.get('field', handler.meta.model._meta.fields.get(name))
 
         if field:

@@ -24,16 +24,20 @@ class SASorting(Sorting):
 
     MUTATE_CLASS = SASort
 
-    def convert(self, name: t.Union[str, Column], **meta):
+    def convert(self, obj: t.Union[str, Column, SASort], **meta):
         """Prepare sorters."""
         from . import SARESTHandler
 
+        if isinstance(obj, SASort):
+            return obj
+
         handler = t.cast(SARESTHandler, self.handler)
 
-        if isinstance(name, Column):
-            name, field = name.name, name
+        if isinstance(obj, Column):
+            name, field = obj.name, obj
 
         else:
+            name = obj
             field = meta.get('field', handler.meta.table.c.get(name))
 
         if field is not None:

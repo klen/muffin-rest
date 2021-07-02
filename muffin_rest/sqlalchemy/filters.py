@@ -33,7 +33,7 @@ class SAFilter(Filter):
         self.name = name
         self.field = field
         self.schema_field = schema_field or self.schema_field_cls(
-            attribute=field is not None and (field.attribute or field.name) or name)
+            attribute=field is not None and (field.key or field.name) or name)
 
         if operator:
             self.default_operator = operator
@@ -57,17 +57,29 @@ class SAFilters(Filters):
 
     MUTATE_CLASS = SAFilter
 
-    def convert(self, name: str, **meta):
+    def convert(self, obj: t.Union[str, Column, SAFilter], **meta):
         """Convert params to filters."""
         from . import SARESTHandler
 
         handler = t.cast(SARESTHandler, self.handler)
-        field = meta.pop('field', None) or name
 
-        if isinstance(field, str):
-            field = handler.meta.table.c.get(field)
+        if isinstance(obj, SAFilter):
+            if obj.field is None:
+                obj.field = handler.meta.table.c.get(obj.name)
+            return obj
+
+        if isinstance(obj, Column):
+            name = obj.name
+            field = obj
+
+        else:
+            name = obj
+            field = meta.pop('field', None) or name
+            if isinstance(field, str):
+                field = handler.meta.table.c.get(field)
 
         schema_field = meta.pop('schema_field', None)
         if schema_field is None and field is not None:
-            schema_field = self.handler.meta.Schema._declared_fields.get(field.name)
+            schema_field = handler.meta.Schema._declared_fields.get(field.name)
+
         return self.MUTATE_CLASS(name, field=field, schema_field=schema_field, **meta)

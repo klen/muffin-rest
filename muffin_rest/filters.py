@@ -88,13 +88,16 @@ class Filters(Mutator):
 
     MUTATE_CLASS = Filter
 
-    def convert(self, name: str, **meta):
+    def convert(self, obj, **meta):
         """Convert params to filters."""
-        field = meta.pop('field', None) or name
+        if isinstance(obj, self.MUTATE_CLASS):
+            return obj
+
+        field = meta.pop('field', None) or obj
         schema_field = meta.pop('schema_field', None)
         if schema_field is None and field:
             schema_field = self.handler.meta.Schema._declared_fields.get(field)
-        return self.MUTATE_CLASS(name, field=field, schema_field=schema_field, **meta)
+        return self.MUTATE_CLASS(obj, field=field, schema_field=schema_field, **meta)
 
     def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
         """Filter the given collection."""

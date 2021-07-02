@@ -49,13 +49,15 @@ async def resource(Resource, db):
 @pytest.fixture
 def ResourceEndpoint(api, db, Resource):
     from muffin_rest.sqlalchemy import SARESTHandler
+    from muffin_rest.sqlalchemy.filters import SAFilter
 
     @api.route
     class ResourceEndpoint(SARESTHandler):
 
         class Meta:
             database = db
-            filters = 'active', 'name', ('oid', {'field': 'id'}), 'category'
+            filters = 'active', SAFilter('name'), ('oid', {'field': 'id'}), \
+                SAFilter('category', field=Resource.c.category_id)
             limit = 10
             sorting = ('name', {'default': 'asc'}), 'count'
             table = Resource
