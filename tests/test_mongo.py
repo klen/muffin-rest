@@ -72,7 +72,7 @@ async def test_base(api, ResourceEndpoint):
     assert api.router.dynamic[0].pattern.pattern == '^/resource/(?P<resource>[^/]+)$'
 
 
-async def test_api_get(client, ResourceEndpoint, resource):
+async def test_get(client, ResourceEndpoint, resource):
     res = await client.get('/api/resource')
     assert res.status_code == 200
     json = await res.json()
@@ -97,7 +97,7 @@ async def test_api_get(client, ResourceEndpoint, resource):
     assert json
 
 
-async def test_api_create(client, ResourceEndpoint):
+async def test_create(client, ResourceEndpoint):
     res = await client.post('/api/resource', json={'active': True})
     assert res.status_code == 400
     json = await res.json()
@@ -112,7 +112,7 @@ async def test_api_create(client, ResourceEndpoint):
     assert json['active']
 
 
-async def test_api_edit(client, resource, ResourceEndpoint):
+async def test_edit(client, resource, ResourceEndpoint):
     res = await client.put(f"/api/resource/{resource}", data={'name': 'new'})
     assert res.status_code == 200
     json = await res.json()
@@ -120,7 +120,7 @@ async def test_api_edit(client, resource, ResourceEndpoint):
     assert json['_id'] == str(resource)
 
 
-async def test_api_delete(client, resource, ResourceEndpoint, resources):
+async def test_delete(client, resource, ResourceEndpoint, resources):
     res = await client.delete(f"/api/resource/{ resource }")
     assert res.status_code == 200
     json = await res.json()
@@ -130,7 +130,7 @@ async def test_api_delete(client, resource, ResourceEndpoint, resources):
     assert await resources.count_documents({}) == 0
 
 
-async def test_api_sort(client, ResourceEndpoint, resources):
+async def test_sort(client, ResourceEndpoint, resources):
     await resources.insert_many([
         {'name': 'test4', 'count': 2},
         {'name': 'test3', 'count': 3},
@@ -151,7 +151,7 @@ async def test_api_sort(client, ResourceEndpoint, resources):
     assert json[1]['count'] == 2
 
 
-async def test_api_filters(client, ResourceEndpoint, resources):
+async def test_filters(client, ResourceEndpoint, resources):
     await resources.insert_many([
         {'name': 'test4', 'count': 2},
         {'name': 'test3', 'count': 3},
@@ -185,7 +185,7 @@ async def test_api_filters(client, ResourceEndpoint, resources):
     assert len(json) == 1
 
 
-async def test_api_paginate(client, ResourceEndpoint, resources):
+async def test_paginate(client, ResourceEndpoint, resources):
     await resources.insert_many([
         {'name': 'test%d' % n} for n in range(12)
     ])

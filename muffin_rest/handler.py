@@ -29,6 +29,7 @@ class RESTOptions:
 
     # limit: Paginate results (set to None for disable pagination)
     limit: int = 0
+    limit_max: int = 0
 
     # Base class for filters
     filters_cls: t.Type[Filters] = Filters
@@ -69,6 +70,9 @@ class RESTOptions:
             self.Schema = type(
                 self.name.title() + 'Schema', (self.schema_base,),
                 dict(self.schema_fields, Meta=self.setup_schema_meta(cls)))
+
+        if not self.limit_max:
+            self.limit_max = self.limit
 
     def setup_schema_meta(self, cls):
         """Generate meta for schemas."""
@@ -165,7 +169,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         if meta.limit:
             limit = query.get(LIMIT_PARAM) or meta.limit
             try:
-                limit = min(abs(int(limit)), meta.limit)
+                limit = min(abs(int(limit)), meta.limit_max)
                 offset = int(query.get(OFFSET_PARAM, 0))
                 if limit and offset >= 0:
                     self.collection, total = await self.paginate(
