@@ -154,7 +154,6 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
             return await method(request, resource=resource)
 
         meta = self.meta
-        query = request.url.query
 
         # Filter collection
         if meta.filters:
@@ -167,17 +166,11 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         # Paginate the collection
         headers = {}
         if meta.limit:
-            limit = query.get(LIMIT_PARAM) or meta.limit
-            try:
-                limit = min(abs(int(limit)), meta.limit_max)
-                offset = int(query.get(OFFSET_PARAM, 0))
-                if limit and offset >= 0:
-                    self.collection, total = await self.paginate(
-                        request, limit=limit, offset=offset)
-                    headers = self.paginate_prepare_headers(limit, offset, total)
-
-            except ValueError:
-                raise APIError.BAD_REQUEST('Pagination params are invalid')
+            limit, offset = self.paginate_prepare_params(request)
+            if limit and offset >= 0:
+                self.collection, total = await self.paginate(
+                    request, limit=limit, offset=offset)
+                headers = self.paginate_prepare_headers(limit, offset, total)
 
         response = await method(request, resource=resource)
         if headers:
@@ -193,10 +186,39 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
             raise Exception('The handler is not routed by any API')  # TODO
         return self._api
 
+    async def authorize(self, request: Request):
+        """Default authorization method. Proxy auth to self.api."""
+        auth = await self.api.authorize(request)
+        if not auth:
+            raise APIError.UNAUTHORIZED()
+        return auth
+
+    # Prepare data
+    # ------------
     @abc.abstractmethod
     async def prepare_collection(self, request: Request) -> t.Any:
         """Prepare a collection of resources. Create queryset, db cursor and etc."""
         raise NotImplementedError
+
+    async def prepare_resource(self, request: Request) -> t.Any:
+        """Load a resource."""
+        return request['path_params'].get(self.meta.name_id)
+
+    # Paginate
+    # --------
+    def paginate_prepare_headers(self, limit, offset, total):
+        """Prepare pagination headers."""
+        return {'x-total': total, 'x-limit': limit, 'x-offset': offset}
+
+    def paginate_prepare_params(self, request: Request) -> t.Tuple[int, int]:
+        """Prepare pagination params."""
+        meta = self.meta
+        query = request.url.query
+        limit = query.get(LIMIT_PARAM) or meta.limit
+        try:
+            return min(abs(int(limit)), meta.limit_max), int(query.get(OFFSET_PARAM, 0))
+        except ValueError:
+            raise APIError.BAD_REQUEST('Pagination params are invalid')
 
     @abc.abstractmethod
     async def paginate(self, request: Request, *, limit: int = 0,
@@ -204,6 +226,8 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         """Paginate the results."""
         raise NotImplementedError
 
+    # Manage data
+    # -----------
     @abc.abstractmethod
     async def save(self, request: Request, *, resource: T = None) -> T:
         """Save the given resource."""
@@ -214,27 +238,15 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         """Remove the given resource."""
         raise NotImplementedError
 
-    async def prepare_resource(self, request: Request) -> t.Any:
-        """Load a resource."""
-        return request['path_params'].get(self.meta.name_id)
-
-    def paginate_prepare_headers(self, limit, offset, total):
-        """Prepare pagination headers."""
-        return {'x-total': total, 'x-limit': limit, 'x-offset': offset}
-
-    async def authorize(self, request: Request):
-        """Default authorization method. Proxy auth to self.api."""
-        auth = await self.api.authorize(request)
-        if not auth:
-            raise APIError.UNAUTHORIZED()
-        return auth
-
+    # Parse data
+    # -----------
     async def get_schema(self, request: Request, resource=None) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         assert self.meta.Schema, 'RESTHandler.meta.Schema is required.'
+        query = request.url.query
         return self.meta.Schema(
-            only=request.url.query.get('schema_only'),
-            exclude=request.url.query.get('schema_exclude', ()),
+            only=query.get('schema_only'),
+            exclude=query.get('schema_exclude', ()),
         )
 
     async def parse(self, request: Request):
