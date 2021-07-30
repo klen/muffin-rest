@@ -25,28 +25,28 @@ class RESTOptions:
     """Handler Options."""
 
     name: str = ''
-    name_id: str = ''
+    name_id: str = 'id'
 
     # limit: Paginate results (set to None for disable pagination)
     limit: int = 0
     limit_max: int = 0
 
     # Base class for filters
+    filters: Filters
     filters_cls: t.Type[Filters] = Filters
 
     # Base class for sorting
+    sorting: Sorting
     sorting_cls: t.Type[Sorting] = Sorting
 
     # Auto generation for schemas
+    Schema: t.Type[ma.Schema]
     schema_base: t.Type[ma.Schema] = ma.Schema
     schema_fields: t.Dict = {}
     schema_meta: t.Dict = {}
     schema_unknown: str = ma.EXCLUDE
 
-    if t.TYPE_CHECKING:
-        filters: Filters
-        sorting: Sorting
-        Schema: t.Type[ma.Schema]
+    base_property: str = 'name'
 
     def __init__(self, cls):
         """Inherit meta options."""
@@ -60,12 +60,6 @@ class RESTOptions:
 
     def setup(self, cls):
         """Setup the options."""
-        # Setup names
-        cls_name = cls.__name__
-        self.name = self.name or cls_name.lower().split('handler', 1)[0] or cls_name.lower()
-        self.name_id = self.name_id or self.name
-
-        # Setup schema
         if not self.Schema:
             self.Schema = type(
                 self.name.title() + 'Schema', (self.schema_base,),
@@ -80,7 +74,7 @@ class RESTOptions:
 
     def __repr__(self):
         """Represent self as a string."""
-        return "<Options %s>" % self.name
+        return f"<Options {self.name}>"
 
 
 class RESTHandlerMeta(HandlerMeta):
@@ -91,7 +85,7 @@ class RESTHandlerMeta(HandlerMeta):
         params.setdefault('Meta', type("Meta", (object,), {}))  # Every handler has uniq meta
         cls = super().__new__(mcs, name, bases, params)
 
-        if not getattr(cls.Meta, 'abc', False):
+        if getattr(cls.Meta, cls.meta_class.base_property, None) is not None:
             cls.meta = cls.meta_class(cls)
             cls.meta.filters = cls.meta.filters_cls(cls, cls.meta.filters)
             cls.meta.sorting = cls.meta.sorting_cls(cls, cls.meta.sorting)
@@ -114,8 +108,6 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
     class Meta:
         """Tune the handler."""
-
-        abc: bool = True  # The class is abstract, meta wouldn't be generated
 
         # Resource filters
         filters: t.Sequence[t.Union[str, t.Tuple[str, str], Filter]] = ()
@@ -315,10 +307,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 class RESTHandler(RESTBase, openapi.OpenAPIMixin):
     """Basic Handler Class."""
 
-    class Meta:
-        """Tune the handler."""
-
-        abc: bool = True                        # The class is abstract, meta wouldn't be generated
+    pass
 
 
 def to_sort(sort_params: t.Sequence[str]) -> t.Generator[t.Tuple[str, bool], None, None]:

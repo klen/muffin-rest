@@ -80,7 +80,7 @@ def test_imports():
     assert SASorting
 
 
-async def test_base(ResourceEndpoint, api):
+def test_base(ResourceEndpoint, api):
     assert ResourceEndpoint
     assert ResourceEndpoint.meta.name == 'resource'
     assert ResourceEndpoint.meta.Schema

@@ -68,6 +68,7 @@ async def test_handler(api, client):
         methods = 'get', 'put'
 
         class Meta:
+            name = 'simple'
             sorting = 'test',
             schema_base = FakeSchema
 
@@ -114,6 +115,7 @@ async def test_handler2(api, client):
     class Source(RESTHandler):
 
         class Meta:
+            name = 'source'
             filters = 'val',
             limit = 10
             Schema = FakeSchema
@@ -225,6 +227,9 @@ async def test_bad_request(api, client):
 
         methods = 'get', 'post'
 
+        class Meta:
+            name = 'simple'
+
         async def prepare_collection(self, request):
             return f'SIMPLE {request.method}'
 
@@ -247,6 +252,7 @@ async def test_handlers_with_schema(api, client):
         methods = 'get', 'post'
 
         class Meta:
+            name = 'pet'
 
             class Schema(ma.Schema):
                 name = ma.fields.String(required=True)
@@ -275,15 +281,6 @@ async def test_handlers_with_schema(api, client):
     assert json == [{'name': 'muffin'}]
 
 
-async def test_handler_without_meta(api, client):
-    from muffin_rest import RESTHandler
-
-    class Resource(RESTHandler):
-        pass
-
-    assert Resource.meta.name
-
-
 async def test_handler_with_path(api, client):
     from muffin_rest import RESTHandler
 
@@ -291,6 +288,9 @@ async def test_handler_with_path(api, client):
     class Simple(RESTHandler):
 
         methods = 'get', 'patch'
+
+        class Meta:
+            name = 'simple'
 
         async def prepare_collection(self, request):
             return [1, 2, 3, 4]
@@ -338,6 +338,7 @@ async def test_apispec(api, client):
         methods = 'get', 'post'
 
         class Meta:
+            name = 'pet'
             sorting = 'name',
 
             class Schema(ma.Schema):

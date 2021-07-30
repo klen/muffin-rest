@@ -25,16 +25,16 @@ class MongoRESTOptions(RESTOptions):
 
     aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
     collection_id: str = '_id'
+    collection: t.Optional[motor.AsyncIOMotorCollection] = None
+
+    base_property: str = 'collection'
 
     if t.TYPE_CHECKING:
         Schema: t.Type[MongoSchema]
-        collection: motor.AsyncIOMotorCollection
 
     def setup(self, cls):
         """Prepare meta options."""
-        if not self.collection:
-            raise ValueError("'MongoRESTHandler.Meta.collection' is required")
-
+        self.name = self.name or self.collection.name.lower()
         super(MongoRESTOptions, self).setup(cls)
 
 
@@ -43,15 +43,6 @@ class MongoRESTHandler(RESTHandler):
 
     meta: MongoRESTOptions
     meta_class: t.Type[MongoRESTOptions] = MongoRESTOptions
-
-    class Meta:
-        """Tune the handler."""
-
-        abc = True
-
-        # Mongo options
-        collection: t.Optional[motor.AsyncIOMotorCollection] = None
-        aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
 
     async def prepare_collection(self, request: muffin.Request) -> MongoChain:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
@@ -112,7 +103,7 @@ class MongoRESTHandler(RESTHandler):
                     {self.meta.collection_id: doc[self.meta.collection_id]}, doc)
 
             else:
-                res = await self.meta.collection.insert_one(doc)
+                res = await self.meta.collection.insert_one(doc)  # type: ignore
                 doc[self.meta.collection_id] = res.inserted_id
 
         return resource
@@ -127,6 +118,7 @@ class MongoRESTHandler(RESTHandler):
             raise APIError.BAD_REQUEST()
 
         oids = [bson.ObjectId(_id) for _id in oids]
-        await self.meta.collection.delete_many({self.meta.collection_id: {'$in': oids}})
+        await self.meta.collection.delete_many(  # type: ignore
+            {self.meta.collection_id: {'$in': oids}})
 
     delete = remove  # noqa

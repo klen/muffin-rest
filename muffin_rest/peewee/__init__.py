@@ -25,30 +25,26 @@ MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 class PWRESTOptions(RESTOptions):
     """Support Peewee."""
 
+    model: pw.Model
+    model_pk: t.Optional[pw.Field] = None
+
     # Base filters class
     filters_cls: t.Type[PWFilters] = PWFilters
 
     # Base sorting class
     sorting_cls: t.Type[PWSorting] = PWSorting
 
+    Schema: t.Type[ModelSchema]
+
     # Schema auto generation params
     schema_base: t.Type[ModelSchema] = ModelSchema
 
-    if t.TYPE_CHECKING:
-        model: pw.Model
-        model_pk: pw.Field
-        Schema: t.Type[ModelSchema]
+    base_property: str = 'model'
 
     def setup(self, cls):
         """Prepare meta options."""
-        if not self.model:
-            raise ValueError("'PWRESTHandler.Meta.model' is required")
-
+        self.name = self.name or self.model._meta.table_name.lower()
         self.model_pk = self.model_pk or self.model._meta.primary_key
-
-        self.name = self.name or self.model._meta.table_name
-        self.name_id = self.name_id or self.model_pk.name
-
         super(PWRESTOptions, self).setup(cls)
 
     def setup_schema_meta(self, cls):
@@ -64,15 +60,6 @@ class PWRESTBase(RESTBase):
     resource: pw.Model
     meta: PWRESTOptions
     meta_class: t.Type[PWRESTOptions] = PWRESTOptions
-
-    class Meta:
-        """Tune the handler."""
-
-        abc: bool = True
-
-        # Peewee options
-        model = None
-        model_pk = None
 
     async def prepare_collection(self, request: muffin.Request) -> pw.Query:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
@@ -116,7 +103,9 @@ class PWRESTBase(RESTBase):
             data = await request.data()
             if not data:
                 return
-            resources = list(self.collection.where(self.meta.model_pk << data))
+
+            model_pk = t.cast(pw.Field, self.meta.model_pk)
+            resources = list(self.collection.where(model_pk << data))
 
         if not resources:
             raise APIError.NOT_FOUND()
@@ -138,7 +127,4 @@ class PWRESTBase(RESTBase):
 class PWRESTHandler(PWRESTBase, PeeweeOpenAPIMixin):  # type: ignore
     """Support peewee."""
 
-    class Meta:
-        """Tune the handler."""
-
-        abc: bool = True
+    pass

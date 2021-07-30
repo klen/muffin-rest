@@ -65,26 +65,22 @@ class SARESTOptions(RESTOptions):
     sorting_cls: t.Type[SASorting] = SASorting
 
     # Schema auto generation params
+    Schema: t.Type[SQLAlchemyAutoSchema]
     schema_base: t.Type[SQLAlchemyAutoSchema] = SQLAlchemyAutoSchema
 
-    if t.TYPE_CHECKING:
-        table: sa.Table
-        table_pk: sa.Column
-        database: DB
-        Schema: t.Type[SQLAlchemyAutoSchema]
+    table: sa.Table
+    table_pk: t.Optional[sa.Column] = None
+    database: DB
+
+    base_property = 'table'
 
     def setup(self, cls):
         """Prepare meta options."""
-        if self.table is None:
-            raise ValueError("'SARESTHandler.Meta.table' is required")
-
         if self.database is None:
             raise ValueError("'SARESTHandler.Meta.database' is required")
 
-        self.table_pk = self.table_pk or self.table.c.id
-
         self.name = self.name or self.table.name
-        self.name_id = self.name_id or self.table_pk.name
+        self.table_pk = self.table_pk or self.table.c.id
 
         super(SARESTOptions, self).setup(cls)
 
@@ -101,16 +97,6 @@ class SARESTHandler(RESTHandler):
 
     meta: SARESTOptions
     meta_class: t.Type[SARESTOptions] = SARESTOptions
-
-    class Meta:
-        """Tune the handler."""
-
-        abc = True
-
-        # Sqlalchemy options
-        table = None
-        table_pk = None
-        database = None
 
     async def prepare_collection(self, request: muffin.Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
@@ -158,25 +144,27 @@ class SARESTHandler(RESTHandler):
         Supports batch saving.
         """
         resources = resource if isinstance(resource, t.Sequence) else [resource]
+        table_pk = t.cast(sa.Column, self.meta.table_pk)
         for res in resources:
-            if res.get(self.meta.table_pk.name):
+            if res.get(table_pk.name):
                 update = self.meta.table.update().where(
-                    self.meta.table_pk == res[self.meta.table_pk.name])
+                    table_pk == res[table_pk.name])
                 await self.meta.database.execute(update, res)
 
             else:
                 insert = self.meta.table.insert()
-                res[self.meta.table_pk.name] = await self.meta.database.execute(insert, res)
+                res[table_pk.name] = await self.meta.database.execute(insert, res)
 
         return resource
 
     async def remove(self, request: muffin.Request, *, resource: dict = None):
         """Remove the given resource."""
-        pks = [resource[self.meta.table_pk.name]] if resource else await request.data()
+        table_pk = t.cast(sa.Column, self.meta.table_pk)
+        pks = [resource[table_pk.name]] if resource else await request.data()
         if not pks:
             raise APIError.NOT_FOUND()
 
-        delete = self.meta.table.delete(self.meta.table_pk.in_(pks))
+        delete = self.meta.table.delete(table_pk.in_(pks))
         await self.meta.database.execute(delete)
 
     delete = remove  # noqa
