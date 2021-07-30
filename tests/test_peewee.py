@@ -238,3 +238,21 @@ async def test_openapi(client, ResourceEndpoint):
     assert res.status_code == 200
     json = await res.json()
     assert json
+
+
+async def test_endpoint_inheritance(Resource):
+    from muffin_rest.peewee import PWRESTHandler
+
+    class ResourceEndpoint(PWRESTHandler):
+
+        class Meta:
+            model = Resource
+
+    assert ResourceEndpoint.meta.name == 'resource'
+
+    class ChildEndpoint(ResourceEndpoint):
+
+        class Meta:
+            name = 'child'
+
+    assert ChildEndpoint.meta.name == 'child'

@@ -24,7 +24,7 @@ T = t.TypeVar('T')
 class RESTOptions:
     """Handler Options."""
 
-    name: str = ''
+    name: t.Optional[str] = None
     name_id: str = 'id'
 
     # limit: Paginate results (set to None for disable pagination)
@@ -56,7 +56,8 @@ class RESTOptions:
                     if not k.startswith('_'):
                         setattr(self, k, v)
 
-        self.setup(cls)
+        if getattr(self, self.base_property, None) is not None:
+            self.setup(cls)
 
     def setup(self, cls):
         """Setup the options."""
@@ -82,11 +83,10 @@ class RESTHandlerMeta(HandlerMeta):
 
     def __new__(mcs, name, bases, params):
         """Prepare options for the handler."""
-        params.setdefault('Meta', type("Meta", (object,), {}))  # Every handler has uniq meta
         cls = super().__new__(mcs, name, bases, params)
+        cls.meta = cls.meta_class(cls)
 
-        if getattr(cls.Meta, cls.meta_class.base_property, None) is not None:
-            cls.meta = cls.meta_class(cls)
+        if getattr(cls.meta, cls.meta_class.base_property, None) is not None:
             cls.meta.filters = cls.meta.filters_cls(cls, cls.meta.filters)
             cls.meta.sorting = cls.meta.sorting_cls(cls, cls.meta.sorting)
 
