@@ -12,7 +12,7 @@ from asgi_tools.response import CAST_RESPONSE
 from muffin import Response
 from muffin.typing import JSONType
 
-from . import FILTERS_PARAM, LIMIT_PARAM, OFFSET_PARAM, SORT_PARAM, openapi
+from . import LIMIT_PARAM, OFFSET_PARAM, openapi
 
 try:
     from apispec import yaml_utils
@@ -153,6 +153,9 @@ class OpenAPIMixin:
     @classmethod
     def openapi(cls, route: Route, spec: APISpec) -> t.Dict:
         """Get openapi specs for the endpoint."""
+        if cls.meta.name is None:
+            return {}
+
         operations: t.Dict = {}
         summary, desc, schema = parse_docs(cls)
         if cls not in spec.tags:
