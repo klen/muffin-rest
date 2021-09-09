@@ -3,22 +3,32 @@ from muffin_peewee import Plugin as Peewee, JSONField
 import pytest
 
 
+@pytest.fixture(scope='module')
+def aiolib():
+    return 'asyncio', {'use_uvloop': False}
+
+
 @pytest.fixture
 async def db(app):
-    return Peewee(app, connection='sqlite+async:///:memory:', manage_connections=False)
+    db = Peewee(app, connection='sqlite:///:memory:', auto_connection=False)
+    async with db:
+        yield db
 
 
 @pytest.fixture
 async def Resource(db):
 
-    @db.register
+    @db.manager.register
     class Resource(pw.Model):
         active = pw.BooleanField(default=False)
         name = pw.CharField(null=False)
         count = pw.IntegerField(null=True)
         config = JSONField(default={})
 
-    Resource.create_table()
+    assert Resource._meta.manager
+
+    await db.manager.create_tables(Resource)
+
     return Resource
 
 
@@ -38,14 +48,23 @@ async def ResourceEndpoint(Resource, api):
         @PWRESTHandler.route('/resource/action')
         async def action(self, request, resource=None):
             """Description for the action."""
-            return await self.dump(request, list(self.collection))
+            resources = await self.meta.manager.fetchall(self.collection)
+            return await self.dump(request, resources)
 
     return ResourceEndpoint
 
 
 @pytest.fixture
-async def resource(Resource):
-    return Resource.create(name='test')
+async def resource(Resource, db):
+    return await db.create(Resource, name='test')
+
+
+@pytest.fixture(scope='session', autouse=True)
+def setup_logging():
+    import logging
+
+    logger = logging.getLogger('peewee')
+    logger.setLevel(logging.DEBUG)
 
 
 def test_imports():
@@ -61,6 +80,7 @@ def test_imports():
 async def test_base(api, ResourceEndpoint, Resource):
     assert ResourceEndpoint
     assert ResourceEndpoint.meta.name == 'resource'
+    assert ResourceEndpoint.meta.manager
     assert ResourceEndpoint.meta.Schema
     assert ResourceEndpoint.meta.sorting
     assert list(ResourceEndpoint.meta.sorting.mutations.keys()) == ['id', 'name', 'count']
@@ -123,19 +143,19 @@ async def test_edit(client, resource, ResourceEndpoint):
     assert json['id'] == '1'
 
 
-async def test_delete(client, resource, ResourceEndpoint, Resource):
+async def test_delete(client, resource, ResourceEndpoint, Resource, db):
     res = await client.delete('/api/resource/1')
     assert res.status_code == 200
     json = await res.json()
     assert not json
 
-    assert not Resource.select().where(Resource.id == 1).exists()
+    assert not await db.fetchone(Resource.select().where(Resource.id == 1))
 
 
-async def test_sort(client, ResourceEndpoint, Resource):
-    Resource.create(name='test2', count=2)
-    Resource.create(name='test3', count=3)
-    Resource.create(name='test4', count=1)
+async def test_sort(client, ResourceEndpoint, Resource, db):
+    await db.create(Resource, name='test2', count=2)
+    await db.create(Resource, name='test3', count=3)
+    await db.create(Resource, name='test4', count=1)
 
     # Default sort
     res = await client.get('/api/resource')
@@ -151,10 +171,10 @@ async def test_sort(client, ResourceEndpoint, Resource):
     assert json[1]['id'] == '1'
 
 
-async def test_filters(client, ResourceEndpoint, Resource):
-    Resource.create(name='test2', count=2)
-    Resource.create(name='test3', count=3)
-    Resource.create(name='test4', count=1)
+async def test_filters(client, ResourceEndpoint, Resource, db):
+    await db.create(Resource, name='test2', count=2)
+    await db.create(Resource, name='test3', count=3)
+    await db.create(Resource, name='test4', count=1)
 
     res = await client.get('/api/resource?where={"name":"test"}')
     assert res.status_code == 200
@@ -187,9 +207,9 @@ async def test_filters(client, ResourceEndpoint, Resource):
     assert len(json) == 1
 
 
-async def test_paginate(client, ResourceEndpoint, Resource):
+async def test_paginate(client, ResourceEndpoint, Resource, db):
     for n in range(12):
-        Resource.create(name='test%d' % n)
+        await db.create(Resource, name=f"test{n}")
 
     res = await client.get('/api/resource')
     assert res.status_code == 200
@@ -230,7 +250,7 @@ async def test_batch_ops(client, ResourceEndpoint, db, Resource):
     res = await client.delete('/api/resource', json=['1', '2', '3'])
     assert res.status_code == 200
 
-    assert not Resource.select().where(Resource.id << ('11', '12', '13')).count()
+    assert not await db.count(Resource.select().where(Resource.id << ('11', '12', '13')))
 
 
 async def test_openapi(client, ResourceEndpoint):

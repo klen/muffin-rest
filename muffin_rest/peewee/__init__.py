@@ -9,6 +9,8 @@ import muffin
 import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ModelSchema, ForeignKey
+from peewee_aio import Manager
+from muffin.typing import JSONType
 
 from ..handler import RESTBase, RESTOptions
 from ..errors import APIError
@@ -28,6 +30,8 @@ class PWRESTOptions(RESTOptions):
     model: pw.Model
     model_pk: t.Optional[pw.Field] = None
 
+    manager: Manager
+
     # Base filters class
     filters_cls: t.Type[PWFilters] = PWFilters
 
@@ -45,6 +49,10 @@ class PWRESTOptions(RESTOptions):
         """Prepare meta options."""
         self.name = self.name or self.model._meta.table_name.lower()
         self.model_pk = self.model_pk or self.model._meta.primary_key
+        self.manager = getattr(self, 'manager', getattr(self.model._meta, 'manager', None))
+        if self.manager is None:
+            raise RuntimeError('Peewee-AIO ORM Manager is not available')
+
         super(PWRESTOptions, self).setup(cls)
 
     def setup_schema_meta(self, cls):
@@ -71,9 +79,11 @@ class PWRESTBase(RESTBase):
         if not pk:
             return None
 
+        meta = self.meta
+
         try:
-            return self.collection.where(self.meta.model_pk == pk).get()
-        except self.meta.model.DoesNotExist:
+            return await meta.manager.get(meta.model, meta.model_pk == pk)
+        except meta.model.DoesNotExist:
             raise APIError.NOT_FOUND('Resource not found')
 
     async def paginate(self, request: muffin.Request, *, limit: int = 0,
@@ -82,7 +92,16 @@ class PWRESTBase(RESTBase):
         cqs = self.collection.order_by()
         if cqs._group_by:
             cqs._select = cqs._group_by
-        return self.collection.offset(offset).limit(limit), cqs.count()
+        count = await self.meta.manager.count(cqs)
+        return self.collection.offset(offset).limit(limit), count
+
+    async def get(self, request, *, resource=None) -> JSONType:
+        """Get resource or collection of resources."""
+        if resource is not None and resource != '':
+            return await self.dump(request, resource, many=False)
+
+        resources = await self.meta.manager.fetchall(self.collection)
+        return await self.dump(request, resources, many=True)
 
     async def save(self, request: muffin.Request,  # type: ignore
                    resource: t.Union[pw.Model, t.List[pw.Model]]):
@@ -91,11 +110,13 @@ class PWRESTBase(RESTBase):
         Supports batch saving.
         """
         for obj in (resource if isinstance(resource, list) else [resource]):
-            obj.save()
+            await self.meta.manager.save(obj)
+
         return resource
 
     async def remove(self, request: muffin.Request, *, resource: pw.Model = None):
         """Remove the given resource."""
+        meta = self.meta
         if resource:
             resources = [resource]
 
@@ -104,14 +125,14 @@ class PWRESTBase(RESTBase):
             if not data:
                 return
 
-            model_pk = t.cast(pw.Field, self.meta.model_pk)
-            resources = list(self.collection.where(model_pk << data))
+            model_pk = t.cast(pw.Field, meta.model_pk)
+            resources = await meta.manager.fetchall(self.collection.where(model_pk << data))
 
         if not resources:
             raise APIError.NOT_FOUND()
 
         for resource in resources:
-            resource.delete_instance()
+            await meta.manager.delete_instance(resource)
 
     delete = remove  # noqa
 
