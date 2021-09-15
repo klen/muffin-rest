@@ -81,10 +81,10 @@ class PWRESTBase(RESTBase):
 
         meta = self.meta
 
-        try:
-            return await meta.manager.get(meta.model, meta.model_pk == pk)
-        except meta.model.DoesNotExist:
+        resource = await meta.manager.fetchone(self.collection.where(meta.model_pk == pk))
+        if resource is None:
             raise APIError.NOT_FOUND('Resource not found')
+        return resource
 
     async def paginate(self, request: muffin.Request, *, limit: int = 0,
                        offset: int = 0) -> t.Tuple[pw.Query, int]:

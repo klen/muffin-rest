@@ -8,11 +8,20 @@ def aiolib():
     return 'asyncio', {'use_uvloop': False}
 
 
+@pytest.fixture(scope='session', autouse=True)
+def setup_logging():
+    import logging
+
+    logger = logging.getLogger('peewee')
+    logger.setLevel(logging.DEBUG)
+
+
 @pytest.fixture
 async def db(app):
     db = Peewee(app, connection='sqlite:///:memory:', auto_connection=False)
     async with db:
-        yield db
+        async with db.connection():
+            yield db
 
 
 @pytest.fixture
