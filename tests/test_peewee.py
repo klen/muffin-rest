@@ -1,6 +1,6 @@
 import peewee as pw
-from muffin_peewee import Plugin as Peewee, JSONField
 import pytest
+from muffin_peewee import Plugin as Peewee, JSONField
 
 
 @pytest.fixture(scope='module')
@@ -68,14 +68,6 @@ async def resource(Resource, db):
     return await db.create(Resource, name='test')
 
 
-@pytest.fixture(scope='session', autouse=True)
-def setup_logging():
-    import logging
-
-    logger = logging.getLogger('peewee')
-    logger.setLevel(logging.DEBUG)
-
-
 def test_imports():
     from muffin_rest import PWRESTHandler, PWFilter, PWFilters, PWSort, PWSorting
 
@@ -104,10 +96,10 @@ async def test_get(client, ResourceEndpoint, resource):
     assert res.status_code == 200
     json = await res.json()
     assert json
-    assert json[0]['id'] == '1'
-    assert json[0]['count'] is None
-    assert json[0]['name'] == 'test'
     assert json[0]['config'] == {}
+    assert json[0]['count'] is None
+    assert json[0]['id'] == '1'
+    assert json[0]['name'] == 'test'
 
     res = await client.get('/api/resource/1')
     assert res.status_code == 200
@@ -285,3 +277,43 @@ async def test_endpoint_inheritance(Resource):
             name = 'child'
 
     assert ChildEndpoint.meta.name == 'child'
+
+
+async def test_aiomodels(client, db, api):
+
+    events = []
+
+    class TestModel(db.Model):
+
+        data = pw.CharField()
+
+        async def save(self, **kwargs):
+            events.append('custom-save')
+            return await super().save(**kwargs)
+
+        async def delete_instance(self, **kwargs):
+            events.append('custom-delete')
+            return await super().delete_instance(**kwargs)
+
+    await db.create_tables(TestModel)
+
+    from muffin_rest.peewee import PWRESTHandler
+
+    @api.route
+    class Test(PWRESTHandler):
+
+        class Meta:
+            model = TestModel
+
+    res = await client.post('/api/testmodel', json={'data': 'test'})
+    assert res.status_code == 200
+    json = await res.json()
+    assert json['id']
+
+    assert events
+    assert 'custom-save' in events
+
+    res = await client.delete(f"/api/testmodel/{json['id']}")
+    assert res.status_code == 200
+
+    assert 'custom-delete' in events

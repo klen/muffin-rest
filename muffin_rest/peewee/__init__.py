@@ -9,7 +9,7 @@ import muffin
 import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ModelSchema, ForeignKey
-from peewee_aio import Manager
+from peewee_aio import Manager, Model
 from muffin.typing import JSONType
 
 from ..handler import RESTBase, RESTOptions
@@ -109,8 +109,13 @@ class PWRESTBase(RESTBase):
 
         Supports batch saving.
         """
+        meta = self.meta
+        save = meta.manager.save
+        if issubclass(meta.model, Model):
+            save = lambda m: m.save()  # type: ignore  # noqa
+
         for obj in (resource if isinstance(resource, list) else [resource]):
-            await self.meta.manager.save(obj)
+            await save(obj)
 
         return resource
 
@@ -131,8 +136,12 @@ class PWRESTBase(RESTBase):
         if not resources:
             raise APIError.NOT_FOUND()
 
+        delete_instance = meta.manager.delete_instance
+        if issubclass(meta.model, Model):
+            delete_instance = lambda m: m.delete_instance()  # type: ignore  # noqa
+
         for resource in resources:
-            await meta.manager.delete_instance(resource)
+            await delete_instance(resource)
 
     delete = remove  # noqa
 
