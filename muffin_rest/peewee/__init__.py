@@ -142,7 +142,7 @@ class PWRESTBase(RESTBase):
             instance=resource,
             only=request.url.query.get('schema_only'),
             exclude=request.url.query.get('schema_exclude', ()),
-        ) if self.meta.Schema else None
+        )
 
 
 class PWRESTHandler(PWRESTBase, PeeweeOpenAPIMixin):  # type: ignore
