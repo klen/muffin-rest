@@ -1,6 +1,6 @@
 """REST helpers for Muffin Framework."""
 
-__version__ = "3.4.1"
+__version__ = "3.4.2"
 __project__ = "muffin-rest"
 __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "MIT"
