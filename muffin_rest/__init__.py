@@ -25,7 +25,7 @@ try:
     from .peewee import PWRESTHandler
     from .peewee.filters import PWFilter, PWFilters
     from .peewee.sorting import PWSort, PWSorting
-except ImportError:
+except ImportError as exc:
     pass
 
 
