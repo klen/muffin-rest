@@ -26,11 +26,11 @@ setup(
         'build': ['bump2version', 'wheel'],
         'example': ['uvicorn', 'muffin-peewee-aio', 'marshmallow-peewee'],
         'peewee': [
-            'muffin-peewee-aio   >= 0.2.2',
-            'marshmallow-peewee  >= 3.1.3',
+            'muffin-peewee-aio >= 0.2.2',
+            'marshmallow-peewee >= 3.2.0',
         ],
         'sqlalchemy': [
-            'muffin-databases    >= 0.3.2',
+            'muffin-databases >= 0.3.2',
             'marshmallow-sqlalchemy',
             'sqlalchemy',
         ],

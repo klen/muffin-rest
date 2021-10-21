@@ -82,7 +82,14 @@ async def test_base(api, ResourceEndpoint, Resource):
     assert ResourceEndpoint
     assert ResourceEndpoint.meta.name == 'resource'
     assert ResourceEndpoint.meta.manager
+
+    # Schema
     assert ResourceEndpoint.meta.Schema
+    assert ResourceEndpoint.meta.Schema._declared_fields
+    ff = ResourceEndpoint.meta.Schema._declared_fields['active']
+    assert ff.load_default is False
+
+    # Sorting
     assert ResourceEndpoint.meta.sorting
     assert list(ResourceEndpoint.meta.sorting.mutations.keys()) == ['id', 'name', 'count']
     assert ResourceEndpoint.meta.sorting.default == [Resource.id.desc()]
