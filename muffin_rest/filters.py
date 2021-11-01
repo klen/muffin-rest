@@ -52,15 +52,25 @@ class Filter(Mutate):
         if operator:
             self.default_operator = operator
 
-    def filter(self, collection: t.Any, data: t.Mapping, **kwargs):
+    async def apply(self, collection: t.Any, data: t.Mapping = None, **kwargs):
         """Filter given collection."""
+        if not data:
+            return None, collection
+
         try:
             ops = self.parse(data)
         except ma.ValidationError:
             return None, collection
 
-        collection = self.apply(collection, *ops, **kwargs)
+        if ops:
+            collection = await self.filter(collection, *ops, **kwargs)
+
         return ops, collection
+
+    async def filter(self, collection, *ops: t.Tuple[t.Callable, t.Any], **options):
+        """Apply the filter to collection."""
+        validator = lambda obj: all(op(get_value(obj, self.name), val) for (op, val) in ops)  # noqa
+        return [o for o in collection if validator(o)]
 
     def parse(self, data: t.Mapping) -> t.Tuple[t.Tuple[t.Callable, t.Any], ...]:
         """Parse operator and value from filter's data."""
@@ -76,17 +86,30 @@ class Filter(Mutate):
             for (op, val) in val.items() if op in self.operators
         )
 
-    def apply(self, collection, *ops: t.Tuple[t.Callable, t.Any], **options):
-        """Apply the filter to collection."""
-        validator = lambda obj: all(op(get_value(obj, self.name), val) for (op, val) in ops)  # noqa
-        return [o for o in collection if validator(o)]
-
 
 class Filters(Mutator):
 
     """Build filters for handlers."""
 
     MUTATE_CLASS = Filter
+
+    async def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
+        """Filter the given collection."""
+        data = request.url.query.get(FILTERS_PARAM)
+        if data is not None:
+            try:
+                data = json_loads(data)
+                assert isinstance(data, dict)
+                mutations = self.mutations
+                for name in data:
+                    if name in mutations:
+                        _, collection = await mutations[name].apply(collection, data, **options)
+
+            except (ValueError, TypeError, AssertionError):
+                api = t.cast(API, self.handler._api)
+                api.logger.warning(f'Invalid filters data: { request.url }')
+
+        return collection
 
     def convert(self, obj, **meta):
         """Convert params to filters."""
@@ -98,24 +121,6 @@ class Filters(Mutator):
         if schema_field is None and field:
             schema_field = self.handler.meta.Schema._declared_fields.get(field)
         return self.MUTATE_CLASS(obj, field=field, schema_field=schema_field, **meta)
-
-    def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
-        """Filter the given collection."""
-        data = request.url.query.get(FILTERS_PARAM)
-        if data is not None:
-            try:
-                data = json_loads(data)
-                assert isinstance(data, dict)
-                mutations = self.mutations
-                for name in data:
-                    if name in mutations:
-                        _, collection = mutations[name].filter(collection, data, **options)
-
-            except (ValueError, TypeError, AssertionError):
-                api = t.cast(API, self.handler._api)
-                api.logger.warning(f'Invalid filters data: { request.url }')
-
-        return collection
 
     @property
     def openapi(self):

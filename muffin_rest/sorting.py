@@ -12,7 +12,7 @@ from .utils import Mutate, Mutator, TCOLLECTION
 class Sort(Mutate):
     """Sort a collection."""
 
-    def apply(self, collection, desc: bool = False, **options):
+    async def apply(self, collection, desc: bool = False, **options):
         """Sort the collection."""
         return sorted(collection, key=lambda obj: getattr(obj, self.name), reverse=desc)
 
@@ -28,25 +28,25 @@ class Sorting(Mutator):
         self.default: t.List = []
         super(Sorting, self).__init__(handler, params)
 
+    async def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
+        """Sort the given collection."""
+        data = request.url.query.get(SORT_PARAM)
+        if data:
+            for name, desc in to_sort(data.split(',')):
+                if name in self.mutations:
+                    collection = await self.mutations[name].apply(collection, desc)
+
+        elif self.default:
+            return self.sort_default(collection)
+
+        return collection
+
     def convert(self, obj, **meta):
         """Prepare sorters."""
         sort = super(Sorting, self).convert(obj, **meta)
         if sort.meta.get('default'):
             self.default.append(sort)
         return sort
-
-    def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
-        """Sort the given collection."""
-        data = request.url.query.get(SORT_PARAM)
-        if data:
-            for name, desc in to_sort(data.split(',')):
-                if name in self.mutations:
-                    collection = self.mutations[name].apply(collection, desc)
-
-        elif self.default:
-            return self.sort_default(collection)
-
-        return collection
 
     def sort_default(self, collection: TCOLLECTION) -> TCOLLECTION:
         """Sort by default."""

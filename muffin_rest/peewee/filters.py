@@ -33,7 +33,7 @@ class PWFilter(Filter):
         if operator:
             self.default_operator = operator
 
-    def apply(self, collection: Query, *ops: t.Tuple[t.Callable, t.Any], **kwargs) -> Query:
+    async def filter(self, collection: Query, *ops: t.Tuple[t.Callable, t.Any], **kwargs) -> Query:
         """Apply the filters to Peewee QuerySet.."""
         if ops:
             return self.query(collection, self.field, *ops, **kwargs)

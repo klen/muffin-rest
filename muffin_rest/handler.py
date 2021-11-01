@@ -149,11 +149,11 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
         # Filter collection
         if meta.filters:
-            self.collection = meta.filters.apply(request, self.collection, **options)
+            self.collection = await meta.filters.apply(request, self.collection, **options)
 
         # Sort collection
         if meta.sorting:
-            self.collection = meta.sorting.apply(request, self.collection, **options)
+            self.collection = await meta.sorting.apply(request, self.collection, **options)
 
         # Paginate the collection
         headers = {}

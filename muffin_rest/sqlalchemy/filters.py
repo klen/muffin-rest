@@ -38,8 +38,8 @@ class SAFilter(Filter):
         if operator:
             self.default_operator = operator
 
-    def apply(self, collection: sql.Select,
-              *ops: t.Tuple[t.Callable, t.Any], **kwargs) -> sql.Select:
+    async def filter(self, collection: sql.Select,
+                    *ops: t.Tuple[t.Callable, t.Any], **kwargs) -> sql.Select:
         """Apply the filters to SQLAlchemy Select."""
         column = self.field
         if ops and column is not None:

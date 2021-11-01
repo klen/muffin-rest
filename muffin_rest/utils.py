@@ -1,6 +1,7 @@
 """REST Utils."""
 
 import typing as t
+import abc
 
 from muffin import Request
 
@@ -8,7 +9,7 @@ from muffin import Request
 TCOLLECTION = t.TypeVar('TCOLLECTION')
 
 
-class Mutate:
+class Mutate(abc.ABC):
     """Mutate collections."""
 
     def __init__(self, name: str, *, field=None, **meta):
@@ -23,12 +24,13 @@ class Mutate:
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self.name}'>"
 
-    def apply(self, collection: TCOLLECTION, **options) -> TCOLLECTION:
+    @abc.abstractmethod
+    async def apply(self, collection: TCOLLECTION, **options) -> TCOLLECTION:
         """Apply the mutation."""
         raise NotImplementedError
 
 
-class Mutator:
+class Mutator(abc.ABC):
     """Mutate collections."""
 
     MUTATE_CLASS = Mutate
@@ -66,6 +68,7 @@ class Mutator:
 
         return self.MUTATE_CLASS(obj, **meta)
 
-    def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
+    @abc.abstractmethod
+    async def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
         """Mutate a collection."""
         raise NotImplementedError

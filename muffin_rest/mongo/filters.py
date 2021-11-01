@@ -21,7 +21,7 @@ class MongoFilter(Filter):
         '$ends': lambda n, v: ('$regex', f"{ v }$"),
     }
 
-    def apply(self, collection, *ops: t.Tuple[t.Callable, t.Any], **options):
+    async def filter(self, collection, *ops: t.Tuple[t.Callable, t.Any], **options):
         """Apply the filter."""
         return collection.find({self.field: dict(op(self.name, v) for op, v in ops)})
 

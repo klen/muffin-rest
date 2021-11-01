@@ -13,7 +13,7 @@ TCOLLECTION = t.TypeVar('TCOLLECTION', bound=sql.Select)
 class SASort(Sort):
     """Sorter for Peewee."""
 
-    def apply(self, collection: TCOLLECTION, desc: bool = False, **options) -> TCOLLECTION:
+    async def apply(self, collection: TCOLLECTION, desc: bool = False, **options) -> TCOLLECTION:
         """Sort the collection."""
         collection.append_order_by(self.field if not desc else self.field.desc())
         return collection

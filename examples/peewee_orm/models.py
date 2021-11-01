@@ -25,6 +25,6 @@ class Pet(pw.Model):
 # don't do on production, this is only for the example
 @app.on_startup
 async def create_schema():
-    async with db:
+    with db.allow_sync():
         Category.create_table()
         Pet.create_table()

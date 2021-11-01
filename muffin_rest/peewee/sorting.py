@@ -13,7 +13,7 @@ TCOLLECTION = t.TypeVar('TCOLLECTION', bound=Query)
 class PWSort(Sort):
     """Sorter for Peewee."""
 
-    def apply(self, collection: TCOLLECTION, desc: bool = False, **options) -> TCOLLECTION:
+    async def apply(self, collection: TCOLLECTION, desc: bool = False, **options) -> TCOLLECTION:
         """Sort the collection."""
         return collection.order_by_extend(self.field if not desc else self.field.desc())
 

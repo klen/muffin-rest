@@ -24,7 +24,7 @@ async def home(request):
     """Redirect to Swagger documentation."""
     return ResponseRedirect('/api/swagger')
 
-db = Peewee(app, connection=f"sqlite+async:///{ Path(__file__).parent.joinpath('db.sqlite')}")
+db = Peewee(app, connection=f"aiosqlite:///{ Path(__file__).parent.joinpath('db.sqlite')}")
 
 # Register the API
 from .api import api # noqa

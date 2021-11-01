@@ -13,7 +13,7 @@ TCOLLECTION = t.TypeVar('TCOLLECTION', bound=MongoChain)
 class MongoSort(Sort):
     """Sorter for Peewee."""
 
-    def apply(self, collection, desc: bool = False, **options):
+    async def apply(self, collection, desc: bool = False, **options):
         """Sort the collection."""
         collection.sorting.append((self.field, -1 if desc else 1))
         return collection
