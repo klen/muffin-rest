@@ -6,18 +6,25 @@ __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "MIT"
 
 # Default query params
-FILTERS_PARAM = 'where'
 LIMIT_PARAM = 'limit'
 OFFSET_PARAM = 'offset'
-SORT_PARAM = 'sort'
 
 
 from .api import API                # noqa
 from .handler import RESTHandler    # noqa
 from .errors import APIError        # noqa
 
+
 # Just an alias to support legacy style
 Api = API
+
+
+__all__ = (
+    'API', 'Api', 'RESTHandler', 'APIError',
+    'PWRESTHandler', 'PWFilter', 'PWFilters', 'PWSort', 'PWSorting',
+    'SARESTHandler', 'SAFilter', 'SAFilters', 'SASort', 'SASorting',
+    'MongoRESTHandler', 'MongoFilter', 'MongoFilters', 'MongoSort', 'MongoSorting',
+)
 
 
 # Support Peewee ORM

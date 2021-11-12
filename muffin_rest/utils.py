@@ -33,7 +33,7 @@ class Mutate(abc.ABC):
 class Mutator(abc.ABC):
     """Mutate collections."""
 
-    MUTATE_CLASS = Mutate
+    MUTATE_CLASS: t.Type[Mutate]
 
     def __init__(self, handler, params: t.Sequence):
         """Initialize the mutations."""

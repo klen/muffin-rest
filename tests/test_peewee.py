@@ -34,7 +34,7 @@ async def Resource(db):
         count = pw.IntegerField(null=True)
         config = JSONField(default={})
 
-    assert Resource._meta.manager
+    assert Resource._manager
 
     await db.manager.create_tables(Resource)
 

@@ -27,7 +27,7 @@ MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 class PWRESTOptions(RESTOptions):
     """Support Peewee."""
 
-    model: pw.Model
+    model: t.Type[pw.Model]
     model_pk: t.Optional[pw.Field] = None
 
     manager: Manager
@@ -49,13 +49,15 @@ class PWRESTOptions(RESTOptions):
         """Prepare meta options."""
         self.name = self.name or self.model._meta.table_name.lower()
         self.model_pk = self.model_pk or self.model._meta.primary_key
-        self.manager = getattr(self, 'manager', getattr(self.model._meta, 'manager', None))
-        if self.manager is None:
+        manager = getattr(self, 'manager', getattr(self.model, '_manager', None))
+        if manager is None:
             raise RuntimeError('Peewee-AIO ORM Manager is not available')
+
+        self.manager = manager
 
         super(PWRESTOptions, self).setup(cls)
 
-    def setup_schema_meta(self, cls):
+    def setup_schema_meta(self, _):
         """Prepare a schema."""
         return type('Meta', (object,), dict(
             {'unknown': self.schema_unknown, 'model': self.model}, **self.schema_meta))
@@ -69,7 +71,7 @@ class PWRESTBase(RESTBase):
     meta: PWRESTOptions
     meta_class: t.Type[PWRESTOptions] = PWRESTOptions
 
-    async def prepare_collection(self, request: muffin.Request) -> pw.Query:
+    async def prepare_collection(self, _: muffin.Request) -> pw.Query:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.model.select()
 
@@ -86,14 +88,14 @@ class PWRESTBase(RESTBase):
             raise APIError.NOT_FOUND('Resource not found')
         return resource
 
-    async def paginate(self, request: muffin.Request, *, limit: int = 0,
+    async def paginate(self, _: muffin.Request, *, limit: int = 0,
                        offset: int = 0) -> t.Tuple[pw.Query, int]:
         """Paginate the collection."""
-        cqs = self.collection.order_by()
+        cqs: pw.Select = self.collection.order_by()  # type: ignore
         if cqs._group_by:
-            cqs._select = cqs._group_by
+            cqs._returning = cqs._group_by
         count = await self.meta.manager.count(cqs)
-        return self.collection.offset(offset).limit(limit), count
+        return self.collection.offset(offset).limit(limit), count  # type: ignore
 
     async def get(self, request, *, resource=None) -> JSONType:
         """Get resource or collection of resources."""
@@ -103,7 +105,7 @@ class PWRESTBase(RESTBase):
         resources = await self.meta.manager.fetchall(self.collection)
         return await self.dump(request, resources, many=True)
 
-    async def save(self, request: muffin.Request,  # type: ignore
+    async def save(self, _: muffin.Request,  # type: ignore
                    resource: t.Union[pw.Model, t.List[pw.Model]]):
         """Save the given resource.
 
@@ -145,7 +147,7 @@ class PWRESTBase(RESTBase):
 
     delete = remove  # noqa
 
-    async def get_schema(self, request: muffin.Request, resource=None) -> ma.Schema:
+    async def get_schema(self, request: muffin.Request, resource=None, **_) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
             instance=resource,

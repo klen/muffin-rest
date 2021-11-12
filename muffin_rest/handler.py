@@ -62,14 +62,15 @@ class RESTOptions:
     def setup(self, cls):
         """Setup the options."""
         if not self.Schema:
+            name = self.name or 'Unknown'
             self.Schema = type(
-                self.name.title() + 'Schema', (self.schema_base,),
+                name.title() + 'Schema', (self.schema_base,),
                 dict(self.schema_fields, Meta=self.setup_schema_meta(cls)))
 
         if not self.limit_max:
             self.limit_max = self.limit
 
-    def setup_schema_meta(self, cls):
+    def setup_schema_meta(self, _):
         """Generate meta for schemas."""
         return type('Meta', (object,), dict({'unknown': self.schema_unknown}, **self.schema_meta))
 
@@ -136,7 +137,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
         return cls
 
-    async def __call__(self, request: Request, *args, __meth__: str = None, **options) -> t.Any:
+    async def __call__(self, request: Request, *, __meth__: str = None, **options) -> t.Any:
         """Dispatch the given request by HTTP method."""
         method = getattr(self, __meth__ or request.method.lower())
         self.auth = await self.authorize(request)
@@ -232,7 +233,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
     # Parse data
     # -----------
-    async def get_schema(self, request: Request, resource=None) -> ma.Schema:
+    async def get_schema(self, request: Request, **_) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         assert self.meta.Schema, 'RESTHandler.meta.Schema is required.'
         query = request.url.query

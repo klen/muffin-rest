@@ -9,19 +9,19 @@ class MongoFilter(Filter):
     """Custom filter for sqlalchemy."""
 
     operators = {
-        '$eq': lambda n, v: ('$eq', v),
-        '$ge': lambda n, v: ('$ge', v),
-        '$gt': lambda n, v: ('$gt', v),
-        '$in': lambda n, v: ('$in', v),
-        '$le': lambda n, v: ('$le', v),
-        '$lt': lambda n, v: ('$lt', v),
-        '$ne': lambda n, v: ('$ne', v),
-        '$nin': lambda n, v: ('$nin', v),
-        '$starts': lambda n, v: ('$regex', f"^{ v }"),
-        '$ends': lambda n, v: ('$regex', f"{ v }$"),
+        '$eq': lambda _, v: ('$eq', v),
+        '$ge': lambda _, v: ('$ge', v),
+        '$gt': lambda _, v: ('$gt', v),
+        '$in': lambda _, v: ('$in', v),
+        '$le': lambda _, v: ('$le', v),
+        '$lt': lambda _, v: ('$lt', v),
+        '$ne': lambda _, v: ('$ne', v),
+        '$nin': lambda _, v: ('$nin', v),
+        '$starts': lambda _, v: ('$regex', f"^{ v }"),
+        '$ends': lambda _, v: ('$regex', f"{ v }$"),
     }
 
-    async def filter(self, collection, *ops: t.Tuple[t.Callable, t.Any], **options):
+    async def filter(self, collection, *ops: t.Tuple[t.Callable, t.Any], **_):
         """Apply the filter."""
         return collection.find({self.field: dict(op(self.name, v) for op, v in ops)})
 

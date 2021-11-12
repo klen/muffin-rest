@@ -5,8 +5,10 @@ import typing as t
 from muffin import Request
 from muffin.handler import Handler
 
-from . import SORT_PARAM
 from .utils import Mutate, Mutator, TCOLLECTION
+
+
+SORT_PARAM = 'sort'
 
 
 class Sort(Mutate):

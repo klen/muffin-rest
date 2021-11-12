@@ -24,7 +24,7 @@ class PWFilter(Filter):
     list_ops = Filter.list_ops + ['$between']
 
     def __init__(self, name: str, *, field: Field = None,
-                 schema_field: ma.fields.Field = None, operator: str = None, **meta):
+                 schema_field: ma.fields.Field = None, operator: str = None, **_):
         """Support custom model fields."""
         self.name = name
         self.field = field
@@ -35,14 +35,14 @@ class PWFilter(Filter):
 
     async def filter(self, collection: Query, *ops: t.Tuple[t.Callable, t.Any], **kwargs) -> Query:
         """Apply the filters to Peewee QuerySet.."""
-        if ops:
+        if self.field and ops:
             return self.query(collection, self.field, *ops, **kwargs)
         return collection
 
-    def query(self, query: Query, column: Field, *ops: t.Tuple, **kwargs) -> Query:
+    def query(self, query: Query, column: Field, *ops: t.Tuple, **_) -> Query:
         """Filter a query."""
         if isinstance(column, Field):
-            return query.where(*[op(column, val) for op, val in ops])
+            return query.where(*[op(column, val) for op, val in ops])  # type: ignore
 
         return query
 

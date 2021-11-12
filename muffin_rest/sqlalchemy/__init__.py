@@ -18,14 +18,14 @@ from .sorting import SASorting
 
 
 # XXX: Monkey patch ModelConverter
-ModelConverter._get_field_name = lambda s, prop_or_column: str(prop_or_column.key)
+ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)
 
 
 class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
     """Allow partial updates for tables."""
 
     @ma.pre_load
-    def fill_defaults(self, data, partial=False, **kwargs):
+    def fill_defaults(self, data, partial=False, **_):
         """Insert default params for SQLAlchemy because databases don't.
 
         https://github.com/encode/databases/issues/72
@@ -84,7 +84,7 @@ class SARESTOptions(RESTOptions):
 
         super(SARESTOptions, self).setup(cls)
 
-    def setup_schema_meta(self, cls):
+    def setup_schema_meta(self, _):
         """Prepare a schema."""
         return type('Meta', (object,), dict({
             'unknown': self.schema_unknown, 'table': self.table,
@@ -98,11 +98,11 @@ class SARESTHandler(RESTHandler):
     meta: SARESTOptions
     meta_class: t.Type[SARESTOptions] = SARESTOptions
 
-    async def prepare_collection(self, request: muffin.Request) -> sa.sql.Select:
+    async def prepare_collection(self, _: muffin.Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.table.select()
 
-    async def paginate(self, request: muffin.Request, *, limit: int = 0,
+    async def paginate(self, _: muffin.Request, *, limit: int = 0,
                        offset: int = 0) -> t.Tuple[sa.sql.Select, int]:
         """Paginate the collection."""
         qs = sa.select([sa.func.count()]).select_from(self.collection.order_by(None))
@@ -129,7 +129,7 @@ class SARESTHandler(RESTHandler):
             raise APIError.NOT_FOUND('Resource not found')
         return dict(resource)
 
-    async def get_schema(self, request: muffin.Request, resource=None) -> ma.Schema:
+    async def get_schema(self, request: muffin.Request, *, resource=None, **_) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
             instance=resource,
@@ -137,7 +137,7 @@ class SARESTHandler(RESTHandler):
             exclude=request.url.query.get('schema_exclude', ()),
         )
 
-    async def save(self, request: muffin.Request,  # type: ignore
+    async def save(self, _: muffin.Request,  # type: ignore
                    resource: t.Union[dict, t.List[dict]]):
         """Save the given resource.
 

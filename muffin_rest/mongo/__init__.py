@@ -3,6 +3,7 @@
 import typing as t
 
 import bson
+from bson.errors import InvalidId
 import marshmallow as ma
 import muffin
 from motor import motor_asyncio as motor
@@ -34,6 +35,8 @@ class MongoRESTOptions(RESTOptions):
 
     def setup(self, cls):
         """Prepare meta options."""
+        if self.collection is None:
+            raise RuntimeError('MongoResthandler.Meta.collection is required')
         self.name = self.name or self.collection.name.lower()
         super(MongoRESTOptions, self).setup(cls)
 
@@ -44,11 +47,11 @@ class MongoRESTHandler(RESTHandler):
     meta: MongoRESTOptions
     meta_class: t.Type[MongoRESTOptions] = MongoRESTOptions
 
-    async def prepare_collection(self, request: muffin.Request) -> MongoChain:
+    async def prepare_collection(self, _: muffin.Request) -> MongoChain:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return MongoChain(self.meta.collection)
 
-    async def paginate(self, request: muffin.Request, *, limit: int = 0,
+    async def paginate(self, _: muffin.Request, *, limit: int = 0,
                        offset: int = 0) -> t.Tuple[motor.AsyncIOMotorCursor, int]:
         """Paginate collection."""
         if self.meta.aggregate:
@@ -79,10 +82,10 @@ class MongoRESTHandler(RESTHandler):
 
         try:
             return await self.collection.find_one({self.meta.collection_id: bson.ObjectId(pk)})
-        except bson.errors.InvalidId:
+        except InvalidId:
             raise APIError.NOT_FOUND()
 
-    async def get_schema(self, request: muffin.Request, resource=None) -> ma.Schema:
+    async def get_schema(self, request: muffin.Request, resource=None, **_) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
             instance=resource,
@@ -90,7 +93,7 @@ class MongoRESTHandler(RESTHandler):
             exclude=request.url.query.get('schema_exclude', ()),
         )
 
-    async def save(self, request: muffin.Request,  # type: ignore
+    async def save(self, _: muffin.Request,  # type: ignore
                    resource: t.Union[dict, t.List[dict]]):
         """Save the given resource.
 

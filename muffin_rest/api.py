@@ -31,7 +31,7 @@ class API:
         if servers:
             self.openapi_options['servers'] = servers
 
-        self.authorize: t.Callable[[muffin.Request], t.Awaitable] = to_awaitable(lambda r: True)
+        self.authorize: t.Callable[[muffin.Request], t.Awaitable] = to_awaitable(lambda _: True)
         self.router = Router()
 
         if app:
@@ -78,17 +78,12 @@ class API:
         if not self.openapi:
             return
 
-        @self.router.route('/swagger')
-        async def swagger(request):
-            return SWAGGER_TEMPLATE
-
-        @self.router.route('/redoc')
-        async def redoc(request):
-            return REDOC_TEMPLATE
-
-        @self.router.route('/openapi.json')
         async def openapi_json(request):
             return render_openapi(self, request=request)
+
+        self.router.route('/swagger')(swagger)
+        self.router.route('/redoc')(redoc)
+        self.router.route('/openapi.json')(openapi_json)
 
     def route(self, path: t.Union[str, t.Any], *paths: str, **params):
         """Route an endpoint by the API."""
@@ -108,3 +103,11 @@ class API:
             return self.router.route(path, *paths, **params)
 
         raise Exception("Invalid endpoint")  # TODO
+
+
+async def swagger(_):
+    return SWAGGER_TEMPLATE
+
+
+async def redoc(_):
+    return REDOC_TEMPLATE

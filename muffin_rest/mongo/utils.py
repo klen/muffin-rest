@@ -58,7 +58,7 @@ class MongoChain:
                     params['$match'] = {'$and': query}
                     break
             else:
-                pipeline.insert(0, {'$match': {'$and': query}})
+                pipeline.insert(0, {'$match': {'$and': self.query}})
 
         if self.sorting:
             pipeline = [p for p in pipeline if '$sort' not in p]

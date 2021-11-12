@@ -8,13 +8,13 @@ class ObjectId(ma.fields.Field):
 
     """ObjectID Marshmallow Field."""
 
-    def _deserialize(self, value, attr, data):
+    def _deserialize(self, value, _, __):
         try:
             return bson.ObjectId(value)
         except ValueError:
             raise ma.ValidationError('invalid ObjectId `%s`' % value)
 
-    def _serialize(self, value, attr, obj):
+    def _serialize(self, value, _, __):
         if value is None:
             return ma.missing
         return str(value)
@@ -32,7 +32,7 @@ class MongoSchema(ma.Schema):
         super(MongoSchema, self).__init__(**kwargs)
 
     @ma.post_load
-    def make_instance(self, data, **kwargs):
+    def make_instance(self, data, **__):
         """Build object from data."""
         if self.instance is not None:
             self.instance.update(data)

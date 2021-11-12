@@ -28,7 +28,7 @@ class SAFilter(Filter):
     list_ops = Filter.list_ops + ['$between']
 
     def __init__(self, name: str, *, field: Column = None,
-                 schema_field: ma.fields.Field = None, operator: str = None, **meta):
+                 schema_field: ma.fields.Field = None, operator: str = None, **_):
         """Support custom model fields."""
         self.name = name
         self.field = field
@@ -47,7 +47,7 @@ class SAFilter(Filter):
 
         return collection
 
-    def query(self, select: sql.Select, column: Column, *ops, **kwargs) -> sql.Select:
+    def query(self, select: sql.Select, column: Column, *ops, **_) -> sql.Select:
         """Filter a select."""
         return select.where(*[op(column, val) for op, val in ops])
 

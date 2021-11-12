@@ -6,8 +6,11 @@ import marshmallow as ma
 from muffin import Request
 from asgi_tools._compat import json_loads
 
-from . import FILTERS_PARAM, API
+from . import API
 from .utils import Mutate, Mutator, TCOLLECTION
+
+
+FILTERS_PARAM = 'where'
 
 
 class Filter(Mutate):
@@ -67,7 +70,7 @@ class Filter(Mutate):
 
         return ops, collection
 
-    async def filter(self, collection, *ops: t.Tuple[t.Callable, t.Any], **options):
+    async def filter(self, collection, *ops: t.Tuple[t.Callable, t.Any], **_):
         """Apply the filter to collection."""
         validator = lambda obj: all(op(get_value(obj, self.name), val) for (op, val) in ops)  # noqa
         return [o for o in collection if validator(o)]

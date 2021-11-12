@@ -13,9 +13,9 @@ TCOLLECTION = t.TypeVar('TCOLLECTION', bound=Query)
 class PWSort(Sort):
     """Sorter for Peewee."""
 
-    async def apply(self, collection: TCOLLECTION, desc: bool = False, **options) -> TCOLLECTION:
+    async def apply(self, collection: TCOLLECTION, desc: bool = False, **_) -> TCOLLECTION:
         """Sort the collection."""
-        return collection.order_by_extend(self.field if not desc else self.field.desc())
+        return collection.order_by_extend(self.field if not desc else self.field.desc())  # type: ignore
 
 
 class PWSorting(Sorting):
@@ -48,7 +48,8 @@ class PWSorting(Sorting):
 
     def sort_default(self, collection: TCOLLECTION) -> TCOLLECTION:
         """Sort collection by default."""
-        return collection.order_by(*[
+        sorting = [
             sort.field.desc() if sort.meta['default'] == 'desc' else sort.field
             for sort in self.default
-        ])
+        ]
+        return collection.order_by(*sorting)  # type: ignore
