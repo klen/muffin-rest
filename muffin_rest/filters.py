@@ -95,6 +95,7 @@ class Filters(Mutator):
     """Build filters for handlers."""
 
     MUTATE_CLASS = Filter
+    mutations: t.Dict[str, Filter]  # type: ignore
 
     async def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
         """Filter the given collection."""

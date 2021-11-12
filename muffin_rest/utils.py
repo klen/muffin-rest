@@ -61,7 +61,7 @@ class Mutator(abc.ABC):
     def __bool__(self):
         return bool(self.mutations)
 
-    def convert(self, obj, **meta):
+    def convert(self, obj, **meta) -> Mutate:
         """Convert params to mutations."""
         if isinstance(obj, self.MUTATE_CLASS):
             return obj

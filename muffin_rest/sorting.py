@@ -14,7 +14,7 @@ SORT_PARAM = 'sort'
 class Sort(Mutate):
     """Sort a collection."""
 
-    async def apply(self, collection, desc: bool = False, **options):
+    async def apply(self, collection, desc: bool = False, **_) -> t.Any:
         """Sort the collection."""
         return sorted(collection, key=lambda obj: getattr(obj, self.name), reverse=desc)
 
@@ -24,13 +24,14 @@ class Sorting(Mutator):
     """Build sorters for handlers."""
 
     MUTATE_CLASS = Sort
+    mutations: t.Dict[str, Sort]  # type: ignore
 
     def __init__(self, handler: Handler, params: t.Sequence):
         """Initialize the sorting."""
-        self.default: t.List = []
+        self.default: t.List[Sort] = []
         super(Sorting, self).__init__(handler, params)
 
-    async def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
+    async def apply(self, request: Request, collection: TCOLLECTION, **_) -> TCOLLECTION:
         """Sort the given collection."""
         data = request.url.query.get(SORT_PARAM)
         if data:
@@ -43,9 +44,9 @@ class Sorting(Mutator):
 
         return collection
 
-    def convert(self, obj, **meta):
+    def convert(self, obj, **meta) -> Sort:
         """Prepare sorters."""
-        sort = super(Sorting, self).convert(obj, **meta)
+        sort: Sort = super(Sorting, self).convert(obj, **meta)  # type: ignore
         if sort.meta.get('default'):
             self.default.append(sort)
         return sort
