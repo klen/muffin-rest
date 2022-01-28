@@ -1,6 +1,7 @@
 """Support filters for Peewee ORM."""
 
 import typing as t
+
 from peewee import Query, Field
 import marshmallow as ma
 

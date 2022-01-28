@@ -82,16 +82,16 @@ class RESTOptions:
 class RESTHandlerMeta(HandlerMeta):
     """Create class options."""
 
-    def __new__(mcs, name, bases, params):
+    def __new__(cls, name, bases, params):
         """Prepare options for the handler."""
-        cls = super().__new__(mcs, name, bases, params)
-        cls.meta = cls.meta_class(cls)
+        kls = super().__new__(cls, name, bases, params)
+        kls.meta = kls.meta_class(kls)
 
-        if getattr(cls.meta, cls.meta_class.base_property, None) is not None:
-            cls.meta.filters = cls.meta.filters_cls(cls, cls.meta.filters)
-            cls.meta.sorting = cls.meta.sorting_cls(cls, cls.meta.sorting)
+        if getattr(kls.meta, kls.meta_class.base_property, None) is not None:
+            kls.meta.filters = kls.meta.filters_cls(kls, kls.meta.filters)
+            kls.meta.sorting = kls.meta.sorting_cls(kls, kls.meta.sorting)
 
-        return cls
+        return kls
 
 
 class RESTBase(Handler, metaclass=RESTHandlerMeta):

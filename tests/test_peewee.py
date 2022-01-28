@@ -53,6 +53,7 @@ async def ResourceEndpoint(Resource, api):
             limit = 10
             model = Resource
             sorting = ('id', {'default': 'desc'}), 'name', Resource.count
+            delete_recursive = True
 
         @PWRESTHandler.route('/resource/action')
         async def action(self, request, resource=None):
@@ -65,7 +66,7 @@ async def ResourceEndpoint(Resource, api):
 
 @pytest.fixture
 async def resource(Resource, db):
-    return await db.create(Resource, name='test')
+    return await db.manager.create(Resource, name='test')
 
 
 def test_imports():
@@ -157,13 +158,13 @@ async def test_delete(client, resource, ResourceEndpoint, Resource, db):
     json = await res.json()
     assert not json
 
-    assert not await db.fetchone(Resource.select().where(Resource.id == 1))
+    assert not await db.manager.fetchone(Resource.select().where(Resource.id == 1))
 
 
 async def test_sort(client, ResourceEndpoint, Resource, db):
-    await db.create(Resource, name='test2', count=2)
-    await db.create(Resource, name='test3', count=3)
-    await db.create(Resource, name='test4', count=1)
+    await db.manager.create(Resource, name='test2', count=2)
+    await db.manager.create(Resource, name='test3', count=3)
+    await db.manager.create(Resource, name='test4', count=1)
 
     # Default sort
     res = await client.get('/api/resource')
@@ -180,9 +181,9 @@ async def test_sort(client, ResourceEndpoint, Resource, db):
 
 
 async def test_filters(client, ResourceEndpoint, Resource, db):
-    await db.create(Resource, name='test2', count=2)
-    await db.create(Resource, name='test3', count=3)
-    await db.create(Resource, name='test4', count=1)
+    await db.manager.create(Resource, name='test2', count=2)
+    await db.manager.create(Resource, name='test3', count=3)
+    await db.manager.create(Resource, name='test4', count=1)
 
     res = await client.get('/api/resource?where={"name":"test"}')
     assert res.status_code == 200
@@ -217,7 +218,7 @@ async def test_filters(client, ResourceEndpoint, Resource, db):
 
 async def test_paginate(client, ResourceEndpoint, Resource, db):
     for n in range(12):
-        await db.create(Resource, name=f"test{n}")
+        await db.manager.create(Resource, name=f"test{n}")
 
     res = await client.get('/api/resource')
     assert res.status_code == 200
@@ -258,7 +259,7 @@ async def test_batch_ops(client, ResourceEndpoint, db, Resource):
     res = await client.delete('/api/resource', json=['1', '2', '3'])
     assert res.status_code == 200
 
-    assert not await db.count(Resource.select().where(Resource.id << ('11', '12', '13')))
+    assert not await db.manager.count(Resource.select().where(Resource.id << ('11', '12', '13')))
 
 
 async def test_openapi(client, ResourceEndpoint):
@@ -302,7 +303,7 @@ async def test_aiomodels(client, db, api):
             events.append('custom-delete')
             return await super().delete_instance(**kwargs)
 
-    await db.create_tables(TestModel)
+    await db.manager.create_tables(TestModel)
 
     from muffin_rest.peewee import PWRESTHandler
 
