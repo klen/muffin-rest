@@ -1,7 +1,7 @@
 aiosqlite
 apispec             >= 4
 marshmallow-peewee  >= 3.2.0
-marshmallow-sqlalchemy
+marshmallow-sqlalchemy >= 0.27.0
 muffin-databases    >= 0.3.2
 muffin-mongo        >= 0.3.1
 muffin-peewee-aio

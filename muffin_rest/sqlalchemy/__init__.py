@@ -18,7 +18,7 @@ from muffin_rest.sqlalchemy.filters import SAFilters
 from muffin_rest.sqlalchemy.sorting import SASorting
 
 # XXX: Monkey patch ModelConverter
-ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)
+ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore
 
 
 class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
