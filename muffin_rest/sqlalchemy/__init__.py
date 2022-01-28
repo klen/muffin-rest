@@ -7,15 +7,15 @@ import typing as t
 import marshmallow as ma
 import muffin
 import sqlalchemy as sa
-from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSchema, ModelConverter
+from marshmallow_sqlalchemy import ModelConverter
+from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSchema
 from muffin.typing import JSONType
 from muffin_databases import Plugin as DB
 
-from ..handler import RESTHandler, RESTOptions
-from ..errors import APIError
-from .filters import SAFilters
-from .sorting import SASorting
-
+from muffin_rest.errors import APIError
+from muffin_rest.handler import RESTHandler, RESTOptions
+from muffin_rest.sqlalchemy.filters import SAFilters
+from muffin_rest.sqlalchemy.sorting import SASorting
 
 # XXX: Monkey patch ModelConverter
 ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)
@@ -31,7 +31,8 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
         https://github.com/encode/databases/issues/72
         """
         cols_to_fields = {
-            f.attribute or f.name: f for f in self.declared_fields.values()}
+            f.attribute or f.name: f for f in self.declared_fields.values()
+        }
         if not partial:
             for column in self.opts.table.columns:
                 field = cols_to_fields.get(column.name)
@@ -44,7 +45,9 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
                     if callable(value):
                         value = value(column)
 
-                    data[data_key] = field._serialize(value, field.attribute or field.name, None)
+                    data[data_key] = field._serialize(
+                        value, field.attribute or field.name, None
+                    )
 
         return data
 
@@ -55,7 +58,7 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
             instance = dict(self.instance)
             instance.update(data)
             return instance
-        return super(SQLAlchemyAutoSchema, self).make_instance(data, **kwargs)
+        return super().make_instance(data, **kwargs)
 
 
 class SARESTOptions(RESTOptions):
@@ -72,7 +75,7 @@ class SARESTOptions(RESTOptions):
     table_pk: t.Optional[sa.Column] = None
     database: DB
 
-    base_property = 'table'
+    base_property = "table"
 
     def setup(self, cls):
         """Prepare meta options."""
@@ -82,14 +85,23 @@ class SARESTOptions(RESTOptions):
         self.name = self.name or self.table.name
         self.table_pk = self.table_pk or self.table.c.id
 
-        super(SARESTOptions, self).setup(cls)
+        super().setup(cls)
 
     def setup_schema_meta(self, _):
         """Prepare a schema."""
-        return type('Meta', (object,), dict({
-            'unknown': self.schema_unknown, 'table': self.table,
-            'include_fk': True, 'dump_only': (self.name_id,)
-        }, **self.schema_meta))
+        return type(
+            "Meta",
+            (object,),
+            dict(
+                {
+                    "unknown": self.schema_unknown,
+                    "table": self.table,
+                    "include_fk": True,
+                    "dump_only": (self.name_id,),
+                },
+                **self.schema_meta
+            ),
+        )
 
 
 class SARESTHandler(RESTHandler):
@@ -102,8 +114,9 @@ class SARESTHandler(RESTHandler):
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.table.select()
 
-    async def paginate(self, _: muffin.Request, *, limit: int = 0,
-                       offset: int = 0) -> t.Tuple[sa.sql.Select, int]:
+    async def paginate(
+        self, _: muffin.Request, *, limit: int = 0, offset: int = 0
+    ) -> t.Tuple[sa.sql.Select, int]:
         """Paginate the collection."""
         qs = sa.select([sa.func.count()]).select_from(self.collection.order_by(None))
         total = await self.meta.database.fetch_val(qs)
@@ -111,7 +124,7 @@ class SARESTHandler(RESTHandler):
 
     async def get(self, request, *, resource=None) -> JSONType:
         """Get resource or collection of resources."""
-        if resource is not None and resource != '':
+        if resource is not None and resource != "":
             return await self.dump(request, resource, many=False)
 
         rows = await self.meta.database.fetch_all(self.collection)
@@ -119,41 +132,36 @@ class SARESTHandler(RESTHandler):
 
     async def prepare_resource(self, request: muffin.Request) -> t.Optional[dict]:
         """Load a resource."""
-        pk = request['path_params'].get(self.meta.name_id)
+        pk = request["path_params"].get(self.meta.name_id)
         if not pk:
             return None
 
         qs = self.collection.where(self.meta.table_pk == pk)
         resource = await self.meta.database.fetch_one(qs)
         if resource is None:
-            raise APIError.NOT_FOUND('Resource not found')
+            raise APIError.NOT_FOUND("Resource not found")
         return dict(resource)
 
-    async def get_schema(self, request: muffin.Request, *, resource=None, **_) -> ma.Schema:
+    async def get_schema(
+        self, request: muffin.Request, *, resource=None, **_
+    ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
             instance=resource,
-            only=request.url.query.get('schema_only'),
-            exclude=request.url.query.get('schema_exclude', ()),
+            only=request.url.query.get("schema_only"),
+            exclude=request.url.query.get("schema_exclude", ()),
         )
 
-    async def save(self, _: muffin.Request,  # type: ignore
-                   resource: t.Union[dict, t.List[dict]]):
-        """Save the given resource.
-
-        Supports batch saving.
-        """
-        resources = resource if isinstance(resource, t.Sequence) else [resource]
+    async def save(self, _: muffin.Request, resource: t.Dict) -> t.Dict:  # type: ignore
+        """Save the given resource."""
         table_pk = t.cast(sa.Column, self.meta.table_pk)
-        for res in resources:
-            if res.get(table_pk.name):
-                update = self.meta.table.update().where(
-                    table_pk == res[table_pk.name])
-                await self.meta.database.execute(update, res)
+        if resource.get(table_pk.name):
+            update = self.meta.table.update().where(table_pk == resource[table_pk.name])
+            await self.meta.database.execute(update, resource)
 
-            else:
-                insert = self.meta.table.insert()
-                res[table_pk.name] = await self.meta.database.execute(insert, res)
+        else:
+            insert = self.meta.table.insert()
+            resource[table_pk.name] = await self.meta.database.execute(insert, resource)
 
         return resource
 

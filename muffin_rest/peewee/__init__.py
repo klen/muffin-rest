@@ -12,11 +12,11 @@ from marshmallow_peewee import ForeignKey, ModelSchema
 from muffin.typing import JSONType
 from peewee_aio import Manager, Model
 
-from ..errors import APIError
-from ..handler import RESTBase, RESTOptions
-from .filters import PWFilters
-from .openapi import PeeweeOpenAPIMixin
-from .sorting import PWSorting
+from muffin_rest.errors import APIError
+from muffin_rest.handler import RESTBase, RESTOptions
+from muffin_rest.peewee.filters import PWFilters
+from muffin_rest.peewee.openapi import PeeweeOpenAPIMixin
+from muffin_rest.peewee.sorting import PWSorting
 
 # XXX: Patch apispec.MarshmallowPlugin to support ForeignKeyField
 MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
@@ -56,7 +56,7 @@ class PWRESTOptions(RESTOptions):
 
         self.manager = manager
 
-        super(PWRESTOptions, self).setup(cls)
+        super().setup(cls)
 
     def setup_schema_meta(self, _):
         """Prepare a schema."""
@@ -65,7 +65,7 @@ class PWRESTOptions(RESTOptions):
             (object,),
             dict(
                 {"unknown": self.schema_unknown, "model": self.model},
-                **self.schema_meta
+                **self.schema_meta,
             ),
         )
 
@@ -115,22 +115,13 @@ class PWRESTBase(RESTBase):
         resources = await self.meta.manager.fetchall(self.collection)
         return await self.dump(request, resources, many=True)
 
-    async def save(
-        self,
-        _: muffin.Request,  # type: ignore
-        resource: t.Union[pw.Model, t.List[pw.Model]],
-    ):
-        """Save the given resource.
-
-        Supports batch saving.
-        """
+    async def save(self, _: muffin.Request, resource: pw.Model) -> pw.Model:
+        """Save the given resource."""
         meta = self.meta
-        save = meta.manager.save
         if issubclass(meta.model, Model):
-            save = lambda m: m.save()  # type: ignore  # noqa
-
-        for obj in resource if isinstance(resource, list) else [resource]:
-            await save(obj)
+            await resource.save()
+        else:
+            await meta.manager.save(resource)
 
         return resource
 
@@ -157,8 +148,8 @@ class PWRESTBase(RESTBase):
         if issubclass(meta.model, Model):
             delete_instance = lambda m: m.delete_instance(recursive=meta.delete_recursive)  # type: ignore  # noqa
 
-        for resource in resources:
-            await delete_instance(resource)
+        for res in resources:
+            await delete_instance(res)
 
     delete = remove  # noqa
 
