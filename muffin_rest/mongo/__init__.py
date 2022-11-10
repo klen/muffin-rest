@@ -1,6 +1,6 @@
 """Mongo DB support."""
 
-import typing as t
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type
 
 import bson
 import marshmallow as ma
@@ -19,18 +19,18 @@ from muffin_rest.mongo.utils import MongoChain
 class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
 
-    filters_cls: t.Type[MongoFilters] = MongoFilters
-    sorting_cls: t.Type[MongoSorting] = MongoSorting
-    schema_base: t.Type[MongoSchema] = MongoSchema
+    filters_cls: Type[MongoFilters] = MongoFilters
+    sorting_cls: Type[MongoSorting] = MongoSorting
+    schema_base: Type[MongoSchema] = MongoSchema
 
-    aggregate: t.Optional[t.List] = None  # Support aggregation. Set to pipeline.
+    aggregate: Optional[List] = None  # Support aggregation. Set to pipeline.
     collection_id: str = "_id"
-    collection: t.Optional[motor.AsyncIOMotorCollection] = None
+    collection: Optional[motor.AsyncIOMotorCollection] = None
 
     base_property: str = "collection"
 
-    if t.TYPE_CHECKING:
-        Schema: t.Type[MongoSchema]
+    if TYPE_CHECKING:
+        Schema: Type[MongoSchema]
 
     def setup(self, cls):
         """Prepare meta options."""
@@ -44,7 +44,7 @@ class MongoRESTHandler(RESTHandler):
     """Support Mongo DB."""
 
     meta: MongoRESTOptions
-    meta_class: t.Type[MongoRESTOptions] = MongoRESTOptions
+    meta_class: Type[MongoRESTOptions] = MongoRESTOptions
 
     async def prepare_collection(self, _: muffin.Request) -> MongoChain:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
@@ -52,7 +52,7 @@ class MongoRESTHandler(RESTHandler):
 
     async def paginate(
         self, _: muffin.Request, *, limit: int = 0, offset: int = 0
-    ) -> t.Tuple[motor.AsyncIOMotorCursor, int]:
+    ) -> Tuple[motor.AsyncIOMotorCursor, int]:
         """Paginate collection."""
         if self.meta.aggregate:
             pipeline_all = self.meta.aggregate + [{"$skip": offset}, {"$limit": limit}]
@@ -75,7 +75,7 @@ class MongoRESTHandler(RESTHandler):
         docs = await self.collection.to_list(None)
         return await self.dump(request, docs, many=True)
 
-    async def prepare_resource(self, request: muffin.Request) -> t.Optional[dict]:
+    async def prepare_resource(self, request: muffin.Request) -> Optional[Dict]:
         """Load a resource."""
         pk = request["path_params"].get(self.meta.name_id)
         if not pk:
@@ -98,7 +98,7 @@ class MongoRESTHandler(RESTHandler):
             exclude=request.url.query.get("schema_exclude", ()),
         )
 
-    async def save(self, _: muffin.Request, resource: t.Dict) -> t.Dict:  # type: ignore
+    async def save(self, _: muffin.Request, resource: Dict) -> Dict:  # type: ignore
         """Save the given resource."""
         if resource.get(self.meta.collection_id):
             await self.collection.replace_one(
@@ -111,7 +111,7 @@ class MongoRESTHandler(RESTHandler):
 
         return resource
 
-    async def remove(self, request: muffin.Request, *, resource: dict = None):
+    async def remove(self, request: muffin.Request, resource: Optional[Dict] = None):
         """Remove the given resource(s)."""
         oids = [resource[self.meta.collection_id]] if resource else await request.data()
         if not oids:

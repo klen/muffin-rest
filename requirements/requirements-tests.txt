@@ -9,3 +9,6 @@ pytest
 pytest-aio[curio,trio]
 pytest-mypy
 pyyaml
+
+types-PyYAML
+types-ujson

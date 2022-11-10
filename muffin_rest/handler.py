@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import abc
 import inspect
-import typing as t
+from typing import (TYPE_CHECKING, Any, Dict, Generator, Optional, Sequence, Tuple, Type, TypeVar,
+                    Union)
 
 import marshmallow as ma
 from asgi_tools.response import parse_response
@@ -17,13 +18,13 @@ from muffin_rest.errors import APIError
 from muffin_rest.filters import Filter, Filters
 from muffin_rest.sorting import Sort, Sorting
 
-T = t.TypeVar("T")
+T = TypeVar("T")
 
 
 class RESTOptions:
     """Handler Options."""
 
-    name: t.Optional[str] = None
+    name: Optional[str] = None
     name_id: str = "id"
 
     # limit: Paginate results (set to None for disable pagination)
@@ -32,17 +33,17 @@ class RESTOptions:
 
     # Base class for filters
     filters: Filters
-    filters_cls: t.Type[Filters] = Filters
+    filters_cls: Type[Filters] = Filters
 
     # Base class for sorting
     sorting: Sorting
-    sorting_cls: t.Type[Sorting] = Sorting
+    sorting_cls: Type[Sorting] = Sorting
 
     # Auto generation for schemas
-    Schema: t.Type[ma.Schema]
-    schema_base: t.Type[ma.Schema] = ma.Schema
-    schema_fields: t.Dict = {}
-    schema_meta: t.Dict = {}
+    Schema: Type[ma.Schema]
+    schema_base: Type[ma.Schema] = ma.Schema
+    schema_fields: Dict = {}
+    schema_meta: Dict = {}
     schema_unknown: str = ma.EXCLUDE
 
     base_property: str = "name"
@@ -103,26 +104,26 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
     """Load/save resources."""
 
-    if t.TYPE_CHECKING:
-        auth: t.Any
-        collection: t.Any
-        resource: t.Any
+    if TYPE_CHECKING:
+        auth: Any
+        collection: Any
+        resource: Any
 
     meta: RESTOptions
-    meta_class: t.Type[RESTOptions] = RESTOptions
-    _api: t.Optional[API] = None
+    meta_class: Type[RESTOptions] = RESTOptions
+    _api: Optional[API] = None
 
     class Meta:
         """Tune the handler."""
 
         # Resource filters
-        filters: t.Sequence[t.Union[str, t.Tuple[str, str], Filter]] = ()
+        filters: Sequence[Union[str, Tuple[str, str], Filter]] = ()
 
         # Define allowed resource sorting params
-        sorting: t.Sequence[t.Union[str, t.Tuple[str, t.Dict], Sort]] = ()
+        sorting: Sequence[Union[str, Tuple[str, Dict], Sort]] = ()
 
         # Serialize/Deserialize Schema class
-        Schema: t.Optional[t.Type[ma.Schema]] = None
+        Schema: Optional[Type[ma.Schema]] = None
 
     @classmethod
     def __route__(cls, router, *paths, **params):
@@ -147,8 +148,8 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         return cls
 
     async def __call__(
-        self, request: Request, *, __meth__: str = None, **options
-    ) -> t.Any:
+        self, request: Request, *, __meth__: Optional[str] = None, **options
+    ) -> Any:
         """Dispatch the given request by HTTP method."""
         method = getattr(self, __meth__ or request.method.lower())
         self.auth = await self.authorize(request)
@@ -205,11 +206,11 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
     # Prepare data
     # ------------
     @abc.abstractmethod
-    async def prepare_collection(self, request: Request) -> t.Any:
+    async def prepare_collection(self, request: Request) -> Any:
         """Prepare a collection of resources. Create queryset, db cursor and etc."""
         raise NotImplementedError
 
-    async def prepare_resource(self, request: Request) -> t.Any:
+    async def prepare_resource(self, request: Request) -> Any:
         """Load a resource."""
         return request["path_params"].get(self.meta.name_id)
 
@@ -219,7 +220,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         """Prepare pagination headers."""
         return {"x-total": total, "x-limit": limit, "x-offset": offset}
 
-    def paginate_prepare_params(self, request: Request) -> t.Tuple[int, int]:
+    def paginate_prepare_params(self, request: Request) -> Tuple[int, int]:
         """Prepare pagination params."""
         meta = self.meta
         query = request.url.query
@@ -232,7 +233,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
     @abc.abstractmethod
     async def paginate(
         self, request: Request, *, limit: int = 0, offset: int = 0
-    ) -> t.Tuple[t.Any, int]:
+    ) -> Tuple[Any, int]:
         """Paginate the results."""
         raise NotImplementedError
 
@@ -266,7 +267,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         except (ValueError, TypeError) as exc:
             raise APIError.BAD_REQUEST(str(exc))
 
-    async def load(self, request: Request, resource: T = None) -> t.Any:
+    async def load(self, request: Request, resource: Optional[T] = None) -> Any:
         """Load data from request and create/update a resource."""
         data = await self.parse(request)
         schema = await self.get_schema(request, resource=resource)
@@ -280,11 +281,11 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
         return resource
 
-    async def dump(self, request: Request, response: t.Any, *, many=...) -> JSONType:
+    async def dump(self, request: Request, response: Any, *, many=...) -> JSONType:
         """Serialize the given response."""
         schema = await self.get_schema(request)
         if many is ...:
-            many = isinstance(response, t.Sequence)
+            many = isinstance(response, Sequence)
 
         return schema.dump(response, many=many) if schema else response
 
@@ -330,8 +331,8 @@ class RESTHandler(RESTBase, openapi.OpenAPIMixin):
 
 
 def to_sort(
-    sort_params: t.Sequence[str],
-) -> t.Generator[t.Tuple[str, bool], None, None]:
+    sort_params: Sequence[str],
+) -> Generator[Tuple[str, bool], None, None]:
     """Generate sort params."""
     for name in sort_params:
         n, desc = name.strip("-"), name.startswith("-")

@@ -1,8 +1,8 @@
 """SQLAlchemy Core support."""
 
-from __future__ import annotations  # py37
+from __future__ import annotations
 
-import typing as t
+from typing import Dict, Optional, Tuple, Type, cast  # py37
 
 import marshmallow as ma
 import muffin
@@ -64,15 +64,15 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
 class SARESTOptions(RESTOptions):
     """Support SQLAlchemy Core."""
 
-    filters_cls: t.Type[SAFilters] = SAFilters
-    sorting_cls: t.Type[SASorting] = SASorting
+    filters_cls: Type[SAFilters] = SAFilters
+    sorting_cls: Type[SASorting] = SASorting
 
     # Schema auto generation params
-    Schema: t.Type[SQLAlchemyAutoSchema]
-    schema_base: t.Type[SQLAlchemyAutoSchema] = SQLAlchemyAutoSchema
+    Schema: Type[SQLAlchemyAutoSchema]
+    schema_base: Type[SQLAlchemyAutoSchema] = SQLAlchemyAutoSchema
 
     table: sa.Table
-    table_pk: t.Optional[sa.Column] = None
+    table_pk: Optional[sa.Column] = None
     database: DB
 
     base_property = "table"
@@ -108,7 +108,7 @@ class SARESTHandler(RESTHandler):
     """Support SQLAlchemy Core."""
 
     meta: SARESTOptions
-    meta_class: t.Type[SARESTOptions] = SARESTOptions
+    meta_class: Type[SARESTOptions] = SARESTOptions
 
     async def prepare_collection(self, _: muffin.Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
@@ -116,7 +116,7 @@ class SARESTHandler(RESTHandler):
 
     async def paginate(
         self, _: muffin.Request, *, limit: int = 0, offset: int = 0
-    ) -> t.Tuple[sa.sql.Select, int]:
+    ) -> Tuple[sa.sql.Select, int]:
         """Paginate the collection."""
         qs = sa.select([sa.func.count()]).select_from(self.collection.order_by(None))
         total = await self.meta.database.fetch_val(qs)
@@ -130,7 +130,7 @@ class SARESTHandler(RESTHandler):
         rows = await self.meta.database.fetch_all(self.collection)
         return await self.dump(request, rows, many=True)
 
-    async def prepare_resource(self, request: muffin.Request) -> t.Optional[dict]:
+    async def prepare_resource(self, request: muffin.Request) -> Optional[Dict]:
         """Load a resource."""
         pk = request["path_params"].get(self.meta.name_id)
         if not pk:
@@ -152,9 +152,9 @@ class SARESTHandler(RESTHandler):
             exclude=request.url.query.get("schema_exclude", ()),
         )
 
-    async def save(self, _: muffin.Request, resource: t.Dict) -> t.Dict:  # type: ignore
+    async def save(self, _: muffin.Request, resource: Dict) -> Dict:  # type: ignore
         """Save the given resource."""
-        table_pk = t.cast(sa.Column, self.meta.table_pk)
+        table_pk = cast(sa.Column, self.meta.table_pk)
         if resource.get(table_pk.name):
             update = self.meta.table.update().where(table_pk == resource[table_pk.name])
             await self.meta.database.execute(update, resource)
@@ -165,9 +165,9 @@ class SARESTHandler(RESTHandler):
 
         return resource
 
-    async def remove(self, request: muffin.Request, *, resource: dict = None):
+    async def remove(self, request: muffin.Request, resource: Optional[Dict] = None):
         """Remove the given resource."""
-        table_pk = t.cast(sa.Column, self.meta.table_pk)
+        table_pk = cast(sa.Column, self.meta.table_pk)
         pks = [resource[table_pk.name]] if resource else await request.data()
         if not pks:
             raise APIError.NOT_FOUND()

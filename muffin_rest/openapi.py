@@ -1,11 +1,13 @@
 """Create openapi schema from the given API."""
 import inspect
 import re
-import typing as t
 from functools import partial
 from http import HTTPStatus
+from types import ModuleType
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, cast
 
-from apispec import APISpec, utils
+from apispec import utils
+from apispec.core import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from asgi_tools.response import CAST_RESPONSE
 from http_router.routes import DynamicRoute, Route
@@ -14,10 +16,12 @@ from muffin.typing import JSONType
 
 from . import LIMIT_PARAM, OFFSET_PARAM, openapi
 
+yaml_utils: Optional[ModuleType] = None
+
 try:
     from apispec import yaml_utils
 except ImportError:
-    yaml_utils = None
+    pass
 
 
 DEFAULT_METHODS = ("get",)
@@ -51,7 +55,7 @@ def render_openapi(api, request):
         **options,
         plugins=[MarshmallowPlugin()],
     )
-    spec.tags = {}
+    tags = {}
 
     # Setup Authorization
     if api.authorize:
@@ -67,12 +71,12 @@ def render_openapi(api, request):
         if route.path in SKIP_PATH:
             continue
 
-        spec.path(route.path, **route_to_spec(route, spec))
+        spec.path(route.path, **route_to_spec(route, spec, tags))
 
     return spec.to_dict()
 
 
-def parse_docs(cb: t.Callable) -> t.Tuple[str, str, t.Dict]:
+def parse_docs(cb: Callable) -> Tuple[str, str, Dict]:
     """Parse docs from the given callback."""
     if yaml_utils is None:
         return "", "", {}
@@ -85,7 +89,7 @@ def parse_docs(cb: t.Callable) -> t.Tuple[str, str, t.Dict]:
     return summary, description.strip(), schema
 
 
-def merge_dicts(source: t.Dict, merge: t.Dict) -> t.Dict:
+def merge_dicts(source: Dict, merge: Dict) -> Dict:
     """Merge dicts."""
     return dict(
         source,
@@ -109,19 +113,19 @@ def merge_dicts(source: t.Dict, merge: t.Dict) -> t.Dict:
     )
 
 
-def route_to_spec(route: Route, spec: APISpec) -> t.Dict:
+def route_to_spec(route: Route, spec: APISpec, tags: Dict) -> Dict:
     """Convert the given router to openapi operations."""
-    results: t.Dict = {"parameters": [], "operations": {}}
+    results: Dict = {"parameters": [], "operations": {}}
     if isinstance(route, DynamicRoute):
         for param in route.params:
             results["parameters"].append({"in": "path", "name": param})
 
-    target = t.cast(t.Callable, route.target)
+    target = cast(Callable, route.target)
     if isinstance(target, partial):
         target = target.func
 
     if hasattr(target, "openapi"):
-        results["operations"] = target.openapi(route, spec)  # type: ignore
+        results["operations"] = target.openapi(route, spec, tags)
         return results
 
     summary, desc, schema = parse_docs(target)
@@ -137,15 +141,15 @@ def route_to_spec(route: Route, spec: APISpec) -> t.Dict:
     return results
 
 
-def route_to_methods(route: Route) -> t.List[str]:
+def route_to_methods(route: Route) -> List[str]:
     """Get sorted methods from the route."""
     methods = [m for m in HTTP_METHODS if m in (route.methods or [])]
     return [m.lower() for m in methods or DEFAULT_METHODS]
 
 
-def return_type_to_response(fn: t.Callable) -> t.Dict:
+def return_type_to_response(fn: Callable) -> Dict:
     """Generate reponses specs based on the given function's return type."""
-    responses: t.Dict[int, t.Dict] = {}
+    responses: Dict[int, Dict] = {}
     return_type = fn.__annotations__.get("return")
     return_type = CAST_RESPONSE.get(return_type, return_type)  # type: ignore
     if return_type is None:
@@ -167,21 +171,21 @@ def return_type_to_response(fn: t.Callable) -> t.Dict:
 class OpenAPIMixin:
     """Render an endpoint to openapi specs."""
 
-    if t.TYPE_CHECKING:
+    if TYPE_CHECKING:
         from .endpoint import RESTOptions
 
         meta: RESTOptions
 
     @classmethod
-    def openapi(cls, route: Route, spec: APISpec) -> t.Dict:
+    def openapi(cls, route: Route, spec: APISpec, tags: Dict) -> Dict:  # noqa
         """Get openapi specs for the endpoint."""
         if cls.meta.name is None:
             return {}
 
-        operations: t.Dict = {}
+        operations: Dict = {}
         summary, desc, schema = parse_docs(cls)
-        if cls not in spec.tags:
-            spec.tags[cls] = cls.meta.name
+        if cls not in tags:
+            tags[cls] = cls.meta.name
             spec.tag({"name": cls.meta.name, "description": summary})
             Schema = cls.meta.Schema
             if Schema.__name__ not in spec.components.schemas:
@@ -189,7 +193,7 @@ class OpenAPIMixin:
 
         schema_ref = {"$ref": f"#/components/schemas/{ cls.meta.Schema.__name__ }"}
         for method in route_to_methods(route):
-            operations[method] = {"tags": [spec.tags[cls]]}
+            operations[method] = {"tags": [tags[cls]]}
             is_resource_route = isinstance(route, DynamicRoute) and route.params.get(
                 cls.meta.name_id
             )

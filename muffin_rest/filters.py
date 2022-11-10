@@ -1,16 +1,15 @@
 """Support API filters."""
 import operator
-import typing as t
+from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Type, cast
 
 import marshmallow as ma
-from muffin import Request
 from asgi_tools._compat import json_loads
+from muffin import Request
 
 from . import API
-from .utils import Mutate, Mutator, TCOLLECTION
+from .utils import TCOLLECTION, Mutate, Mutator
 
-
-FILTERS_PARAM = 'where'
+FILTERS_PARAM = "where"
 
 
 class Filter(Mutate):
@@ -18,30 +17,37 @@ class Filter(Mutate):
     """Base filter class."""
 
     operators = {
-        '<':   operator.lt,
-        '$lt': operator.lt,
-        '<=':  operator.le,
-        '$le': operator.le,
-        '>':   operator.gt,
-        '$gt': operator.gt,
-        '>=':  operator.ge,
-        '$ge': operator.ge,
-        '==':  operator.eq,
-        '$eq': operator.eq,
-        '!':   operator.ne,
-        '$ne': operator.ne,
-        '$in': lambda v, c: v in c,
-        '$nin': lambda v, c: v not in c,
+        "<": operator.lt,
+        "$lt": operator.lt,
+        "<=": operator.le,
+        "$le": operator.le,
+        ">": operator.gt,
+        "$gt": operator.gt,
+        ">=": operator.ge,
+        "$ge": operator.ge,
+        "==": operator.eq,
+        "$eq": operator.eq,
+        "!": operator.ne,
+        "$ne": operator.ne,
+        "$in": lambda v, c: v in c,
+        "$nin": lambda v, c: v not in c,
     }
-    operators['<<'] = operators['$in']
+    operators["<<"] = operators["$in"]
 
-    list_ops = ['$in', '<<']
+    list_ops = ["$in", "<<"]
 
-    schema_field_cls: t.Type[ma.fields.Field] = ma.fields.Raw
-    default_operator: str = '$eq'
+    schema_field_cls: Type[ma.fields.Field] = ma.fields.Raw
+    default_operator: str = "$eq"
 
-    def __init__(self, name: str, *, field: t.Any = None,
-                 schema_field: ma.fields.Field = None, operator: str = None, **meta):
+    def __init__(
+        self,
+        name: str,
+        *,
+        field: Any = None,
+        schema_field: Optional[ma.fields.Field] = None,
+        operator: Optional[str] = None,
+        **meta,
+    ):
         """Initialize filter.
 
         :param name: The filter's name
@@ -55,7 +61,7 @@ class Filter(Mutate):
         if operator:
             self.default_operator = operator
 
-    async def apply(self, collection: t.Any, data: t.Mapping = None, **kwargs):
+    async def apply(self, collection: Any, data: Optional[Mapping] = None, **kwargs):
         """Filter given collection."""
         if not data:
             return None, collection
@@ -70,23 +76,33 @@ class Filter(Mutate):
 
         return ops, collection
 
-    async def filter(self, collection, *ops: t.Tuple[t.Callable, t.Any], **_):
+    async def filter(self, collection, *ops: Tuple[Callable, Any], **_):
         """Apply the filter to collection."""
-        validator = lambda obj: all(op(get_value(obj, self.name), val) for (op, val) in ops)  # noqa
+        validator = lambda obj: all(  # noqa
+            op(get_value(obj, self.name), val) for (op, val) in ops
+        )
         return [o for o in collection if validator(o)]
 
-    def parse(self, data: t.Mapping) -> t.Tuple[t.Tuple[t.Callable, t.Any], ...]:
+    def parse(self, data: Mapping) -> Tuple[Tuple[Callable, Any], ...]:
         """Parse operator and value from filter's data."""
         val = data.get(self.name, ma.missing)
         if not isinstance(val, dict):
-            return (self.operators[self.default_operator], self.schema_field.deserialize(val)),
+            return (
+                (
+                    self.operators[self.default_operator],
+                    self.schema_field.deserialize(val),
+                ),
+            )
 
         return tuple(
             (
                 self.operators[op],
-                (self.schema_field.deserialize(val)) if op not in self.list_ops else [
-                    self.schema_field.deserialize(v) for v in val])
-            for (op, val) in val.items() if op in self.operators
+                (self.schema_field.deserialize(val))
+                if op not in self.list_ops
+                else [self.schema_field.deserialize(v) for v in val],
+            )
+            for (op, val) in val.items()
+            if op in self.operators
         )
 
 
@@ -95,9 +111,11 @@ class Filters(Mutator):
     """Build filters for handlers."""
 
     MUTATE_CLASS = Filter
-    mutations: t.Dict[str, Filter]  # type: ignore
+    mutations: Dict[str, Filter]  # type: ignore
 
-    async def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
+    async def apply(
+        self, request: Request, collection: TCOLLECTION, **options
+    ) -> TCOLLECTION:
         """Filter the given collection."""
         data = request.url.query.get(FILTERS_PARAM)
         if data is not None:
@@ -107,11 +125,13 @@ class Filters(Mutator):
                 mutations = self.mutations
                 for name in data:
                     if name in mutations:
-                        _, collection = await mutations[name].apply(collection, data, **options)
+                        _, collection = await mutations[name].apply(
+                            collection, data, **options
+                        )
 
             except (ValueError, TypeError, AssertionError):
-                api = t.cast(API, self.handler._api)
-                api.logger.warning(f'Invalid filters data: { request.url }')
+                api = cast(API, self.handler._api)
+                api.logger.warning(f"Invalid filters data: { request.url }")
 
         return collection
 
@@ -120,8 +140,8 @@ class Filters(Mutator):
         if isinstance(obj, self.MUTATE_CLASS):
             return obj
 
-        field = meta.pop('field', None) or obj
-        schema_field = meta.pop('schema_field', None)
+        field = meta.pop("field", None) or obj
+        schema_field = meta.pop("schema_field", None)
         if schema_field is None and field:
             schema_field = self.handler.meta.Schema._declared_fields.get(field)
         return self.MUTATE_CLASS(obj, field=field, schema_field=schema_field, **meta)
@@ -130,8 +150,10 @@ class Filters(Mutator):
     def openapi(self):
         """Prepare OpenAPI params."""
         return {
-            'name': FILTERS_PARAM, 'in': 'query', 'description': str(self),
-            'content': {'application/json': {'schema': {'type': 'object'}}}
+            "name": FILTERS_PARAM,
+            "in": "query",
+            "description": str(self),
+            "content": {"application/json": {"schema": {"type": "object"}}},
         }
 
 
