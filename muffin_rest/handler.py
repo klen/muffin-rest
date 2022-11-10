@@ -244,7 +244,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def remove(self, request: Request, *, resource: t.Any = None):
+    async def remove(self, request: Request, resource):
         """Remove the given resource."""
         raise NotImplementedError
 

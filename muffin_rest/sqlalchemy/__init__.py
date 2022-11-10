@@ -99,7 +99,7 @@ class SARESTOptions(RESTOptions):
                     "include_fk": True,
                     "dump_only": (self.name_id,),
                 },
-                **self.schema_meta
+                **self.schema_meta,
             ),
         )
 

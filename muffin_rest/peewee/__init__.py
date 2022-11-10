@@ -125,7 +125,7 @@ class PWRESTBase(RESTBase):
 
         return resource
 
-    async def remove(self, request: muffin.Request, *, resource: pw.Model = None):
+    async def remove(self, request: muffin.Request, resource: pw.Model):
         """Remove the given resource."""
         meta = self.meta
         if resource:
