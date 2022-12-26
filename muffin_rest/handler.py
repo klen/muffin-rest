@@ -18,7 +18,7 @@ from muffin_rest.errors import APIError
 from muffin_rest.filters import Filter, Filters
 from muffin_rest.sorting import Sort, Sorting
 
-T = TypeVar("T")
+TV = TypeVar("TV")
 
 
 class RESTOptions:
@@ -240,7 +240,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
     # Manage data
     # -----------
     @abc.abstractmethod
-    async def save(self, request: Request, resource: T) -> T:
+    async def save(self, request: Request, resource: TV) -> TV:
         """Save the given resource."""
         raise NotImplementedError
 
@@ -267,7 +267,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         except (ValueError, TypeError) as exc:
             raise APIError.BAD_REQUEST(str(exc))
 
-    async def load(self, request: Request, resource: Optional[T] = None) -> Any:
+    async def load(self, request: Request, resource: Optional[TV] = None) -> Any:
         """Load data from request and create/update a resource."""
         data = await self.parse(request)
         schema = await self.get_schema(request, resource=resource)

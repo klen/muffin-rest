@@ -1,12 +1,12 @@
 """Support sorting for Peewee ORM."""
 
-import typing as t
+from typing import TypeVar, Union, cast
 
 from peewee import Field, Query
 
 from ..sorting import Sort, Sorting
 
-TCOLLECTION = t.TypeVar("TCOLLECTION", bound=Query)
+TCOLLECTION = TypeVar("TCOLLECTION", bound=Query)
 
 
 class PWSort(Sort):
@@ -26,14 +26,14 @@ class PWSorting(Sorting):
 
     MUTATE_CLASS = PWSort
 
-    def convert(self, obj: t.Union[str, Field, PWSort], **meta):
+    def convert(self, obj: Union[str, Field, PWSort], **meta):
         """Prepare sorters."""
         from . import PWRESTHandler
 
         if isinstance(obj, PWSort):
             return obj
 
-        handler = t.cast(PWRESTHandler, self.handler)
+        handler = cast(PWRESTHandler, self.handler)
 
         if isinstance(obj, Field):
             name, field = obj.name, obj
