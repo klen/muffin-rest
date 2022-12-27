@@ -287,13 +287,13 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         request: Request,
         data: Optional[Iterable] = None,
         resource: Optional[TV] = None,
-        **schema_opts,
+        **dump_schema_opts,
     ) -> JSONType:
         """Serialize the given response."""
-        schema = await self.get_schema(request)
+        schema = await self.get_schema(request, resource=resource)
         if schema:
             return schema.dump(
-                resource if resource is not None else data, **schema_opts
+                resource if resource is not None else data, **dump_schema_opts
             )
 
         return cast(JSONType, data)
