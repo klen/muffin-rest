@@ -77,7 +77,7 @@ def ResourceEndpoint(api, db, Resource):
         @SARESTHandler.route("/resource/action")
         async def action(self, request, resource=None):
             rows = await self.meta.database.fetch_all(self.collection)
-            return await self.dump(request, rows)
+            return await self.dump(request, rows, many=True)
 
     return ResourceEndpoint
 

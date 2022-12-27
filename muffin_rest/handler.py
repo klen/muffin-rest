@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import abc
 import inspect
+from collections.abc import Iterable
 from typing import (TYPE_CHECKING, Any, Dict, Generator, Optional, Sequence, Tuple, Type, TypeVar,
-                    Union)
+                    Union, cast)
 
 import marshmallow as ma
 from asgi_tools.response import parse_response
@@ -281,42 +282,54 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
         return resource
 
-    async def dump(self, request: Request, response: Any, *, many=...) -> JSONType:
+    async def dump(
+        self,
+        request: Request,
+        data: Optional[Iterable] = None,
+        resource: Optional[TV] = None,
+        **schema_opts,
+    ) -> JSONType:
         """Serialize the given response."""
         schema = await self.get_schema(request)
-        if many is ...:
-            many = isinstance(response, Sequence)
+        if schema:
+            return schema.dump(
+                resource if resource is not None else data, **schema_opts
+            )
 
-        return schema.dump(response, many=many) if schema else response
+        return cast(JSONType, data)
 
-    async def get(self, request, *, resource=None) -> JSONType:
+    async def get(self, request: Request, *, resource=None) -> JSONType:
         """Get a resource or a collection of resources.
 
         Specify a path param to load a resource.
         """
         if resource is not None and resource != "":
-            return await self.dump(request, resource)
+            return await self.dump(request, resource=resource)
 
-        return await self.dump(request, self.collection, many=True)
+        return await self.dump(request, data=self.collection, many=True)
 
-    async def post(self, request, *, resource=None) -> JSONType:
+    async def post(self, request: Request, *, resource=None) -> JSONType:
         """Create a resource.
 
         The method accepts a single resource's data or a list of resources to create.
         """
-        resource = await self.load(request, resource)
-        for res in resource if isinstance(resource, list) else [resource]:
-            await self.save(request, res)
-        return await self.dump(request, resource, many=isinstance(resource, list))
+        data = await self.load(request, resource)
+        if isinstance(data, list):
+            for res in data:
+                await self.save(request, res)
+            return await self.dump(request, data=data, many=True)
 
-    async def put(self, request, *, resource=None) -> JSONType:
+        await self.save(request, data)
+        return await self.dump(request, resource=data)
+
+    async def put(self, request: Request, *, resource=None) -> JSONType:
         """Update a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()
 
         return await self.post(request, resource=resource)
 
-    async def delete(self, request, *, resource=None):
+    async def delete(self, request: Request, *, resource=None):
         """Delete a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()

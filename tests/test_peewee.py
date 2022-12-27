@@ -62,7 +62,7 @@ async def ResourceEndpoint(api):
         async def action(self, request, resource=None):
             """Description for the action."""
             resources = await self.meta.manager.fetchall(self.collection)
-            return await self.dump(request, resources)
+            return await self.dump(request, resources, many=True)
 
     return ResourceEndpoint
 

@@ -1,12 +1,11 @@
 """REST Utils."""
 
-import typing as t
 import abc
+from typing import Sequence, Type, TypeVar, cast
 
 from muffin import Request
 
-
-TCOLLECTION = t.TypeVar('TCOLLECTION')
+TCOLLECTION = TypeVar("TCOLLECTION")
 
 
 class Mutate(abc.ABC):
@@ -33,13 +32,13 @@ class Mutate(abc.ABC):
 class Mutator(abc.ABC):
     """Mutate collections."""
 
-    MUTATE_CLASS: t.Type[Mutate]
+    MUTATE_CLASS: Type[Mutate]
 
-    def __init__(self, handler, params: t.Sequence):
+    def __init__(self, handler, params: Sequence):
         """Initialize the mutations."""
         from .handler import RESTHandler
 
-        self.handler = t.cast(RESTHandler, handler)
+        self.handler = cast(RESTHandler, handler)
         self.mutations = {}
         for param in params:
             obj, meta = param if isinstance(param, tuple) else (param, {})
@@ -53,7 +52,7 @@ class Mutator(abc.ABC):
 
     def __str__(self) -> str:
         """Describe the filters."""
-        return ','.join(self.mutations)
+        return ",".join(self.mutations)
 
     def __repr__(self):
         return f"<{self.__class__.__name__} '{self}'>"
@@ -69,6 +68,8 @@ class Mutator(abc.ABC):
         return self.MUTATE_CLASS(obj, **meta)
 
     @abc.abstractmethod
-    async def apply(self, request: Request, collection: TCOLLECTION, **options) -> TCOLLECTION:
+    async def apply(
+        self, request: Request, collection: TCOLLECTION, **options
+    ) -> TCOLLECTION:
         """Mutate a collection."""
         raise NotImplementedError

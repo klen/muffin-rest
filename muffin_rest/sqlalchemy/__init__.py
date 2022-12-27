@@ -118,17 +118,19 @@ class SARESTHandler(RESTHandler):
         self, _: muffin.Request, *, limit: int = 0, offset: int = 0
     ) -> Tuple[sa.sql.Select, int]:
         """Paginate the collection."""
-        qs = sa.select([sa.func.count()]).select_from(self.collection.order_by(None))
+        qs = sa.select([sa.func.count()]).select_from(
+            self.collection.order_by(None).subquery()
+        )
         total = await self.meta.database.fetch_val(qs)
         return self.collection.offset(offset).limit(limit), total
 
     async def get(self, request, *, resource=None) -> JSONType:
         """Get resource or collection of resources."""
         if resource is not None and resource != "":
-            return await self.dump(request, resource, many=False)
+            return await self.dump(request, resource=resource)
 
         rows = await self.meta.database.fetch_all(self.collection)
-        return await self.dump(request, rows, many=True)
+        return await self.dump(request, data=rows, many=True)
 
     async def prepare_resource(self, request: muffin.Request) -> Optional[Dict]:
         """Load a resource."""

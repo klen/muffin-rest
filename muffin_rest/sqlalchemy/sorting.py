@@ -6,21 +6,21 @@ from sqlalchemy import Column, sql
 
 from ..sorting import Sort, Sorting
 
-
-TCOLLECTION = t.TypeVar('TCOLLECTION', bound=sql.Select)
+TCOLLECTION = t.TypeVar("TCOLLECTION", bound=sql.Select)
 
 
 class SASort(Sort):
     """Sorter for Peewee."""
 
-    async def apply(self, collection: TCOLLECTION, desc: bool = False, **_) -> TCOLLECTION:
+    async def apply(
+        self, collection: TCOLLECTION, desc: bool = False, **_
+    ) -> TCOLLECTION:
         """Sort the collection."""
         field = self.field
         if desc and isinstance(field, Column):
             field = field.desc()
 
-        collection.append_order_by(field)
-        return collection
+        return collection.order_by(field)
 
 
 class SASorting(Sorting):
@@ -42,18 +42,20 @@ class SASorting(Sorting):
 
         else:
             name = obj
-            field = meta.get('field', handler.meta.table.c.get(name))
+            field = meta.get("field", handler.meta.table.c.get(name))
 
         if field is not None:
             sort = self.MUTATE_CLASS(name, field=field, **meta)
-            if sort.meta.get('default'):
+            if sort.meta.get("default"):
                 self.default.append(sort)
 
             return sort
 
     def sort_default(self, collection: sql.Select) -> sql.Select:
         """Sort collection by default."""
-        return collection.order_by(*[
-            sort.field.desc() if sort.meta['default'] == 'desc' else sort.field
-            for sort in self.default
-        ])
+        return collection.order_by(
+            *[
+                sort.field.desc() if sort.meta["default"] == "desc" else sort.field
+                for sort in self.default
+            ]
+        )

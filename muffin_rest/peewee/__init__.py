@@ -113,10 +113,10 @@ class PWRESTBase(Generic[TVModel], RESTBase):
     async def get(self, request, *, resource: Optional[TVModel] = None) -> JSONType:
         """Get resource or collection of resources."""
         if resource is not None and resource != "":
-            return await self.dump(request, resource, many=False)
+            return await self.dump(request, resource=resource)
 
         resources = await self.meta.manager.fetchall(self.collection)
-        return await self.dump(request, resources, many=True)
+        return await self.dump(request, data=resources, many=True)
 
     async def save(self, _: muffin.Request, resource: TVModel) -> TVModel:  # type: ignore
         """Save the given resource."""
@@ -154,7 +154,7 @@ class PWRESTBase(Generic[TVModel], RESTBase):
         for res in resources:
             await delete_instance(res)
 
-    delete = remove  # noqa
+    delete = remove  # type: ignore
 
     async def get_schema(
         self, request: muffin.Request, resource: Optional[TVModel] = None, **_

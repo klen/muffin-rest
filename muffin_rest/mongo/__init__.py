@@ -70,10 +70,10 @@ class MongoRESTHandler(RESTHandler):
     async def get(self, request, *, resource=None):
         """Get resource or collection of resources."""
         if resource is not None and resource != "":
-            return await self.dump(request, resource, many=False)
+            return await self.dump(request, resource=resource)
 
         docs = await self.collection.to_list(None)
-        return await self.dump(request, docs, many=True)
+        return await self.dump(request, data=docs, many=True)
 
     async def prepare_resource(self, request: muffin.Request) -> Optional[Dict]:
         """Load a resource."""
