@@ -185,8 +185,8 @@ async def test_sort(client, ResourceEndpoint, db):
     res = await client.get("/api/resource?sort=-count")
     assert res.status_code == 200
     json = await res.json()
-    assert json[0]["id"] == "1"
-    assert json[1]["id"] == "2"
+    assert json[0]["id"] == "2"
+    assert json[1]["id"] == "1"
 
 
 async def test_filters(client, ResourceEndpoint, db):

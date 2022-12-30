@@ -80,10 +80,10 @@ class PWRESTBase(Generic[TVModel], RESTBase):
     meta: PWRESTOptions
     meta_class: Type[PWRESTOptions] = PWRESTOptions
 
+    # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
     async def prepare_collection(self, _: muffin.Request) -> pw.Query:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
-        meta = self.meta
-        return meta.model.select().order_by(meta.model_pk)
+        return self.meta.model.select()
 
     async def prepare_resource(self, request: muffin.Request) -> Optional[TVModel]:
         """Load a resource."""
