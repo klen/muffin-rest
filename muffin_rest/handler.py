@@ -9,6 +9,7 @@ from typing import (TYPE_CHECKING, Any, Dict, Generator, Optional, Sequence, Tup
 
 import marshmallow as ma
 from asgi_tools.response import parse_response
+from marshmallow import ValidationError
 from muffin import Request
 from muffin.handler import Handler, HandlerMeta
 from muffin.typing import JSONType
@@ -157,7 +158,10 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         self.collection = await self.prepare_collection(request)
         resource = await self.prepare_resource(request)
         if resource or request.method != "GET":
-            return await method(request, resource=resource)
+            try:
+                return await method(request, resource=resource)
+            except ValidationError as exc:
+                raise APIError.BAD_REQUEST("Invalid data", errors=exc.messages)
 
         meta = self.meta
 
@@ -184,6 +188,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
                 headers = self.paginate_prepare_headers(limit, offset, total)
 
         response = await method(request, resource=resource)
+
         if headers:
             response = parse_response(response)
             response.headers.update(headers)
@@ -275,12 +280,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         if not schema:
             return data
 
-        try:
-            resource = schema.load(data, partial=resource is not None, many=isinstance(data, list))  # type: ignore # noqa
-        except ma.ValidationError as exc:
-            raise APIError.BAD_REQUEST("Invalid data", errors=exc.messages)
-
-        return resource
+        return schema.load(data, partial=resource is not None, many=isinstance(data, list))  # type: ignore # noqa
 
     async def dump(
         self,

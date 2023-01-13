@@ -93,11 +93,16 @@ class PWRESTBase(Generic[TVModel], RESTBase):
 
         meta = self.meta
 
-        resource = await meta.manager.fetchone(
-            self.collection.where(meta.model_pk == pk)
-        )
+        try:
+            resource = await meta.manager.fetchone(
+                self.collection.where(meta.model_pk == pk)
+            )
+        except Exception:
+            resource = None
+
         if resource is None:
             raise APIError.NOT_FOUND("Resource not found")
+
         return resource
 
     async def paginate(
