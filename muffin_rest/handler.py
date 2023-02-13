@@ -20,7 +20,7 @@ from muffin_rest.errors import APIError
 from muffin_rest.filters import Filter, Filters
 from muffin_rest.sorting import Sort, Sorting
 
-TV = TypeVar("TV")
+TV = TypeVar("TV", bound=Any)
 
 
 class RESTOptions:
@@ -248,7 +248,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
     @abc.abstractmethod
     async def save(self, request: Request, resource: TV) -> TV:
         """Save the given resource."""
-        raise NotImplementedError
+        return resource
 
     @abc.abstractmethod
     async def remove(self, request: Request, resource):
@@ -280,7 +280,9 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         if not schema:
             return data
 
-        return schema.load(data, partial=resource is not None, many=isinstance(data, list))  # type: ignore # noqa
+        return schema.load(
+            data, partial=resource is not None, many=isinstance(data, list)
+        )  # noqa
 
     async def dump(
         self,
@@ -315,12 +317,12 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         """
         data = await self.load(request, resource)
         if isinstance(data, list):
-            for res in data:
-                await self.save(request, res)
-            return await self.dump(request, data=data, many=True)
+            return await self.dump(
+                request, data=[await self.save(request, res) for res in data], many=True
+            )
 
-        await self.save(request, data)
-        return await self.dump(request, resource=data)
+        res = await self.save(request, data)
+        return await self.dump(request, resource=res)
 
     async def put(self, request: Request, *, resource=None) -> JSONType:
         """Update a resource."""

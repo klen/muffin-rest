@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple, Type, cast  # py37
+from typing import Any, Dict, Optional, Tuple, Type, TypeVar, cast  # py37
 
 import marshmallow as ma
-import muffin
 import sqlalchemy as sa
 from marshmallow_sqlalchemy import ModelConverter
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSchema
+from muffin import Request
 from muffin.typing import JSONType
 from muffin_databases import Plugin as DB
 
@@ -19,6 +19,9 @@ from muffin_rest.sqlalchemy.sorting import SASorting
 
 # XXX: Monkey patch ModelConverter
 ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore
+
+TResource = Dict[str, Any]
+TVResource = TypeVar("TVResource", bound=TResource)
 
 
 class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
@@ -110,12 +113,12 @@ class SARESTHandler(RESTHandler):
     meta: SARESTOptions
     meta_class: Type[SARESTOptions] = SARESTOptions
 
-    async def prepare_collection(self, _: muffin.Request) -> sa.sql.Select:
+    async def prepare_collection(self, _: Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.table.select()
 
     async def paginate(
-        self, _: muffin.Request, *, limit: int = 0, offset: int = 0
+        self, _: Request, *, limit: int = 0, offset: int = 0
     ) -> Tuple[sa.sql.Select, int]:
         """Paginate the collection."""
         qs = sa.select([sa.func.count()]).select_from(
@@ -124,7 +127,7 @@ class SARESTHandler(RESTHandler):
         total = await self.meta.database.fetch_val(qs)
         return self.collection.offset(offset).limit(limit), total
 
-    async def get(self, request, *, resource=None) -> JSONType:
+    async def get(self, request, *, resource: Optional[TVResource] = None) -> JSONType:
         """Get resource or collection of resources."""
         if resource is not None and resource != "":
             return await self.dump(request, resource=resource)
@@ -132,7 +135,7 @@ class SARESTHandler(RESTHandler):
         rows = await self.meta.database.fetch_all(self.collection)
         return await self.dump(request, data=rows, many=True)
 
-    async def prepare_resource(self, request: muffin.Request) -> Optional[Dict]:
+    async def prepare_resource(self, request: Request) -> Optional[TVResource]:
         """Load a resource."""
         pk = request["path_params"].get(self.meta.name_id)
         if not pk:
@@ -142,10 +145,10 @@ class SARESTHandler(RESTHandler):
         resource = await self.meta.database.fetch_one(qs)
         if resource is None:
             raise APIError.NOT_FOUND("Resource not found")
-        return dict(resource)
+        return cast(TVResource, dict(resource))
 
     async def get_schema(
-        self, request: muffin.Request, *, resource=None, **_
+        self, request: Request, *, resource: Optional[TVResource] = None, **_
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
@@ -154,7 +157,7 @@ class SARESTHandler(RESTHandler):
             exclude=request.url.query.get("schema_exclude", ()),
         )
 
-    async def save(self, _: muffin.Request, resource: Dict) -> Dict:  # type: ignore
+    async def save(self, _: Request, resource: TVResource) -> TVResource:
         """Save the given resource."""
         table_pk = cast(sa.Column, self.meta.table_pk)
         if resource.get(table_pk.name):
@@ -167,7 +170,7 @@ class SARESTHandler(RESTHandler):
 
         return resource
 
-    async def remove(self, request: muffin.Request, resource: Optional[Dict] = None):
+    async def remove(self, request: Request, resource: Optional[TVResource] = None):
         """Remove the given resource."""
         table_pk = cast(sa.Column, self.meta.table_pk)
         pks = [resource[table_pk.name]] if resource else await request.data()

@@ -1,12 +1,12 @@
 """Mongo DB support."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar
 
 import bson
 import marshmallow as ma
-import muffin
 from bson.errors import InvalidId
 from motor import motor_asyncio as motor
+from muffin import Request
 
 from muffin_rest.errors import APIError
 from muffin_rest.handler import RESTHandler, RESTOptions
@@ -14,6 +14,9 @@ from muffin_rest.mongo.filters import MongoFilters
 from muffin_rest.mongo.schema import MongoSchema
 from muffin_rest.mongo.sorting import MongoSorting
 from muffin_rest.mongo.utils import MongoChain
+
+TResource = Dict[str, Any]
+TVResource = TypeVar("TVResource", bound=TResource)
 
 
 class MongoRESTOptions(RESTOptions):
@@ -46,12 +49,12 @@ class MongoRESTHandler(RESTHandler):
     meta: MongoRESTOptions
     meta_class: Type[MongoRESTOptions] = MongoRESTOptions
 
-    async def prepare_collection(self, _: muffin.Request) -> MongoChain:
+    async def prepare_collection(self, _: Request) -> MongoChain:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return MongoChain(self.meta.collection)
 
     async def paginate(
-        self, _: muffin.Request, *, limit: int = 0, offset: int = 0
+        self, _: Request, *, limit: int = 0, offset: int = 0
     ) -> Tuple[motor.AsyncIOMotorCursor, int]:
         """Paginate collection."""
         if self.meta.aggregate:
@@ -67,7 +70,7 @@ class MongoRESTHandler(RESTHandler):
         total = await self.collection.count()
         return self.collection.skip(offset).limit(limit), total
 
-    async def get(self, request, *, resource=None):
+    async def get(self, request, *, resource: Optional[TVResource] = None):
         """Get resource or collection of resources."""
         if resource is not None and resource != "":
             return await self.dump(request, resource=resource)
@@ -75,7 +78,7 @@ class MongoRESTHandler(RESTHandler):
         docs = await self.collection.to_list(None)
         return await self.dump(request, data=docs, many=True)
 
-    async def prepare_resource(self, request: muffin.Request) -> Optional[Dict]:
+    async def prepare_resource(self, request: Request) -> Optional[TVResource]:
         """Load a resource."""
         pk = request["path_params"].get(self.meta.name_id)
         if not pk:
@@ -89,7 +92,7 @@ class MongoRESTHandler(RESTHandler):
             raise APIError.NOT_FOUND() from exc
 
     async def get_schema(
-        self, request: muffin.Request, resource=None, **_
+        self, request: Request, resource: Optional[TVResource] = None, **_
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
@@ -98,7 +101,7 @@ class MongoRESTHandler(RESTHandler):
             exclude=request.url.query.get("schema_exclude", ()),
         )
 
-    async def save(self, _: muffin.Request, resource: Dict) -> Dict:  # type: ignore
+    async def save(self, _: Request, resource: TVResource) -> TVResource:
         """Save the given resource."""
         if resource.get(self.meta.collection_id):
             await self.collection.replace_one(
@@ -111,7 +114,7 @@ class MongoRESTHandler(RESTHandler):
 
         return resource
 
-    async def remove(self, request: muffin.Request, resource: Optional[Dict] = None):
+    async def remove(self, request: Request, resource: Optional[TVResource] = None):
         """Remove the given resource(s)."""
         oids = [resource[self.meta.collection_id]] if resource else await request.data()
         if not oids:

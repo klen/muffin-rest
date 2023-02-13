@@ -123,7 +123,7 @@ class PWRESTBase(Generic[TVModel], RESTBase):
         resources = await self.meta.manager.fetchall(self.collection)
         return await self.dump(request, data=resources, many=True)
 
-    async def save(self, _: muffin.Request, resource: TVModel) -> TVModel:  # type: ignore
+    async def save(self, _: muffin.Request, resource: TVModel) -> TVModel:
         """Save the given resource."""
         meta = self.meta
         if issubclass(meta.model, Model):
