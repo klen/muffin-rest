@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, Type, TypeVar, cast
+from typing import Optional, Tuple, Type, TypeVar, cast, overload
 
 import marshmallow as ma
 import peewee as pw
@@ -10,7 +10,7 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ForeignKey
 from muffin import Request
 from muffin.typing import JSONType
-from peewee_aio import Model
+from peewee_aio.model import AIOModel, ModelSelect
 
 from muffin_rest.errors import APIError
 from muffin_rest.handler import RESTBase
@@ -24,16 +24,28 @@ MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 TVModel = TypeVar("TVModel", bound=pw.Model)
 
 
-class PWRESTHandler(RESTBase[TVModel], PeeweeOpenAPIMixin):
+class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     """Support Peeweee."""
 
-    collection: pw.Query
-    resource: pw.Model
+    resource: TVModel
     meta: PWRESTOptions
     meta_class: Type[PWRESTOptions] = PWRESTOptions
+    collection: pw.ModelSelect
+
+    @overload
+    async def prepare_collection(
+        self: PWRESTBase[AIOModel], request: Request
+    ) -> ModelSelect[TVModel]:
+        ...
+
+    @overload
+    async def prepare_collection(
+        self: PWRESTBase[pw.Model], request: Request
+    ) -> pw.ModelSelect:
+        ...
 
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
-    async def prepare_collection(self, _: Request) -> pw.Query:
+    async def prepare_collection(self, request: Request):
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.model.select()
 
@@ -57,9 +69,19 @@ class PWRESTHandler(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
         return resource
 
+    @overload
     async def paginate(
-        self, _: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[pw.Query, int]:
+        self: PWRESTBase[AIOModel], request: Request, *, limit: int = 0, offset: int = 0
+    ) -> Tuple[ModelSelect[TVModel], int]:
+        ...
+
+    @overload
+    async def paginate(
+        self: PWRESTBase[pw.Model], request: Request, *, limit: int = 0, offset: int = 0
+    ) -> Tuple[pw.ModelSelect, int]:
+        ...
+
+    async def paginate(self, request: Request, *, limit: int = 0, offset: int = 0):
         """Paginate the collection."""
         cqs: pw.Select = self.collection.order_by()
         if cqs._group_by:
@@ -78,7 +100,7 @@ class PWRESTHandler(RESTBase[TVModel], PeeweeOpenAPIMixin):
     async def save(self, _: Request, resource: TVModel) -> TVModel:
         """Save the given resource."""
         meta = self.meta
-        if issubclass(meta.model, Model):
+        if issubclass(meta.model, AIOModel):
             await resource.save()
         else:
             await meta.manager.save(resource)
@@ -104,7 +126,7 @@ class PWRESTHandler(RESTBase[TVModel], PeeweeOpenAPIMixin):
         if not resources:
             raise APIError.NOT_FOUND()
 
-        is_aiomodel = issubclass(meta.model, Model)
+        is_aiomodel = issubclass(meta.model, AIOModel)
         if is_aiomodel:
             for res in resources:
                 await res.delete_instance(recursive=meta.delete_recursive)
@@ -123,3 +145,7 @@ class PWRESTHandler(RESTBase[TVModel], PeeweeOpenAPIMixin):
             only=request.url.query.get("schema_only"),
             exclude=request.url.query.get("schema_exclude", ()),
         )
+
+
+class PWRESTHandler(PWRESTBase[TVModel], PeeweeOpenAPIMixin):
+    meta: PWRESTOptions

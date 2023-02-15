@@ -74,12 +74,14 @@ async def resource(db):
 
 def test_imports():
     from muffin_rest import PWFilter, PWFilters, PWRESTHandler, PWSort, PWSorting
+    from muffin_rest.peewee import PWRESTBase
 
     assert PWRESTHandler
     assert PWFilter
     assert PWFilters
     assert PWSort
     assert PWSorting
+    assert PWRESTBase
 
 
 async def test_base(api, ResourceEndpoint):
