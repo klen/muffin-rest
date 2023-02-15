@@ -77,7 +77,7 @@ class API:
 
         # Setup routing
         self.router.trim_last_slash = self.app.router.trim_last_slash
-        self.router.validator = self.app.router.validator  # type: ignore
+        self.router.validator = self.app.router.validator
         self.app.router.route(self.prefix)(self.router)
 
         if openapi is not None:

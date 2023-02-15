@@ -5,20 +5,17 @@ from typing import TypeVar, Union, cast
 from peewee import Field, Query
 
 from ..sorting import Sort, Sorting
-
-TCOLLECTION = TypeVar("TCOLLECTION", bound=Query)
+from .types import TVCollection
 
 
 class PWSort(Sort):
     """Sorter for Peewee."""
 
     async def apply(
-        self, collection: TCOLLECTION, desc: bool = False, **_
-    ) -> TCOLLECTION:
+        self, collection: TVCollection, desc: bool = False, **_
+    ) -> TVCollection:
         """Sort the collection."""
-        return collection.order_by_extend(
-            self.field if not desc else self.field.desc()
-        )  # type: ignore
+        return collection.order_by_extend(self.field if not desc else self.field.desc())
 
 
 class PWSorting(Sorting):
@@ -49,10 +46,10 @@ class PWSorting(Sorting):
 
             return sort
 
-    def sort_default(self, collection: TCOLLECTION) -> TCOLLECTION:
+    def sort_default(self, collection: TVCollection) -> TVCollection:
         """Sort collection by default."""
         sorting = [
             sort.field.desc() if sort.meta["default"] == "desc" else sort.field
             for sort in self.default
         ]
-        return collection.order_by(*sorting)  # type: ignore
+        return collection.order_by(*sorting)

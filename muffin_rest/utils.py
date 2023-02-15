@@ -1,11 +1,11 @@
 """REST Utils."""
 
 import abc
-from typing import Sequence, Type, TypeVar, cast
+from typing import Mapping, Sequence, Type
 
 from muffin import Request
 
-TCOLLECTION = TypeVar("TCOLLECTION")
+from muffin_rest.types import TVCollection
 
 
 class Mutate(abc.ABC):
@@ -24,7 +24,7 @@ class Mutate(abc.ABC):
         return f"<{self.__class__.__name__} '{self.name}'>"
 
     @abc.abstractmethod
-    async def apply(self, collection: TCOLLECTION, **options) -> TCOLLECTION:
+    async def apply(self, collection: TVCollection, **options) -> TVCollection:
         """Apply the mutation."""
         raise NotImplementedError
 
@@ -33,12 +33,11 @@ class Mutator(abc.ABC):
     """Mutate collections."""
 
     MUTATE_CLASS: Type[Mutate]
+    mutations: Mapping[str, Mutate]
 
     def __init__(self, handler, params: Sequence):
         """Initialize the mutations."""
-        from .handler import RESTHandler
-
-        self.handler = cast(RESTHandler, handler)
+        self.handler = handler
         self.mutations = {}
         for param in params:
             obj, meta = param if isinstance(param, tuple) else (param, {})
@@ -69,7 +68,7 @@ class Mutator(abc.ABC):
 
     @abc.abstractmethod
     async def apply(
-        self, request: Request, collection: TCOLLECTION, **options
-    ) -> TCOLLECTION:
+        self, request: Request, collection: TVCollection, **options
+    ) -> TVCollection:
         """Mutate a collection."""
         raise NotImplementedError

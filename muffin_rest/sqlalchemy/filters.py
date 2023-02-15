@@ -1,13 +1,12 @@
 """Support filters for SQLAlchemy ORM."""
 
-from typing import Any, Callable, Optional, Tuple, TypeVar, Union, cast
+from typing import Any, Callable, Optional, Tuple, Union, cast
 
 import marshmallow as ma
 from sqlalchemy import Column, sql
 
 from ..filters import Filter, Filters
-
-TCOLLECTION = TypeVar("TCOLLECTION", bound=sql.Select)
+from .types import TVCollection
 
 
 class SAFilter(Filter):
@@ -47,8 +46,8 @@ class SAFilter(Filter):
             self.default_operator = operator
 
     async def filter(
-        self, collection: sql.Select, *ops: Tuple[Callable, Any], **kwargs
-    ) -> sql.Select:
+        self, collection: TVCollection, *ops: Tuple[Callable, Any], **kwargs
+    ) -> TVCollection:
         """Apply the filters to SQLAlchemy Select."""
         column = self.field
         if ops and column is not None:
@@ -56,7 +55,7 @@ class SAFilter(Filter):
 
         return collection
 
-    def query(self, select: sql.Select, column: Column, *ops, **_) -> sql.Select:
+    def query(self, select: TVCollection, column: Column, *ops, **_) -> TVCollection:
         """Filter a select."""
         return select.where(*[op(column, val) for op, val in ops])
 

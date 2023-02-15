@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple, Type, TypeVar, cast  # py37
+from typing import Optional, Tuple, Type, cast  # py37
 
 import marshmallow as ma
 import sqlalchemy as sa
@@ -17,11 +17,10 @@ from muffin_rest.handler import RESTHandler, RESTOptions
 from muffin_rest.sqlalchemy.filters import SAFilters
 from muffin_rest.sqlalchemy.sorting import SASorting
 
+from .types import TVResource
+
 # XXX: Monkey patch ModelConverter
 ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore
-
-TResource = Dict[str, Any]
-TVResource = TypeVar("TVResource", bound=TResource)
 
 
 class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):

@@ -1,11 +1,12 @@
 """Implement sorting."""
 
-from typing import Any, Dict, Generator, List, Sequence, Tuple
+from typing import Any, Generator, List, Mapping, Sequence, Tuple, cast
 
 from muffin import Request
 from muffin.handler import Handler
 
-from .utils import TCOLLECTION, Mutate, Mutator
+from .types import TVCollection
+from .utils import Mutate, Mutator
 
 SORT_PARAM = "sort"
 
@@ -23,7 +24,7 @@ class Sorting(Mutator):
     """Build sorters for handlers."""
 
     MUTATE_CLASS = Sort
-    mutations: Dict[str, Sort]  # type: ignore
+    mutations: Mapping[str, Sort]
 
     def __init__(self, handler: Handler, params: Sequence):
         """Initialize the sorting."""
@@ -31,8 +32,8 @@ class Sorting(Mutator):
         super(Sorting, self).__init__(handler, params)
 
     async def apply(
-        self, request: Request, collection: TCOLLECTION, **_
-    ) -> TCOLLECTION:
+        self, request: Request, collection: TVCollection, **_
+    ) -> TVCollection:
         """Sort the given collection."""
         data = request.url.query.get(SORT_PARAM)
         if data:
@@ -47,14 +48,14 @@ class Sorting(Mutator):
 
     def convert(self, obj, **meta) -> Sort:
         """Prepare sorters."""
-        sort: Sort = super(Sorting, self).convert(obj, **meta)  # type: ignore
+        sort = cast(Sort, super(Sorting, self).convert(obj, **meta))
         if sort.meta.get("default"):
             self.default.append(sort)
         return sort
 
-    def sort_default(self, collection: TCOLLECTION) -> TCOLLECTION:
+    def sort_default(self, collection: TVCollection) -> TVCollection:
         """Sort by default."""
-        return sorted(collection)  # type: ignore
+        return cast(TVCollection, sorted(collection))
 
     @property
     def openapi(self):

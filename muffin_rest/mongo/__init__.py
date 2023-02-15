@@ -1,6 +1,6 @@
 """Mongo DB support."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar
+from typing import List, Optional, Tuple, Type
 
 import bson
 import marshmallow as ma
@@ -15,8 +15,7 @@ from muffin_rest.mongo.schema import MongoSchema
 from muffin_rest.mongo.sorting import MongoSorting
 from muffin_rest.mongo.utils import MongoChain
 
-TResource = Dict[str, Any]
-TVResource = TypeVar("TVResource", bound=TResource)
+from .types import TVResource
 
 
 class MongoRESTOptions(RESTOptions):
@@ -28,17 +27,17 @@ class MongoRESTOptions(RESTOptions):
 
     aggregate: Optional[List] = None  # Support aggregation. Set to pipeline.
     collection_id: str = "_id"
-    collection: Optional[motor.AsyncIOMotorCollection] = None
+    collection: motor.AsyncIOMotorCollection
 
     base_property: str = "collection"
 
-    if TYPE_CHECKING:
-        Schema: Type[MongoSchema]
+    Schema: Type[MongoSchema]
 
     def setup(self, cls):
         """Prepare meta options."""
         if self.collection is None:
             raise RuntimeError("MongoResthandler.Meta.collection is required")
+        self.name = getattr(self, "name", self.collection.name.lower())
         self.name = self.name or self.collection.name.lower()
         super().setup(cls)
 
@@ -103,20 +102,22 @@ class MongoRESTHandler(RESTHandler):
 
     async def save(self, _: Request, resource: TVResource) -> TVResource:
         """Save the given resource."""
-        if resource.get(self.meta.collection_id):
+        meta = self.meta
+        if resource.get(meta.collection_id):
             await self.collection.replace_one(
-                {self.meta.collection_id: resource[self.meta.collection_id]}, resource
+                {meta.collection_id: resource[meta.collection_id]}, resource
             )
 
         else:
-            res = await self.meta.collection.insert_one(resource)  # type: ignore
-            resource[self.meta.collection_id] = res.inserted_id
+            res = await meta.collection.insert_one(resource)
+            resource[meta.collection_id] = res.inserted_id
 
         return resource
 
     async def remove(self, request: Request, resource: Optional[TVResource] = None):
         """Remove the given resource(s)."""
-        oids = [resource[self.meta.collection_id]] if resource else await request.data()
+        meta = self.meta
+        oids = [resource[meta.collection_id]] if resource else await request.data()
         if not oids:
             raise APIError.NOT_FOUND()
 
@@ -124,8 +125,6 @@ class MongoRESTHandler(RESTHandler):
             raise APIError.BAD_REQUEST()
 
         oids = [bson.ObjectId(idx) for idx in oids]
-        await self.meta.collection.delete_many(  # type: ignore
-            {self.meta.collection_id: {"$in": oids}}
-        )
+        await meta.collection.delete_many({meta.collection_id: {"$in": oids}})
 
     delete = remove  # noqa

@@ -1,11 +1,11 @@
 """Base class for API REST Handlers."""
+
 from __future__ import annotations
 
 import abc
 import inspect
 from collections.abc import Iterable
-from typing import (TYPE_CHECKING, Any, Dict, Generator, Optional, Sequence, Tuple, Type, TypeVar,
-                    Union, cast)
+from typing import Any, Dict, Generator, Generic, Optional, Sequence, Tuple, Type, Union, cast
 
 import marshmallow as ma
 from asgi_tools.response import parse_response
@@ -17,74 +17,11 @@ from muffin.typing import JSONType
 from muffin_rest import LIMIT_PARAM, OFFSET_PARAM, openapi
 from muffin_rest.api import API
 from muffin_rest.errors import APIError
-from muffin_rest.filters import Filter, Filters
-from muffin_rest.sorting import Sort, Sorting
+from muffin_rest.filters import Filter
+from muffin_rest.sorting import Sort
 
-TV = TypeVar("TV", bound=Any)
-
-
-class RESTOptions:
-    """Handler Options."""
-
-    name: Optional[str] = None
-    name_id: str = "id"
-
-    # limit: Paginate results (set to None for disable pagination)
-    limit: int = 0
-    limit_max: int = 0
-
-    # Base class for filters
-    filters: Filters
-    filters_cls: Type[Filters] = Filters
-
-    # Base class for sorting
-    sorting: Sorting
-    sorting_cls: Type[Sorting] = Sorting
-
-    # Auto generation for schemas
-    Schema: Type[ma.Schema]
-    schema_base: Type[ma.Schema] = ma.Schema
-    schema_fields: Dict = {}
-    schema_meta: Dict = {}
-    schema_unknown: str = ma.EXCLUDE
-
-    base_property: str = "name"
-
-    def __init__(self, cls):
-        """Inherit meta options."""
-        for base in reversed(cls.mro()):
-            if hasattr(base, "Meta"):
-                for k, v in base.Meta.__dict__.items():
-                    if not k.startswith("_"):
-                        setattr(self, k, v)
-
-        if getattr(self, self.base_property, None) is not None:
-            self.setup(cls)
-
-    def setup(self, cls):
-        """Setup the options."""
-        if not self.Schema:
-            name = self.name or "Unknown"
-            self.Schema = type(
-                name.title() + "Schema",
-                (self.schema_base,),
-                dict(self.schema_fields, Meta=self.setup_schema_meta(cls)),
-            )
-
-        if not self.limit_max:
-            self.limit_max = self.limit
-
-    def setup_schema_meta(self, _):
-        """Generate meta for schemas."""
-        return type(
-            "Meta",
-            (object,),
-            dict({"unknown": self.schema_unknown}, **self.schema_meta),
-        )
-
-    def __repr__(self):
-        """Represent self as a string."""
-        return f"<Options {self.name}>"
+from .options import RESTOptions
+from .types import TVResource
 
 
 class RESTHandlerMeta(HandlerMeta):
@@ -102,14 +39,13 @@ class RESTHandlerMeta(HandlerMeta):
         return kls
 
 
-class RESTBase(Handler, metaclass=RESTHandlerMeta):
+class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     """Load/save resources."""
 
-    if TYPE_CHECKING:
-        auth: Any
-        collection: Any
-        resource: Any
+    auth: Any
+    collection: Any
+    resource: Any
 
     meta: RESTOptions
     meta_class: Type[RESTOptions] = RESTOptions
@@ -202,7 +138,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
             raise Exception("The handler is not routed by any API")  # TODO
         return self._api
 
-    async def authorize(self, request: Request):
+    async def authorize(self, request: Request) -> Any:
         """Default authorization method. Proxy auth to self.api."""
         auth = await self.api.authorize(request)
         if not auth:
@@ -246,7 +182,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
     # Manage data
     # -----------
     @abc.abstractmethod
-    async def save(self, request: Request, resource: TV) -> TV:
+    async def save(self, request: Request, resource: TVResource) -> TVResource:
         """Save the given resource."""
         return resource
 
@@ -273,7 +209,9 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         except (ValueError, TypeError) as exc:
             raise APIError.BAD_REQUEST(str(exc))
 
-    async def load(self, request: Request, resource: Optional[TV] = None) -> Any:
+    async def load(
+        self, request: Request, resource: Optional[TVResource] = None
+    ) -> Any:
         """Load data from request and create/update a resource."""
         data = await self.parse(request)
         schema = await self.get_schema(request, resource=resource)
@@ -288,7 +226,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
         self,
         request: Request,
         data: Optional[Iterable] = None,
-        resource: Optional[TV] = None,
+        resource: Optional[TVResource] = None,
         **dump_schema_opts,
     ) -> JSONType:
         """Serialize the given response."""
@@ -331,7 +269,7 @@ class RESTBase(Handler, metaclass=RESTHandlerMeta):
 
         return await self.post(request, resource=resource)
 
-    async def delete(self, request: Request, *, resource=None):
+    async def delete(self, request: Request, *, resource: TVResource | None = None):
         """Delete a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()

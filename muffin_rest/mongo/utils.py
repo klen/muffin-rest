@@ -72,7 +72,7 @@ class MongoChain:
         query = query and {"$and": query} or {}
         return self.collection.find_one(query, projection=projection)
 
-    def count(self) -> int:
+    def count(self) -> Awaitable[int]:
         """Count documents."""
         query = self.query and {"$and": self.query} or {}
         return self.collection.count_documents(query)

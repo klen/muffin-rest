@@ -53,7 +53,7 @@ class PWFilter(Filter):
     def query(self, query: Query, column: Field, *ops: Tuple, **_) -> Query:
         """Filter a query."""
         if isinstance(column, Field):
-            return query.where(*[op(column, val) for op, val in ops])  # type: ignore
+            return query.where(*[op(column, val) for op, val in ops])
 
         return query
 

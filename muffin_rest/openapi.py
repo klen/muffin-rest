@@ -4,7 +4,7 @@ import re
 from functools import partial
 from http import HTTPStatus
 from types import ModuleType
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, cast
+from typing import Callable, Dict, List, Optional, Tuple, cast
 
 from apispec import utils
 from apispec.core import APISpec
@@ -15,6 +15,7 @@ from muffin import Response
 from muffin.typing import JSONType
 
 from . import LIMIT_PARAM, OFFSET_PARAM, openapi
+from .options import RESTOptions
 
 yaml_utils: Optional[ModuleType] = None
 
@@ -151,7 +152,10 @@ def return_type_to_response(fn: Callable) -> Dict:
     """Generate reponses specs based on the given function's return type."""
     responses: Dict[int, Dict] = {}
     return_type = fn.__annotations__.get("return")
-    return_type = CAST_RESPONSE.get(return_type, return_type)  # type: ignore
+    if return_type is None:
+        return responses
+
+    return_type = CAST_RESPONSE.get(return_type, return_type)
     if return_type is None:
         return responses
 
@@ -171,42 +175,40 @@ def return_type_to_response(fn: Callable) -> Dict:
 class OpenAPIMixin:
     """Render an endpoint to openapi specs."""
 
-    if TYPE_CHECKING:
-        from .endpoint import RESTOptions
-
-        meta: RESTOptions
+    meta: RESTOptions
 
     @classmethod
     def openapi(cls, route: Route, spec: APISpec, tags: Dict) -> Dict:  # noqa
         """Get openapi specs for the endpoint."""
-        if cls.meta.name is None:
+        meta = cls.meta
+        if getattr(meta, meta.base_property, None) is None:
             return {}
 
         operations: Dict = {}
         summary, desc, schema = parse_docs(cls)
         if cls not in tags:
-            tags[cls] = cls.meta.name
-            spec.tag({"name": cls.meta.name, "description": summary})
-            Schema = cls.meta.Schema
+            tags[cls] = meta.name
+            spec.tag({"name": meta.name, "description": summary})
+            Schema = meta.Schema
             if Schema.__name__ not in spec.components.schemas:
-                spec.components.schema(cls.meta.Schema.__name__, schema=cls.meta.Schema)
+                spec.components.schema(meta.Schema.__name__, schema=meta.Schema)
 
-        schema_ref = {"$ref": f"#/components/schemas/{ cls.meta.Schema.__name__ }"}
+        schema_ref = {"$ref": f"#/components/schemas/{ meta.Schema.__name__ }"}
         for method in route_to_methods(route):
             operations[method] = {"tags": [tags[cls]]}
             is_resource_route = isinstance(route, DynamicRoute) and route.params.get(
-                cls.meta.name_id
+                meta.name_id
             )
 
             if method == "get" and not is_resource_route:
                 operations[method]["parameters"] = []
-                if cls.meta.sorting:
-                    operations[method]["parameters"].append(cls.meta.sorting.openapi)
+                if meta.sorting:
+                    operations[method]["parameters"].append(meta.sorting.openapi)
 
-                if cls.meta.filters:
-                    operations[method]["parameters"].append(cls.meta.filters.openapi)
+                if meta.filters:
+                    operations[method]["parameters"].append(meta.filters.openapi)
 
-                if cls.meta.limit:
+                if meta.limit:
                     operations[method]["parameters"].append(
                         {
                             "name": LIMIT_PARAM,
@@ -214,7 +216,7 @@ class OpenAPIMixin:
                             "schema": {
                                 "type": "integer",
                                 "minimum": 1,
-                                "maximum": cls.meta.limit,
+                                "maximum": meta.limit,
                             },
                             "description": "The number of items to return",
                         }

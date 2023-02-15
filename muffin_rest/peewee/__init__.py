@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Generic, Optional, Tuple, Type, TypeVar, cast
+from typing import Optional, Tuple, Type, TypeVar, cast
 
 import marshmallow as ma
-import muffin
 import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ForeignKey, ModelSchema
+from muffin import Request
 from muffin.typing import JSONType
 from peewee_aio import Manager, Model
 
@@ -27,11 +27,6 @@ TVModel = TypeVar("TVModel", bound=pw.Model)
 class PWRESTOptions(RESTOptions):
     """Support Peewee."""
 
-    model: Type[pw.Model]
-    model_pk: Optional[pw.Field] = None
-
-    manager: Manager
-
     # Base filters class
     filters_cls: Type[PWFilters] = PWFilters
 
@@ -43,10 +38,15 @@ class PWRESTOptions(RESTOptions):
     # Schema auto generation params
     schema_base: Type[ModelSchema] = ModelSchema
 
+    base_property: str = "model"
+
+    model: Type[pw.Model]
+    model_pk: Optional[pw.Field] = None
+
+    manager: Manager
+
     # Recursive delete
     delete_recursive = False
-
-    base_property: str = "model"
 
     def setup(self, cls):
         """Prepare meta options."""
@@ -72,7 +72,7 @@ class PWRESTOptions(RESTOptions):
         )
 
 
-class PWRESTBase(Generic[TVModel], RESTBase):
+class PWRESTHandler(RESTBase[TVModel], PeeweeOpenAPIMixin):
     """Support Peeweee."""
 
     collection: pw.Query
@@ -81,11 +81,11 @@ class PWRESTBase(Generic[TVModel], RESTBase):
     meta_class: Type[PWRESTOptions] = PWRESTOptions
 
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
-    async def prepare_collection(self, _: muffin.Request) -> pw.Query:
+    async def prepare_collection(self, _: Request) -> pw.Query:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.model.select()
 
-    async def prepare_resource(self, request: muffin.Request) -> Optional[TVModel]:
+    async def prepare_resource(self, request: Request) -> Optional[TVModel]:
         """Load a resource."""
         pk = request["path_params"].get(self.meta.name_id)
         if not pk:
@@ -106,14 +106,14 @@ class PWRESTBase(Generic[TVModel], RESTBase):
         return resource
 
     async def paginate(
-        self, _: muffin.Request, *, limit: int = 0, offset: int = 0
+        self, _: Request, *, limit: int = 0, offset: int = 0
     ) -> Tuple[pw.Query, int]:
         """Paginate the collection."""
-        cqs: pw.Select = self.collection.order_by()  # type: ignore
+        cqs: pw.Select = self.collection.order_by()
         if cqs._group_by:
             cqs._returning = cqs._group_by
         count = await self.meta.manager.count(cqs)
-        return self.collection.offset(offset).limit(limit), count  # type: ignore
+        return self.collection.offset(offset).limit(limit), count
 
     async def get(self, request, *, resource: Optional[TVModel] = None) -> JSONType:
         """Get resource or collection of resources."""
@@ -123,7 +123,7 @@ class PWRESTBase(Generic[TVModel], RESTBase):
         resources = await self.meta.manager.fetchall(self.collection)
         return await self.dump(request, data=resources, many=True)
 
-    async def save(self, _: muffin.Request, resource: TVModel) -> TVModel:
+    async def save(self, _: Request, resource: TVModel) -> TVModel:
         """Save the given resource."""
         meta = self.meta
         if issubclass(meta.model, Model):
@@ -133,7 +133,7 @@ class PWRESTBase(Generic[TVModel], RESTBase):
 
         return resource
 
-    async def remove(self, request: muffin.Request, resource: TVModel):
+    async def remove(self, request: Request, resource: TVModel | None = None):
         """Remove the given resource."""
         meta = self.meta
         if resource:
@@ -152,17 +152,18 @@ class PWRESTBase(Generic[TVModel], RESTBase):
         if not resources:
             raise APIError.NOT_FOUND()
 
-        delete_instance = meta.manager.delete_instance
-        if issubclass(meta.model, Model):
-            delete_instance = lambda m: m.delete_instance(recursive=meta.delete_recursive)  # type: ignore  # noqa
+        is_aiomodel = issubclass(meta.model, Model)
+        if is_aiomodel:
+            for res in resources:
+                await res.delete_instance(recursive=meta.delete_recursive)
+        else:
+            for res in resources:
+                await meta.manager.delete_instance(res, recursive=meta.delete_recursive)
 
-        for res in resources:
-            await delete_instance(res)
-
-    delete = remove  # type: ignore
+    delete = remove
 
     async def get_schema(
-        self, request: muffin.Request, resource: Optional[TVModel] = None, **_
+        self, request: Request, resource: Optional[TVModel] = None, **_
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
@@ -170,9 +171,3 @@ class PWRESTBase(Generic[TVModel], RESTBase):
             only=request.url.query.get("schema_only"),
             exclude=request.url.query.get("schema_exclude", ()),
         )
-
-
-class PWRESTHandler(PWRESTBase[TVModel], PeeweeOpenAPIMixin):  # type: ignore
-    """Support peewee."""
-
-    pass

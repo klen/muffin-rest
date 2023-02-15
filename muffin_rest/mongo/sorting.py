@@ -1,13 +1,7 @@
 """Support sorting for Mongo ORM."""
 
-import typing as t
-
 from ..sorting import Sort, Sorting
-
-from .utils import MongoChain
-
-
-TCOLLECTION = t.TypeVar('TCOLLECTION', bound=MongoChain)
+from .types import TVCollection
 
 
 class MongoSort(Sort):
@@ -24,7 +18,12 @@ class MongoSorting(Sorting):
 
     MUTATE_CLASS = MongoSort
 
-    def sort_default(self, collection: TCOLLECTION) -> TCOLLECTION:  # type: ignore
+    def sort_default(self, collection: TVCollection) -> TVCollection:
         """Sort collection by default."""
-        return collection.sort(
-            [(sort.name, -1 if sort.meta['default'] == 'desc' else 1) for sort in self.default])
+        res = collection.sort(
+            [
+                (sort.name, -1 if sort.meta["default"] == "desc" else 1)
+                for sort in self.default
+            ]
+        )
+        return res

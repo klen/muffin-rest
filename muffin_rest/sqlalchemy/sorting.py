@@ -5,16 +5,15 @@ import typing as t
 from sqlalchemy import Column, sql
 
 from ..sorting import Sort, Sorting
-
-TCOLLECTION = t.TypeVar("TCOLLECTION", bound=sql.Select)
+from .types import TVCollection
 
 
 class SASort(Sort):
     """Sorter for Peewee."""
 
     async def apply(
-        self, collection: TCOLLECTION, desc: bool = False, **_
-    ) -> TCOLLECTION:
+        self, collection: TVCollection, desc: bool = False, **_
+    ) -> TVCollection:
         """Sort the collection."""
         field = self.field
         if desc and isinstance(field, Column):
@@ -51,7 +50,7 @@ class SASorting(Sorting):
 
             return sort
 
-    def sort_default(self, collection: sql.Select) -> sql.Select:
+    def sort_default(self, collection: TVCollection) -> TVCollection:
         """Sort collection by default."""
         return collection.order_by(
             *[

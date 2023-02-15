@@ -1,13 +1,13 @@
 """Support API filters."""
 import operator
-from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Type, cast
+from typing import Any, Callable, Mapping, Optional, Tuple, Type, cast
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads
 from muffin import Request
 
-from . import API
-from .utils import TCOLLECTION, Mutate, Mutator
+from .types import TVCollection
+from .utils import Mutate, Mutator
 
 FILTERS_PARAM = "where"
 
@@ -111,11 +111,11 @@ class Filters(Mutator):
     """Build filters for handlers."""
 
     MUTATE_CLASS = Filter
-    mutations: Dict[str, Filter]  # type: ignore
+    mutations: Mapping[str, Filter]
 
     async def apply(
-        self, request: Request, collection: TCOLLECTION, **options
-    ) -> TCOLLECTION:
+        self, request: Request, collection: TVCollection, **options
+    ) -> TVCollection:
         """Filter the given collection."""
         data = request.url.query.get(FILTERS_PARAM)
         if data is not None:
@@ -130,7 +130,7 @@ class Filters(Mutator):
                         )
 
             except (ValueError, TypeError, AssertionError):
-                api = cast(API, self.handler._api)
+                api = self.handler._api
                 api.logger.warning(f"Invalid filters data: { request.url }")
 
         return collection
