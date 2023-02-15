@@ -1,6 +1,7 @@
 """Create openapi schema from the given API."""
 import inspect
 import re
+from contextlib import suppress
 from functools import partial
 from http import HTTPStatus
 from types import ModuleType
@@ -19,10 +20,8 @@ from .options import RESTOptions
 
 yaml_utils: Optional[ModuleType] = None
 
-try:
+with suppress(ImportError):
     from apispec import yaml_utils
-except ImportError:
-    pass
 
 
 DEFAULT_METHODS = ("get",)
@@ -253,7 +252,7 @@ class OpenAPIMixin:
                     meth
                 )  # noqa
                 return_type = meth.__annotations__.get("return")
-                if return_type == "JSONType" or return_type == JSONType:
+                if return_type in ("JSONType", JSONType):
                     responses = {
                         200: {
                             "description": "Request is successfull",

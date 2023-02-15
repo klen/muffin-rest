@@ -1,6 +1,6 @@
 """Support API filters."""
 import operator
-from typing import Any, Callable, Mapping, Optional, Tuple, Type, cast
+from typing import Any, Callable, Mapping, Optional, Tuple, Type
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads

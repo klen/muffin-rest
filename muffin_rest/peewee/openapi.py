@@ -1,20 +1,18 @@
 """Support openapi."""
 
-from typing import TYPE_CHECKING, Dict
+from typing import Dict
 
 from apispec import APISpec
 from http_router.routes import Route
 
 from ..openapi import OpenAPIMixin
-
-if TYPE_CHECKING:
-    from . import PWRESTOptions
+from .options import PWRESTOptions
 
 
 class PeeweeOpenAPIMixin(OpenAPIMixin):
     """Render openapi."""
 
-    meta: "PWRESTOptions"
+    meta: PWRESTOptions
 
     @classmethod
     def openapi(cls, route: Route, spec: APISpec, tags: Dict) -> Dict:

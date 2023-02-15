@@ -1,5 +1,7 @@
 """REST helpers for Muffin Framework."""
 
+from contextlib import suppress
+
 __version__ = "4.2.5"
 __project__ = "muffin-rest"
 __author__ = "Kirill Klenov <horneds@gmail.com>"
@@ -40,31 +42,24 @@ __all__ = (
     "MongoSorting",
 )
 
-
 # Support Peewee ORM
-try:
+with suppress(ImportError):
     from .peewee import PWRESTHandler
     from .peewee.filters import PWFilter, PWFilters
     from .peewee.sorting import PWSort, PWSorting
-except ImportError:
-    pass
 
 
 # Support SQLAlchemy ORM
-try:
+with suppress(ImportError):
     from .sqlalchemy import SARESTHandler
     from .sqlalchemy.filters import SAFilter, SAFilters
     from .sqlalchemy.sorting import SASort, SASorting
-except ImportError:
-    pass
 
 
 # Support Mongo ORM
-try:
+with suppress(ImportError):
     from .mongo import MongoRESTHandler
     from .mongo.filters import MongoFilter, MongoFilters
     from .mongo.sorting import MongoSort, MongoSorting
-except ImportError:
-    pass
 
 # pylama:ignore=W0611

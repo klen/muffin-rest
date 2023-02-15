@@ -7,69 +7,21 @@ from typing import Optional, Tuple, Type, TypeVar, cast
 import marshmallow as ma
 import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
-from marshmallow_peewee import ForeignKey, ModelSchema
+from marshmallow_peewee import ForeignKey
 from muffin import Request
 from muffin.typing import JSONType
-from peewee_aio import Manager, Model
+from peewee_aio import Model
 
 from muffin_rest.errors import APIError
-from muffin_rest.handler import RESTBase, RESTOptions
-from muffin_rest.peewee.filters import PWFilters
+from muffin_rest.handler import RESTBase
 from muffin_rest.peewee.openapi import PeeweeOpenAPIMixin
-from muffin_rest.peewee.sorting import PWSorting
+
+from .options import PWRESTOptions
 
 # XXX: Patch apispec.MarshmallowPlugin to support ForeignKeyField
 MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 
 TVModel = TypeVar("TVModel", bound=pw.Model)
-
-
-class PWRESTOptions(RESTOptions):
-    """Support Peewee."""
-
-    # Base filters class
-    filters_cls: Type[PWFilters] = PWFilters
-
-    # Base sorting class
-    sorting_cls: Type[PWSorting] = PWSorting
-
-    Schema: Type[ModelSchema]
-
-    # Schema auto generation params
-    schema_base: Type[ModelSchema] = ModelSchema
-
-    base_property: str = "model"
-
-    model: Type[pw.Model]
-    model_pk: Optional[pw.Field] = None
-
-    manager: Manager
-
-    # Recursive delete
-    delete_recursive = False
-
-    def setup(self, cls):
-        """Prepare meta options."""
-        self.name = self.name or self.model._meta.table_name.lower()
-        self.model_pk = self.model_pk or self.model._meta.primary_key
-        manager = getattr(self, "manager", getattr(self.model, "_manager", None))
-        if manager is None:
-            raise RuntimeError("Peewee-AIO ORM Manager is not available")
-
-        self.manager = manager
-
-        super().setup(cls)
-
-    def setup_schema_meta(self, _):
-        """Prepare a schema."""
-        return type(
-            "Meta",
-            (object,),
-            dict(
-                {"unknown": self.schema_unknown, "model": self.model},
-                **self.schema_meta,
-            ),
-        )
 
 
 class PWRESTHandler(RESTBase[TVModel], PeeweeOpenAPIMixin):
