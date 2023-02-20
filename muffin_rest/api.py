@@ -2,18 +2,15 @@
 
 import dataclasses as dc
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, overload
+from typing import Any, Callable, Dict, List, Optional, overload
 
 import muffin
 from http_router import Router
 from muffin.utils import TV, to_awaitable
 
-from muffin_rest.types import TAuth, TVAuth
+from muffin_rest.types import TAuth, TVAuth, TVHandler
 
 from .openapi import render_openapi
-
-if TYPE_CHECKING:
-    from .handler import RESTBase
 
 REDOC_TEMPLATE = Path(__file__).parent.joinpath("redoc.html").read_text()
 SWAGGER_TEMPLATE = Path(__file__).parent.joinpath("swagger.html").read_text()
@@ -99,7 +96,7 @@ class API:
         ...
 
     @overload
-    def route(self, obj: "RESTBase", *paths: str, **params) -> "RESTBase":
+    def route(self, obj: TVHandler, *paths: str, **params) -> TVHandler:
         ...
 
     def route(self, obj, *paths: str, **params):
