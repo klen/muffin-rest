@@ -9,10 +9,10 @@ from typing import Any, Dict, Generator, Generic, Optional, Sequence, Tuple, Typ
 
 import marshmallow as ma
 from asgi_tools.response import parse_response
+from asgi_tools.types import TJSON
 from marshmallow import ValidationError
 from muffin import Request
 from muffin.handler import Handler, HandlerMeta
-from muffin.typing import JSONType
 
 from muffin_rest import LIMIT_PARAM, OFFSET_PARAM, openapi
 from muffin_rest.api import API
@@ -228,7 +228,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         data: Optional[Iterable] = None,
         resource: Optional[TVResource] = None,
         **dump_schema_opts,
-    ) -> JSONType:
+    ) -> TJSON:
         """Serialize the given response."""
         schema = await self.get_schema(request, resource=resource)
         if schema:
@@ -236,9 +236,9 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
                 resource if resource is not None else data, **dump_schema_opts
             )
 
-        return cast(JSONType, data)
+        return cast(TJSON, data)
 
-    async def get(self, request: Request, *, resource=None) -> JSONType:
+    async def get(self, request: Request, *, resource: Optional[TVResource] = None):
         """Get a resource or a collection of resources.
 
         Specify a path param to load a resource.
@@ -248,7 +248,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
         return await self.dump(request, data=self.collection, many=True)
 
-    async def post(self, request: Request, *, resource=None) -> JSONType:
+    async def post(self, request: Request, *, resource: Optional[TVResource] = None):
         """Create a resource.
 
         The method accepts a single resource's data or a list of resources to create.
@@ -262,7 +262,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         res = await self.save(request, data)
         return await self.dump(request, resource=res)
 
-    async def put(self, request: Request, *, resource=None) -> JSONType:
+    async def put(self, request: Request, *, resource: Optional[TVResource] = None):
         """Update a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()

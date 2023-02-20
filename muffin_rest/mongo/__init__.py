@@ -1,6 +1,6 @@
 """Mongo DB support."""
 
-from typing import List, Optional, Tuple, Type
+from typing import List, Optional, Tuple, Type, cast
 
 import bson
 import marshmallow as ma
@@ -117,7 +117,11 @@ class MongoRESTHandler(RESTHandler):
     async def remove(self, request: Request, resource: Optional[TVResource] = None):
         """Remove the given resource(s)."""
         meta = self.meta
-        oids = [resource[meta.collection_id]] if resource else await request.data()
+        oids = (
+            [resource[meta.collection_id]]
+            if resource
+            else cast(List[str], await request.data())
+        )
         if not oids:
             raise APIError.NOT_FOUND()
 

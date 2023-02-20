@@ -7,9 +7,9 @@ from typing import Optional, Tuple, Type, TypeVar, cast, overload
 import marshmallow as ma
 import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
+from asgi_tools.types import TJSON
 from marshmallow_peewee import ForeignKey
 from muffin import Request
-from muffin.typing import JSONType
 from peewee_aio.model import AIOModel, ModelSelect
 
 from muffin_rest.errors import APIError
@@ -89,7 +89,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         count = await self.meta.manager.count(cqs)
         return self.collection.offset(offset).limit(limit), count
 
-    async def get(self, request, *, resource: Optional[TVModel] = None) -> JSONType:
+    async def get(self, request, *, resource: Optional[TVModel] = None) -> TJSON:
         """Get resource or collection of resources."""
         if resource is not None and resource != "":
             return await self.dump(request, resource=resource)

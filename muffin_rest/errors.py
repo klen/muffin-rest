@@ -1,10 +1,10 @@
 """Helpers to raise API errors as JSON responses."""
 import json
 from http import HTTPStatus
-from typing import Mapping, Union
+from typing import Dict, Optional
 
 from muffin import ResponseError
-from muffin.typing import JSONType
+from muffin.types import TJSON
 
 
 class APIError(ResponseError):
@@ -12,7 +12,7 @@ class APIError(ResponseError):
 
     def __init__(
         self,
-        content: Union[str, JSONType] = None,
+        content: Optional[TJSON] = None,
         *,
         status_code: int = HTTPStatus.BAD_REQUEST.value,
         **json_data
@@ -20,7 +20,7 @@ class APIError(ResponseError):
         """Create JSON with errors information."""
         response = {"error": True, "message": HTTPStatus(status_code).description}
 
-        if isinstance(content, Mapping):
+        if isinstance(content, Dict):
             response = content
 
         elif content is not None:

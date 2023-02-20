@@ -2,15 +2,19 @@
 
 import dataclasses as dc
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, overload
 
 import muffin
 from http_router import Router
-from muffin.utils import to_awaitable
+from muffin.utils import TV, to_awaitable
+
+from muffin_rest.types import TAuth, TVAuth
 
 from .openapi import render_openapi
 
-AUTH = TypeVar("AUTH", bound=Callable[[muffin.Request], Awaitable])
+if TYPE_CHECKING:
+    from .handler import RESTBase
+
 REDOC_TEMPLATE = Path(__file__).parent.joinpath("redoc.html").read_text()
 SWAGGER_TEMPLATE = Path(__file__).parent.joinpath("swagger.html").read_text()
 
@@ -37,9 +41,7 @@ class API:
         if servers:
             self.openapi_options["servers"] = servers
 
-        self.authorize: Callable[[muffin.Request], Awaitable] = to_awaitable(
-            lambda _: True
-        )
+        self.authorize: TAuth = to_awaitable(lambda _: True)
         self.router = Router()
 
         if app:
@@ -49,17 +51,9 @@ class API:
         """Stringify the API."""
         return f"<API { self.prefix }>"
 
-    def authorization(self, auth: AUTH) -> AUTH:
-        """Bind an authorization flow to self API."""
-        self.authorize = auth
-        return auth
-
     @property
     def logger(self):
         """Proxy the application's logger."""
-        if self.app is None:
-            raise RuntimeError("API must be binded to an app.")
-
         return self.app.logger
 
     def setup(
@@ -100,7 +94,15 @@ class API:
         self.router.route("/redoc")(redoc)
         self.router.route("/openapi.json")(openapi_json)
 
-    def route(self, path: Union[str, Any], *paths: str, **params):
+    @overload
+    def route(self, obj: str, *paths: str, **params) -> Callable[[TV], TV]:
+        ...
+
+    @overload
+    def route(self, obj: "RESTBase", *paths: str, **params) -> "RESTBase":
+        ...
+
+    def route(self, obj, *paths: str, **params):
         """Route an endpoint by the API."""
         from .handler import RESTBase
 
@@ -108,23 +110,28 @@ class API:
             cb._api = self
             return self.router.route(*paths, **params)(cb)
 
-        if isinstance(path, str):
-            paths = (path, *paths)
+        if isinstance(obj, str):
+            paths = (obj, *paths)
             return wrapper
 
         # Generate URL paths automatically
-        if issubclass(path, RESTBase):
-            path._api = self
-            return self.router.route(path, *paths, **params)
+        if issubclass(obj, RESTBase):
+            obj._api = self
+            return self.router.route(*paths, **params)(obj)
 
         raise Exception("Invalid endpoint")  # TODO
 
+    def authorization(self, auth: TVAuth) -> TVAuth:
+        """Bind an authorization flow to self API."""
+        self.authorize = auth
+        return auth
 
-async def swagger(_):
+
+async def swagger(_) -> str:
     """Get the Swagger UI."""
     return SWAGGER_TEMPLATE
 
 
-async def redoc(_):
+async def redoc(_) -> str:
     """Get the ReDoc UI."""
     return REDOC_TEMPLATE

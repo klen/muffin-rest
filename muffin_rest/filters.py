@@ -1,6 +1,6 @@
 """Support API filters."""
 import operator
-from typing import Any, Callable, Mapping, Optional, Tuple, Type
+from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Type
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads
@@ -147,7 +147,7 @@ class Filters(Mutator):
         return self.MUTATE_CLASS(obj, field=field, schema_field=schema_field, **meta)
 
     @property
-    def openapi(self):
+    def openapi(self) -> Dict:
         """Prepare OpenAPI params."""
         return {
             "name": FILTERS_PARAM,
@@ -157,7 +157,7 @@ class Filters(Mutator):
         }
 
 
-def get_value(obj, name):
+def get_value(obj, name: str):
     """Get value from object by name."""
     if isinstance(obj, dict):
         return obj.get(name)

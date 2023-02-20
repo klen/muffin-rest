@@ -11,9 +11,9 @@ from apispec import utils
 from apispec.core import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from asgi_tools.response import CAST_RESPONSE
+from asgi_tools.types import TJSON
 from http_router.routes import DynamicRoute, Route
 from muffin import Response
-from muffin.typing import JSONType
 
 from . import LIMIT_PARAM, OFFSET_PARAM, openapi
 from .options import RESTOptions
@@ -252,7 +252,7 @@ class OpenAPIMixin:
                     meth
                 )  # noqa
                 return_type = meth.__annotations__.get("return")
-                if return_type in ("JSONType", JSONType):
+                if return_type in ("JSONType", TJSON):
                     responses = {
                         200: {
                             "description": "Request is successfull",

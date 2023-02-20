@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, Type, cast  # py37
+from typing import Optional, Tuple, Type, cast
 
 import marshmallow as ma
 import sqlalchemy as sa
+from asgi_tools.types import TJSON
 from marshmallow_sqlalchemy import ModelConverter
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSchema
 from muffin import Request
-from muffin.typing import JSONType
 from muffin_databases import Plugin as DB
 
 from muffin_rest.errors import APIError
@@ -126,7 +126,7 @@ class SARESTHandler(RESTHandler):
         total = await self.meta.database.fetch_val(qs)
         return self.collection.offset(offset).limit(limit), total
 
-    async def get(self, request, *, resource: Optional[TVResource] = None) -> JSONType:
+    async def get(self, request, *, resource: Optional[TVResource] = None) -> TJSON:
         """Get resource or collection of resources."""
         if resource is not None and resource != "":
             return await self.dump(request, resource=resource)
