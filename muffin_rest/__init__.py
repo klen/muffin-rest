@@ -2,7 +2,7 @@
 
 from contextlib import suppress
 
-__version__ = "4.3.2"
+__version__ = "4.3.3"
 __project__ = "muffin-rest"
 __author__ = "Kirill Klenov <horneds@gmail.com>"
 __license__ = "MIT"
