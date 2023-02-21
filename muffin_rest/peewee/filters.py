@@ -3,7 +3,7 @@
 from typing import Any, Callable, Optional, Tuple, Union, cast
 
 import marshmallow as ma
-from peewee import Field, Query
+from peewee import Field, ModelSelect
 
 from ..filters import Filter, Filters
 
@@ -43,19 +43,19 @@ class PWFilter(Filter):
             self.default_operator = operator
 
     async def filter(
-        self, collection: Query, *ops: Tuple[Callable, Any], **kwargs
-    ) -> Query:
+        self, collection: ModelSelect, *ops: Tuple[Callable, Any], **kwargs
+    ) -> ModelSelect:
         """Apply the filters to Peewee QuerySet.."""
         if self.field and ops:
             return self.query(collection, self.field, *ops, **kwargs)
         return collection
 
-    def query(self, query: Query, column: Field, *ops: Tuple, **_) -> Query:
+    def query(self, qs: ModelSelect, column: Field, *ops: Tuple, **_) -> ModelSelect:
         """Filter a query."""
         if isinstance(column, Field):
-            return query.where(*[op(column, val) for op, val in ops])
+            return qs.where(*[op(column, val) for op, val in ops])
 
-        return query
+        return qs
 
 
 class PWFilters(Filters):
