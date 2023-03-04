@@ -65,7 +65,7 @@ sqlalchemy = [
 packages = ['muffin_rest']
 
 [tool.setuptools.package-data]
-muffin = ["py.typed"]
+muffin_rest = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = "-xsv"
