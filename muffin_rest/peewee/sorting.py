@@ -1,18 +1,22 @@
 """Support sorting for Peewee ORM."""
 
-from typing import TypeVar, Union, cast
+from __future__ import annotations
 
-from peewee import Field, Query
+from typing import TYPE_CHECKING, Union, cast
 
-from ..sorting import Sort, Sorting
-from .types import TVCollection
+from peewee import Field
+
+from muffin_rest.sorting import Sort, Sorting
+
+if TYPE_CHECKING:
+    from .types import TVCollection
 
 
 class PWSort(Sort):
     """Sorter for Peewee."""
 
     async def apply(
-        self, collection: TVCollection, desc: bool = False, **_
+        self, collection: TVCollection, *, desc: bool = False, **_,
     ) -> TVCollection:
         """Sort the collection."""
         return collection.order_by_extend(self.field if not desc else self.field.desc())

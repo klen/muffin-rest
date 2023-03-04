@@ -1,18 +1,21 @@
 """Support sorting for SQLAlchemy ORM."""
+from __future__ import annotations
 
-import typing as t
+from typing import TYPE_CHECKING, Union, cast
 
-from sqlalchemy import Column, sql
+from sqlalchemy import Column
 
-from ..sorting import Sort, Sorting
-from .types import TVCollection
+from muffin_rest.sorting import Sort, Sorting
+
+if TYPE_CHECKING:
+    from .types import TVCollection
 
 
 class SASort(Sort):
     """Sorter for Peewee."""
 
     async def apply(
-        self, collection: TVCollection, desc: bool = False, **_
+        self, collection: TVCollection, *, desc: bool = False, **_,
     ) -> TVCollection:
         """Sort the collection."""
         field = self.field
@@ -27,14 +30,14 @@ class SASorting(Sorting):
 
     MUTATE_CLASS = SASort
 
-    def convert(self, obj: t.Union[str, Column, SASort], **meta):
+    def convert(self, obj: Union[str, Column, SASort], **meta):
         """Prepare sorters."""
         from . import SARESTHandler
 
         if isinstance(obj, SASort):
             return obj
 
-        handler = t.cast(SARESTHandler, self.handler)
+        handler = cast(SARESTHandler, self.handler)
 
         if isinstance(obj, Column):
             name, field = obj.name, obj
@@ -56,5 +59,5 @@ class SASorting(Sorting):
             *[
                 sort.field.desc() if sort.meta["default"] == "desc" else sort.field
                 for sort in self.default
-            ]
+            ],
         )

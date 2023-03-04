@@ -1,10 +1,14 @@
 """Helpers to raise API errors as JSON responses."""
+from __future__ import annotations
+
 import json
 from http import HTTPStatus
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from muffin import ResponseError
-from muffin.types import TJSON
+
+if TYPE_CHECKING:
+    from asgi_tools.types import TJSON
 
 
 class APIError(ResponseError):
@@ -15,7 +19,7 @@ class APIError(ResponseError):
         content: Optional[TJSON] = None,
         *,
         status_code: int = HTTPStatus.BAD_REQUEST.value,
-        **json_data
+        **json_data,
     ):
         """Create JSON with errors information."""
         response = {"error": True, "message": HTTPStatus(status_code).description}
@@ -29,8 +33,15 @@ class APIError(ResponseError):
         if json_data:
             response.update(json_data)
 
-        return super(APIError, self).__init__(
+        super(APIError, self).__init__(
             json.dumps(response),
             status_code=status_code,
             headers={"content-type": "application/json"},
         )
+
+
+class InvalidEnpointError(TypeError):
+    """Invalid endpoint."""
+
+class HandlerNotBindedError(RuntimeError):
+    """Handler not binded."""

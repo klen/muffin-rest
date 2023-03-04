@@ -1,16 +1,21 @@
 """Implement a base class for API."""
 
+from __future__ import annotations
+
 import dataclasses as dc
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, overload
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, overload
 
-import muffin
 from http_router import Router
 from muffin.utils import TV, to_awaitable
 
-from muffin_rest.types import TAuth, TVAuth, TVHandler
-
+from .errors import InvalidEnpointError
 from .openapi import render_openapi
+
+if TYPE_CHECKING:
+    import muffin
+
+    from muffin_rest.types import TAuth, TVAuth, TVHandler
 
 REDOC_TEMPLATE = Path(__file__).parent.joinpath("redoc.html").read_text()
 SWAGGER_TEMPLATE = Path(__file__).parent.joinpath("swagger.html").read_text()
@@ -24,8 +29,8 @@ class API:
         self,
         app: Optional[muffin.Application] = None,
         prefix: str = "",
-        openapi: bool = True,
         *,
+        openapi: bool = True,
         servers: Optional[List] = None,
         **openapi_info,
     ):
@@ -116,7 +121,7 @@ class API:
             obj._api = self
             return self.router.route(*paths, **params)(obj)
 
-        raise Exception("Invalid endpoint")  # TODO
+        raise InvalidEnpointError
 
     def authorization(self, auth: TVAuth) -> TVAuth:
         """Bind an authorization flow to self API."""

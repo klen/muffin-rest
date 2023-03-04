@@ -4,7 +4,8 @@ import peewee as pw
 from marshmallow_peewee import ModelSchema
 from peewee_aio import Manager
 
-from ..options import RESTOptions
+from muffin_rest.options import RESTOptions
+
 from .filters import PWFilters
 from .sorting import PWSorting
 

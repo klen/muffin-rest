@@ -1,12 +1,17 @@
 """Support filters for SQLAlchemy ORM."""
 
-from typing import Any, Callable, Optional, Tuple, Union, cast
+from __future__ import annotations
 
-import marshmallow as ma
-from sqlalchemy import Column, sql
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Union, cast
 
-from ..filters import Filter, Filters
-from .types import TVCollection
+from sqlalchemy import Column
+
+from muffin_rest.filters import Filter, Filters
+
+if TYPE_CHECKING:
+    import marshmallow as ma
+
+    from .types import TVCollection
 
 
 class SAFilter(Filter):
@@ -24,7 +29,7 @@ class SAFilter(Filter):
     operators["$notlike"] = lambda c, v: c.notlike(v)
     operators["$starts"] = lambda c, v: c.startswith(v)
 
-    list_ops = Filter.list_ops + ["$between"]
+    list_ops = [*Filter.list_ops, "$between"]
 
     def __init__(
         self,
@@ -33,20 +38,20 @@ class SAFilter(Filter):
         field: Optional[Column] = None,
         schema_field: Optional[ma.fields.Field] = None,
         operator: Optional[str] = None,
-        **_
+        **_,
     ):
         """Support custom model fields."""
         self.name = name
         self.field = field
         self.schema_field = schema_field or self.schema_field_cls(
-            attribute=field is not None and (field.key or field.name) or name
+            attribute=field is not None and (field.key or field.name) or name,
         )
 
         if operator:
             self.default_operator = operator
 
     async def filter(
-        self, collection: TVCollection, *ops: Tuple[Callable, Any], **kwargs
+        self, collection: TVCollection, *ops: Tuple[Callable, Any], **kwargs,
     ) -> TVCollection:
         """Apply the filters to SQLAlchemy Select."""
         column = self.field

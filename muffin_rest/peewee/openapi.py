@@ -1,12 +1,16 @@
 """Support openapi."""
 
-from typing import Dict
+from __future__ import annotations
 
-from apispec import APISpec
-from http_router.routes import Route
+from typing import TYPE_CHECKING, Dict
 
-from ..openapi import OpenAPIMixin
-from .options import PWRESTOptions
+from muffin_rest.openapi import OpenAPIMixin
+
+if TYPE_CHECKING:
+    from apispec import APISpec
+    from http_router.routes import Route
+
+    from .options import PWRESTOptions
 
 
 class PeeweeOpenAPIMixin(OpenAPIMixin):
@@ -25,8 +29,8 @@ class PeeweeOpenAPIMixin(OpenAPIMixin):
                 "required": True,
                 "content": {
                     "application/json": {
-                        "schema": {"type": "array", "items": {"type": "string"}}
-                    }
+                        "schema": {"type": "array", "items": {"type": "string"}},
+                    },
                 },
             }
         return operations

@@ -2,32 +2,34 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
 
 import marshmallow as ma
 import sqlalchemy as sa
-from asgi_tools.types import TJSON
 from marshmallow_sqlalchemy import ModelConverter
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema as BaseSQLAlchemyAutoSchema
-from muffin import Request
-from muffin_databases import Plugin as DB
 
 from muffin_rest.errors import APIError
 from muffin_rest.handler import RESTHandler, RESTOptions
 from muffin_rest.sqlalchemy.filters import SAFilters
 from muffin_rest.sqlalchemy.sorting import SASorting
 
+if TYPE_CHECKING:
+    from asgi_tools.types import TJSON
+    from muffin import Request
+    from muffin_databases import Plugin as Database
+
 from .types import TVResource
 
 # XXX: Monkey patch ModelConverter
-ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore
+ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore[assignment]  # noqa:
 
 
 class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
     """Allow partial updates for tables."""
 
     @ma.pre_load
-    def fill_defaults(self, data, partial=False, **_):
+    def fill_defaults(self, data, *, partial=False, **_):
         """Insert default params for SQLAlchemy because databases don't.
 
         https://github.com/encode/databases/issues/72
@@ -48,7 +50,7 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
                         value = value(column)
 
                     data[data_key] = field._serialize(
-                        value, field.attribute or field.name, None
+                        value, field.attribute or field.name, None,
                     )
 
         return data
@@ -75,7 +77,7 @@ class SARESTOptions(RESTOptions):
 
     table: sa.Table
     table_pk: Optional[sa.Column] = None
-    database: DB
+    database: Database
 
     base_property = "table"
 
@@ -117,11 +119,11 @@ class SARESTHandler(RESTHandler):
         return self.meta.table.select()
 
     async def paginate(
-        self, _: Request, *, limit: int = 0, offset: int = 0
+        self, _: Request, *, limit: int = 0, offset: int = 0,
     ) -> Tuple[sa.sql.Select, int]:
         """Paginate the collection."""
         qs = sa.select([sa.func.count()]).select_from(
-            self.collection.order_by(None).subquery()
+            self.collection.order_by(None).subquery(),
         )
         total = await self.meta.database.fetch_val(qs)
         return self.collection.offset(offset).limit(limit), total
@@ -147,7 +149,7 @@ class SARESTHandler(RESTHandler):
         return cast(TVResource, dict(resource))
 
     async def get_schema(
-        self, request: Request, *, resource: Optional[TVResource] = None, **_
+        self, request: Request, *, resource: Optional[TVResource] = None, **_,
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
@@ -179,4 +181,4 @@ class SARESTHandler(RESTHandler):
         delete = self.meta.table.delete(table_pk.in_(pks))
         await self.meta.database.execute(delete)
 
-    delete = remove  # noqa
+    delete = remove

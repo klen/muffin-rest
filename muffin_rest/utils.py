@@ -1,11 +1,13 @@
 """REST Utils."""
+from __future__ import annotations
 
 import abc
-from typing import Mapping, Sequence, Type
+from typing import TYPE_CHECKING, Mapping, Sequence, Type
 
-from muffin import Request
+if TYPE_CHECKING:
+    from muffin import Request
 
-from muffin_rest.types import TVCollection
+    from muffin_rest.types import TVCollection
 
 
 class Mutate(abc.ABC):
@@ -68,7 +70,7 @@ class Mutator(abc.ABC):
 
     @abc.abstractmethod
     async def apply(
-        self, request: Request, collection: TVCollection, **options
+        self, request: Request, collection: TVCollection, **options,
     ) -> TVCollection:
         """Mutate a collection."""
         raise NotImplementedError

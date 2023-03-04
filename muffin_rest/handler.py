@@ -4,24 +4,41 @@ from __future__ import annotations
 
 import abc
 import inspect
-from collections.abc import Iterable
-from typing import Any, Dict, Generator, Generic, Optional, Sequence, Tuple, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generator,
+    Generic,
+    Iterable,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
-import marshmallow as ma
 from asgi_tools.response import parse_response
 from asgi_tools.types import TJSON
 from marshmallow import ValidationError
-from muffin import Request
 from muffin.handler import Handler, HandlerMeta
 
 from muffin_rest import LIMIT_PARAM, OFFSET_PARAM, openapi
-from muffin_rest.api import API
 from muffin_rest.errors import APIError
-from muffin_rest.filters import Filter
-from muffin_rest.sorting import Sort
 
+from .errors import HandlerNotBindedError
 from .options import RESTOptions
 from .types import TVResource
+
+if TYPE_CHECKING:
+    import marshmallow as ma
+    from muffin import Request
+
+    from muffin_rest.api import API
+    from muffin_rest.filters import Filter
+    from muffin_rest.sorting import Sort
+
 
 
 class RESTHandlerMeta(HandlerMeta):
@@ -86,7 +103,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         return cls
 
     async def __call__(
-        self, request: Request, *, __meth__: Optional[str] = None, **options
+        self, request: Request, *, __meth__: Optional[str] = None, **options,
     ) -> Any:
         """Dispatch the given request by HTTP method."""
         method = getattr(self, __meth__ or request.method.lower())
@@ -97,20 +114,20 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             try:
                 return await method(request, resource=resource)
             except ValidationError as exc:
-                raise APIError.BAD_REQUEST("Invalid data", errors=exc.messages)
+                raise APIError.BAD_REQUEST("Invalid data", errors=exc.messages) from exc
 
         meta = self.meta
 
         # Filter collection
         if meta.filters:
             self.collection = await meta.filters.apply(
-                request, self.collection, **options
+                request, self.collection, **options,
             )
 
         # Sort collection
         if meta.sorting:
             self.collection = await meta.sorting.apply(
-                request, self.collection, **options
+                request, self.collection, **options,
             )
 
         # Paginate the collection
@@ -119,7 +136,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             limit, offset = self.paginate_prepare_params(request)
             if limit and offset >= 0:
                 self.collection, total = await self.paginate(
-                    request, limit=limit, offset=offset
+                    request, limit=limit, offset=offset,
                 )
                 headers = self.paginate_prepare_headers(limit, offset, total)
 
@@ -135,7 +152,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     def api(self) -> API:
         """Check if the handler is binded to an API."""
         if self._api is None:
-            raise Exception("The handler is not routed by any API")  # TODO
+            raise HandlerNotBindedError
         return self._api
 
     async def authorize(self, request: Request) -> Any:
@@ -174,7 +191,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     @abc.abstractmethod
     async def paginate(
-        self, request: Request, *, limit: int = 0, offset: int = 0
+        self, request: Request, *, limit: int = 0, offset: int = 0,
     ) -> Tuple[Any, int]:
         """Paginate the results."""
         raise NotImplementedError
@@ -207,10 +224,10 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         try:
             return await request.data(raise_errors=True)
         except (ValueError, TypeError) as exc:
-            raise APIError.BAD_REQUEST(str(exc))
+            raise APIError.BAD_REQUEST(str(exc)) from exc
 
     async def load(
-        self, request: Request, resource: Optional[TVResource] = None
+        self, request: Request, resource: Optional[TVResource] = None,
     ) -> Any:
         """Load data from request and create/update a resource."""
         data = await self.parse(request)
@@ -219,8 +236,8 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             return data
 
         return schema.load(
-            data, partial=resource is not None, many=isinstance(data, list)
-        )  # noqa
+            data, partial=resource is not None, many=isinstance(data, list),
+        )
 
     async def dump(
         self,
@@ -233,7 +250,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         schema = await self.get_schema(request, resource=resource)
         if schema:
             return schema.dump(
-                resource if resource is not None else data, **dump_schema_opts
+                resource if resource is not None else data, **dump_schema_opts,
             )
 
         return cast(TJSON, data)
@@ -256,7 +273,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         data = await self.load(request, resource)
         if isinstance(data, list):
             return await self.dump(
-                request, data=[await self.save(request, res) for res in data], many=True
+                request, data=[await self.save(request, res) for res in data], many=True,
             )
 
         res = await self.save(request, data)
@@ -280,7 +297,6 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 class RESTHandler(RESTBase, openapi.OpenAPIMixin):
     """Basic Handler Class."""
 
-    pass
 
 
 def to_sort(

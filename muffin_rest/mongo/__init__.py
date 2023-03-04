@@ -1,12 +1,10 @@
 """Mongo DB support."""
+from __future__ import annotations
 
-from typing import List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
 
 import bson
-import marshmallow as ma
 from bson.errors import InvalidId
-from motor import motor_asyncio as motor
-from muffin import Request
 
 from muffin_rest.errors import APIError
 from muffin_rest.handler import RESTHandler, RESTOptions
@@ -15,8 +13,12 @@ from muffin_rest.mongo.schema import MongoSchema
 from muffin_rest.mongo.sorting import MongoSorting
 from muffin_rest.mongo.utils import MongoChain
 
-from .types import TVResource
+if TYPE_CHECKING:
+    import marshmallow as ma
+    from motor import motor_asyncio as motor
+    from muffin import Request
 
+    from .types import TVResource
 
 class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
@@ -53,14 +55,14 @@ class MongoRESTHandler(RESTHandler):
         return MongoChain(self.meta.collection)
 
     async def paginate(
-        self, _: Request, *, limit: int = 0, offset: int = 0
+        self, _: Request, *, limit: int = 0, offset: int = 0,
     ) -> Tuple[motor.AsyncIOMotorCursor, int]:
         """Paginate collection."""
         if self.meta.aggregate:
-            pipeline_all = self.meta.aggregate + [{"$skip": offset}, {"$limit": limit}]
-            pipeline_num = self.meta.aggregate + [
-                {"$group": {self.meta.collection_id: None, "total": {"$sum": 1}}}
-            ]
+            pipeline_all = [*self.meta.aggregate, {"$skip": offset}, {"$limit": limit}]
+            pipeline_num = [
+                *self.meta.aggregate,
+                {"$group": {self.meta.collection_id: None, "total": {"$sum": 1}}}]
             counts = list(self.collection.aggregate(pipeline_num))
             return (
                 self.collection.aggregate(pipeline_all),
@@ -85,13 +87,13 @@ class MongoRESTHandler(RESTHandler):
 
         try:
             return await self.collection.find_one(
-                {self.meta.collection_id: bson.ObjectId(pk)}
+                {self.meta.collection_id: bson.ObjectId(pk)},
             )
         except InvalidId as exc:
             raise APIError.NOT_FOUND() from exc
 
     async def get_schema(
-        self, request: Request, resource: Optional[TVResource] = None, **_
+        self, request: Request, resource: Optional[TVResource] = None, **_,
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
@@ -105,7 +107,7 @@ class MongoRESTHandler(RESTHandler):
         meta = self.meta
         if resource.get(meta.collection_id):
             await self.collection.replace_one(
-                {meta.collection_id: resource[meta.collection_id]}, resource
+                {meta.collection_id: resource[meta.collection_id]}, resource,
             )
 
         else:
@@ -131,4 +133,4 @@ class MongoRESTHandler(RESTHandler):
         oids = [bson.ObjectId(idx) for idx in oids]
         await meta.collection.delete_many({meta.collection_id: {"$in": oids}})
 
-    delete = remove  # noqa
+    delete = remove

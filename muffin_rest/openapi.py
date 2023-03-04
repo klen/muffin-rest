@@ -45,7 +45,7 @@ def render_openapi(api, request):
     # Setup Specs
     options = dict(api.openapi_options)
     options.setdefault(
-        "servers", [{"url": str(request.url.with_query("").with_path(api.prefix))}]
+        "servers", [{"url": str(request.url.with_query("").with_path(api.prefix))}],
     )
 
     spec = APISpec(
@@ -177,7 +177,7 @@ class OpenAPIMixin:
     meta: RESTOptions
 
     @classmethod
-    def openapi(cls, route: Route, spec: APISpec, tags: Dict) -> Dict:  # noqa
+    def openapi(cls, route: Route, spec: APISpec, tags: Dict) -> Dict:  # noqa: C901
         """Get openapi specs for the endpoint."""
         meta = cls.meta
         if getattr(meta, meta.base_property, None) is None:
@@ -188,15 +188,15 @@ class OpenAPIMixin:
         if cls not in tags:
             tags[cls] = meta.name
             spec.tag({"name": meta.name, "description": summary})
-            Schema = meta.Schema
-            if Schema.__name__ not in spec.components.schemas:
+            schema_cls = meta.Schema
+            if schema_cls.__name__ not in spec.components.schemas:
                 spec.components.schema(meta.Schema.__name__, schema=meta.Schema)
 
         schema_ref = {"$ref": f"#/components/schemas/{ meta.Schema.__name__ }"}
         for method in route_to_methods(route):
             operations[method] = {"tags": [tags[cls]]}
             is_resource_route = isinstance(route, DynamicRoute) and route.params.get(
-                meta.name_id
+                meta.name_id,
             )
 
             if method == "get" and not is_resource_route:
@@ -218,7 +218,7 @@ class OpenAPIMixin:
                                 "maximum": meta.limit,
                             },
                             "description": "The number of items to return",
-                        }
+                        },
                     )
                     operations[method]["parameters"].append(
                         {
@@ -226,7 +226,7 @@ class OpenAPIMixin:
                             "in": "query",
                             "schema": {"type": "integer", "minimum": 0},
                             "description": "The offset of items to return",
-                        }
+                        },
                     )
 
             # Update from the method
@@ -249,15 +249,15 @@ class OpenAPIMixin:
                     operations[method]["description"],
                     mschema,
                 ) = openapi.parse_docs(
-                    meth
-                )  # noqa
+                    meth,
+                )
                 return_type = meth.__annotations__.get("return")
                 if return_type in ("JSONType", TJSON):
                     responses = {
                         200: {
                             "description": "Request is successfull",
                             "content": {"application/json": {"schema": schema_ref}},
-                        }
+                        },
                     }
                 else:
                     responses = return_type_to_response(meth)

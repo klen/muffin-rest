@@ -1,13 +1,18 @@
 """Support API filters."""
+from __future__ import annotations
+
 import operator
-from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping, Optional, Tuple, Type
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads
-from muffin import Request
 
-from .types import TVCollection
 from .utils import Mutate, Mutator
+
+if TYPE_CHECKING:
+    from muffin import Request
+
+    from .types import TVCollection
 
 FILTERS_PARAM = "where"
 
@@ -16,7 +21,7 @@ class Filter(Mutate):
 
     """Base filter class."""
 
-    operators = {
+    operators: Dict[str, Callable] = {
         "<": operator.lt,
         "$lt": operator.lt,
         "<=": operator.le,
@@ -29,7 +34,7 @@ class Filter(Mutate):
         "$eq": operator.eq,
         "!": operator.ne,
         "$ne": operator.ne,
-        "$in": lambda v, c: v in c,
+        "$in": operator.contains,
         "$nin": lambda v, c: v not in c,
     }
     operators["<<"] = operators["$in"]
@@ -78,9 +83,8 @@ class Filter(Mutate):
 
     async def filter(self, collection, *ops: Tuple[Callable, Any], **_):
         """Apply the filter to collection."""
-        validator = lambda obj: all(  # noqa
-            op(get_value(obj, self.name), val) for (op, val) in ops
-        )
+        def validator(obj):
+            return all(op(get_value(obj, self.name), val) for op, val in ops)
         return [o for o in collection if validator(o)]
 
     def parse(self, data: Mapping) -> Tuple[Tuple[Callable, Any], ...]:
@@ -114,7 +118,7 @@ class Filters(Mutator):
     mutations: Mapping[str, Filter]
 
     async def apply(
-        self, request: Request, collection: TVCollection, **options
+        self, request: Request, collection: TVCollection, **options,
     ) -> TVCollection:
         """Filter the given collection."""
         data = request.url.query.get(FILTERS_PARAM)
@@ -126,12 +130,12 @@ class Filters(Mutator):
                 for name in data:
                     if name in mutations:
                         _, collection = await mutations[name].apply(
-                            collection, data, **options
+                            collection, data, **options,
                         )
 
             except (ValueError, TypeError, AssertionError):
                 api = self.handler._api
-                api.logger.warning(f"Invalid filters data: { request.url }")
+                api.logger.warning("Invalid filters data: %s", request.url)
 
         return collection
 

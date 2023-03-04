@@ -1,12 +1,14 @@
 """Implement sorting."""
+from __future__ import annotations
 
-from typing import Any, Generator, List, Mapping, Sequence, Tuple, cast
-
-from muffin import Request
-from muffin.handler import Handler
+from typing import TYPE_CHECKING, Any, Generator, List, Mapping, Sequence, Tuple, cast
 
 from .types import TVCollection
 from .utils import Mutate, Mutator
+
+if TYPE_CHECKING:
+    from muffin import Request
+    from muffin.handler import Handler
 
 SORT_PARAM = "sort"
 
@@ -14,7 +16,7 @@ SORT_PARAM = "sort"
 class Sort(Mutate):
     """Sort a collection."""
 
-    async def apply(self, collection, desc: bool = False, **_) -> Any:
+    async def apply(self, collection, *, desc: bool = False, **_) -> Any:
         """Sort the collection."""
         return sorted(collection, key=lambda obj: getattr(obj, self.name), reverse=desc)
 
@@ -32,14 +34,14 @@ class Sorting(Mutator):
         super(Sorting, self).__init__(handler, params)
 
     async def apply(
-        self, request: Request, collection: TVCollection, **_
+        self, request: Request, collection: TVCollection, **_,
     ) -> TVCollection:
         """Sort the given collection."""
         data = request.url.query.get(SORT_PARAM)
         if data:
             for name, desc in to_sort(data.split(",")):
                 if name in self.mutations:
-                    collection = await self.mutations[name].apply(collection, desc)
+                    collection = await self.mutations[name].apply(collection, desc=desc)
 
         elif self.default:
             return self.sort_default(collection)

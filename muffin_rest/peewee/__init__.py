@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, Type, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Optional, Tuple, Type, TypeVar, cast, overload
 
-import marshmallow as ma
 import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
-from asgi_tools.types import TJSON
 from marshmallow_peewee import ForeignKey
-from muffin import Request
 from peewee_aio.model import AIOModel, ModelSelect
 
 from muffin_rest.errors import APIError
@@ -17,6 +14,11 @@ from muffin_rest.handler import RESTBase
 from muffin_rest.peewee.openapi import PeeweeOpenAPIMixin
 
 from .options import PWRESTOptions
+
+if TYPE_CHECKING:
+    import marshmallow as ma
+    from asgi_tools.types import TJSON
+    from muffin import Request
 
 # XXX: Patch apispec.MarshmallowPlugin to support ForeignKeyField
 MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
@@ -34,18 +36,18 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     @overload
     async def prepare_collection(
-        self: PWRESTBase[AIOModel], request: Request
+        self: PWRESTBase[AIOModel], _: Request,
     ) -> ModelSelect[TVModel]:
         ...
 
     @overload
     async def prepare_collection(
-        self: PWRESTBase[pw.Model], request: Request
+        self: PWRESTBase[pw.Model], _: Request,
     ) -> pw.ModelSelect:
         ...
 
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
-    async def prepare_collection(self, request: Request):
+    async def prepare_collection(self, _: Request):
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.model.select()
 
@@ -59,9 +61,9 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
         try:
             resource = await meta.manager.fetchone(
-                self.collection.where(meta.model_pk == pk)
+                self.collection.where(meta.model_pk == pk),
             )
-        except Exception:
+        except Exception:  # noqa:
             resource = None
 
         if resource is None:
@@ -71,17 +73,17 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     @overload
     async def paginate(
-        self: PWRESTBase[AIOModel], request: Request, *, limit: int = 0, offset: int = 0
+        self: PWRESTBase[AIOModel], _: Request, *, limit: int = 0, offset: int = 0,
     ) -> Tuple[ModelSelect[TVModel], int]:
         ...
 
     @overload
     async def paginate(
-        self: PWRESTBase[pw.Model], request: Request, *, limit: int = 0, offset: int = 0
+        self: PWRESTBase[pw.Model], _: Request, *, limit: int = 0, offset: int = 0,
     ) -> Tuple[pw.ModelSelect, int]:
         ...
 
-    async def paginate(self, request: Request, *, limit: int = 0, offset: int = 0):
+    async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):
         """Paginate the collection."""
         cqs: pw.Select = self.collection.order_by()
         if cqs._group_by:
@@ -120,7 +122,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
             model_pk = cast(pw.Field, meta.model_pk)
             resources = await meta.manager.fetchall(
-                self.collection.where(model_pk << data)
+                self.collection.where(model_pk << data),
             )
 
         if not resources:
@@ -137,7 +139,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     delete = remove
 
     async def get_schema(
-        self, request: Request, resource: Optional[TVModel] = None, **_
+        self, request: Request, resource: Optional[TVModel] = None, **_,
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(

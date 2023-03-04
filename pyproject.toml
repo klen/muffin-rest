@@ -1,0 +1,102 @@
+[project]
+name = "muffin-rest"
+version = "4.3.3"
+description = "The package provides enhanced support for writing REST APIs with Muffin framework"
+readme = "README.rst"
+requires-python = ">=3.8"
+license = {"text" = "MIT License"}
+authors = [{ name = "Kirill Klenov", email = "horneds@gmail.com" }]
+keywords = ["rest", "api", "muffin", "asgi", "asyncio", "trio"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Internet :: WWW/HTTP",
+  "Framework :: AsyncIO",
+  "Framework :: Trio",
+]
+dependencies = [
+  "apispec >= 4",
+  "marshmallow >= 3.14",
+  "muffin >= 0.92",
+]
+
+[project.urls]
+homepage = "https://github.com/klen/muffin-rest"
+repository = "https://github.com/klen/muffin-rest"
+changelog = "https://raw.githubusercontent.com/klen/muffin-rest/master/CHANGELOG.md"
+
+[project.optional-dependencies]
+tests = [
+  "aiosqlite",
+  "marshmallow-peewee  >= 3.2.0",
+  "marshmallow-sqlalchemy >= 0.27.0",
+  "muffin-databases    >= 0.3.2",
+  "muffin-mongo        >= 0.3.1",
+  "muffin-peewee-aio",
+  "pytest",
+  "pytest-aio[curio,trio]",
+  "pytest-mypy",
+  "pyyaml",
+  "types-PyYAML",
+  "types-ujson",
+  "ruff",
+]
+dev = ["pre-commit", "refurb", "bump2version"]
+yaml = ["pyyaml"]
+example = ["uvicorn", "muffin-peewee-aio", "marshmallow-peewee"]
+peewee = [
+    "muffin-peewee-aio >= 0.2.2",
+    "marshmallow-peewee >= 3.2.0",
+]
+sqlalchemy = [
+    "muffin-databases >= 0.3.2",
+    "marshmallow-sqlalchemy",
+    "sqlalchemy",
+]
+
+[tool.setuptools]
+packages = ['muffin_rest']
+
+[tool.setuptools.package-data]
+muffin = ["py.typed"]
+
+[tool.pytest.ini_options]
+addopts = "-xsv"
+log_cli = true
+
+[tool.mypy]
+packages = ["muffin_rest"]
+install_types = true
+non_interactive = true
+ignore_missing_imports = true
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py38,py39,py310,py311,pypy39
+
+[testenv]
+deps = -e .[tests]
+commands =
+	pytest --mypy tests
+
+[testenv:pypy39]
+deps = -e .[tests]
+commands =
+	pytest tests
+"""
+
+[tool.ruff]
+fix = true
+line-length = 100
+target-version = "py38"
+exclude = [".venv", "docs", "examples"]
+select = ["ALL"]
+ignore = ["D", "UP", "ANN", "DJ", "EM", "RSE", "SLF", "RET", "S101", "PLR2004", "PLR0912", "N804", "A003", "TRY003"]

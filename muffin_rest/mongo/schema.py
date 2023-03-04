@@ -1,7 +1,7 @@
 """Serialize/deserialize results from mongo db."""
 
-import marshmallow as ma
 import bson
+import marshmallow as ma
 
 
 class ObjectId(ma.fields.Field):
@@ -11,8 +11,8 @@ class ObjectId(ma.fields.Field):
     def _deserialize(self, value, _, __):
         try:
             return bson.ObjectId(value)
-        except ValueError:
-            raise ma.ValidationError('invalid ObjectId `%s`' % value)
+        except ValueError as exc:
+            raise ma.ValidationError("invalid ObjectId `%s`" % value) from exc
 
     def _serialize(self, value, _, __):
         if value is None:
