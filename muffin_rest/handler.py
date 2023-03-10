@@ -40,7 +40,6 @@ if TYPE_CHECKING:
     from muffin_rest.sorting import Sort
 
 
-
 class RESTHandlerMeta(HandlerMeta):
     """Create class options."""
 
@@ -103,7 +102,11 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         return cls
 
     async def __call__(
-        self, request: Request, *, __meth__: Optional[str] = None, **options,
+        self,
+        request: Request,
+        *,
+        __meth__: Optional[str] = None,
+        **options,
     ) -> Any:
         """Dispatch the given request by HTTP method."""
         method = getattr(self, __meth__ or request.method.lower())
@@ -121,13 +124,17 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         # Filter collection
         if meta.filters:
             self.collection = await meta.filters.apply(
-                request, self.collection, **options,
+                request,
+                self.collection,
+                **options,
             )
 
         # Sort collection
         if meta.sorting:
             self.collection = await meta.sorting.apply(
-                request, self.collection, **options,
+                request,
+                self.collection,
+                **options,
             )
 
         # Paginate the collection
@@ -136,7 +143,9 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             limit, offset = self.paginate_prepare_params(request)
             if limit and offset >= 0:
                 self.collection, total = await self.paginate(
-                    request, limit=limit, offset=offset,
+                    request,
+                    limit=limit,
+                    offset=offset,
                 )
                 headers = self.paginate_prepare_headers(limit, offset, total)
 
@@ -191,7 +200,11 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     @abc.abstractmethod
     async def paginate(
-        self, request: Request, *, limit: int = 0, offset: int = 0,
+        self,
+        request: Request,
+        *,
+        limit: int = 0,
+        offset: int = 0,
     ) -> Tuple[Any, int]:
         """Paginate the results."""
         raise NotImplementedError
@@ -227,7 +240,9 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             raise APIError.BAD_REQUEST(str(exc)) from exc
 
     async def load(
-        self, request: Request, resource: Optional[TVResource] = None,
+        self,
+        request: Request,
+        resource: Optional[TVResource] = None,
     ) -> Any:
         """Load data from request and create/update a resource."""
         data = await self.parse(request)
@@ -236,7 +251,9 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             return data
 
         return schema.load(
-            data, partial=resource is not None, many=isinstance(data, list),
+            data,
+            partial=resource is not None,
+            many=isinstance(data, list),
         )
 
     async def dump(
@@ -250,7 +267,8 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         schema = await self.get_schema(request, resource=resource)
         if schema:
             return schema.dump(
-                resource if resource is not None else data, **dump_schema_opts,
+                resource if resource is not None else data,
+                **dump_schema_opts,
             )
 
         return cast(TJSON, data)
@@ -273,7 +291,9 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         data = await self.load(request, resource)
         if isinstance(data, list):
             return await self.dump(
-                request, data=[await self.save(request, res) for res in data], many=True,
+                request,
+                data=[await self.save(request, res) for res in data],
+                many=True,
             )
 
         res = await self.save(request, data)
@@ -286,17 +306,16 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
         return await self.post(request, resource=resource)
 
-    async def delete(self, request: Request, *, resource: TVResource | None = None):
+    async def delete(self, request: Request, resource: TVResource | None = None):
         """Delete a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()
 
-        return await self.remove(request, resource=resource)
+        return await self.remove(request, resource)
 
 
 class RESTHandler(RESTBase, openapi.OpenAPIMixin):
     """Basic Handler Class."""
-
 
 
 def to_sort(
