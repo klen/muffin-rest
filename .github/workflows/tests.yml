@@ -20,8 +20,9 @@ jobs:
 
     steps:
 
-    - name: Checkout changes
-      uses: actions/checkout@main
+    - uses: actions/checkout@main
+    - name: Install poetry
+      run: pipx install poetry
 
     - name: Start MongoDB
       uses: supercharge/mongodb-github-action@main
@@ -29,20 +30,20 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@main
       with:
-        cache: pip
+        cache: poetry
         python-version: ${{ matrix.python-version }}
 
     - name: Install requirements
-      run: pip install -e .[tests]
+      run: poetry install --with tests
 
     - name: Check code
-      run: ruff muffin_rest
+      run: poetry run ruff muffin_rest
 
     - name: Check typing
-      run: mypy --install-types --non-interactive muffin_rest
+      run: poetry run mypy
 
     - name: Test with pytest
-      run: pytest tests
+      run: poetry run pytest tests
 
   notify:
     runs-on: ubuntu-latest

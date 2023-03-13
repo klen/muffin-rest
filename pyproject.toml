@@ -1,11 +1,12 @@
-[project]
+[tool.poetry]
 name = "muffin-rest"
 version = "4.4.3"
 description = "The package provides enhanced support for writing REST APIs with Muffin framework"
 readme = "README.rst"
-requires-python = ">=3.8"
-license = {"text" = "MIT License"}
-authors = [{ name = "Kirill Klenov", email = "horneds@gmail.com" }]
+homepage = "https://github.com/klen/muffin-rest"
+repository = "https://github.com/klen/muffin-rest"
+authors = ["Kirill Klenov <horneds@gmail.com>"]
+license = "MIT"
 keywords = ["rest", "api", "muffin", "asgi", "asyncio", "trio"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -21,51 +22,47 @@ classifiers = [
   "Framework :: AsyncIO",
   "Framework :: Trio",
 ]
-dependencies = [
-  "apispec >= 4",
-  "marshmallow >= 3.14",
-  "muffin >= 0.92",
-]
 
-[project.urls]
-homepage = "https://github.com/klen/muffin-rest"
-repository = "https://github.com/klen/muffin-rest"
-changelog = "https://raw.githubusercontent.com/klen/muffin-rest/master/CHANGELOG.md"
+[tool.poetry.dependencies]
+python = "^3.8"
+apispec = "^4"
+marshmallow = "^3.14"
+muffin = "^0.94"
 
-[project.optional-dependencies]
-tests = [
-  "aiosqlite",
-  "marshmallow-peewee  >= 3.2.0",
-  "marshmallow-sqlalchemy >= 0.27.0",
-  "muffin-databases    >= 0.3.2",
-  "muffin-mongo        >= 0.3.1",
-  "muffin-peewee-aio",
-  "pytest",
-  "pytest-aio[curio,trio]",
-  "pytest-mypy",
-  "pyyaml",
-  "types-PyYAML",
-  "types-ujson",
-  "ruff",
-]
-dev = ["pre-commit", "refurb", "bump2version"]
-yaml = ["pyyaml"]
-example = ["uvicorn", "muffin-peewee-aio", "marshmallow-peewee"]
-peewee = [
-    "muffin-peewee-aio >= 0.2.2",
-    "marshmallow-peewee >= 3.2.0",
-]
-sqlalchemy = [
-    "muffin-databases >= 0.3.2",
-    "marshmallow-sqlalchemy",
-    "sqlalchemy",
-]
+[tool.poetry.group.tests.dependencies]
+aiosqlite = "*"
+marshmallow-peewee = "^4"
+marshmallow-sqlalchemy = "^0.27.0"
+muffin-databases = "^0.5.0"
+muffin-mongo = "^0.5.1"
+muffin-peewee-aio = "^0.9.6"
+pytest = "*"
+pytest-aio = {version = "*", extras = ["curio", "trio"]}
+pytest-mypy = "*"
+pyyaml = "*"
+types-PyYAML = "*"
+types-ujson = "*"
+ruff = "*"
 
-[tool.setuptools]
-packages = ['muffin_rest']
+[tool.poetry.group.dev.dependencies]
+pre-commit = "*"
 
-[tool.setuptools.package-data]
-muffin_rest = ["py.typed"]
+[tool.poetry.group.yaml.dependencies]
+pyyaml = "*"
+
+[tool.poetry.group.example.dependencies]
+uvicorn = "*"
+muffin-peewee-aio = "^0.9.6"
+marshmallow-peewee = "^4"
+
+[tool.poetry.group.peewee.dependencies]
+muffin-peewee-aio = "^0.9.6"
+marshmallow-peewee = "^4"
+
+[tool.poetry.group.sqlalchemy.dependencies]
+muffin-databases = "^0.5.0"
+marshmallow-sqlalchemy = "*"
+sqlalchemy = "*"
 
 [tool.pytest.ini_options]
 addopts = "-xsv"
@@ -100,3 +97,7 @@ target-version = "py38"
 exclude = [".venv", "docs", "examples"]
 select = ["ALL"]
 ignore = ["D", "UP", "ANN", "DJ", "EM", "RSE", "SLF", "RET", "S101", "PLR2004", "PLR0912", "N804", "A003", "TRY003"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

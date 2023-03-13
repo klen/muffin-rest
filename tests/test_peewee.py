@@ -1,7 +1,10 @@
+from enum import Enum
+
 import peewee as pw
 import pytest
 from muffin_peewee import JSONField
 from muffin_peewee import Plugin as Peewee
+from muffin_peewee.fields import StrEnumField
 
 
 @pytest.fixture(scope="module")
@@ -17,7 +20,7 @@ def setup_logging():
     logger.setLevel(logging.DEBUG)
 
 
-@pytest.fixture
+@pytest.fixture()
 async def db(app):
     db = Peewee(app, connection="sqlite:///:memory:", auto_connection=False)
     async with db:
@@ -25,11 +28,17 @@ async def db(app):
             yield db
 
 
+class Statuses(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
 class Resource(pw.Model):
     active = pw.BooleanField(default=False)
     name = pw.CharField(null=False)
     count = pw.IntegerField(null=True)
     config = JSONField(default={})
+    status = StrEnumField(Statuses, default=Statuses.ACTIVE)
 
 
 @pytest.fixture(autouse=True)
@@ -41,7 +50,7 @@ async def init(db):
     return Resource
 
 
-@pytest.fixture
+@pytest.fixture()
 async def ResourceEndpoint(api):
     from muffin_rest.peewee import PWRESTHandler
 
@@ -67,7 +76,7 @@ async def ResourceEndpoint(api):
     return ResourceEndpoint
 
 
-@pytest.fixture
+@pytest.fixture()
 async def resource(db):
     return await db.manager.create(Resource, name="test")
 
@@ -94,6 +103,11 @@ async def test_base(api, ResourceEndpoint):
     assert ResourceEndpoint.meta.Schema._declared_fields
     ff = ResourceEndpoint.meta.Schema._declared_fields["active"]
     assert ff.load_default is False
+
+    from muffin_rest.peewee.schemas import EnumField
+
+    ef = ResourceEndpoint.meta.Schema._declared_fields["status"]
+    assert isinstance(ef, EnumField)
 
     # Sorting
     assert ResourceEndpoint.meta.sorting
@@ -123,6 +137,7 @@ async def test_get(client, ResourceEndpoint, resource):
     assert await res.json() == {
         "active": False,
         "config": {},
+        "status": "active",
         "count": None,
         "id": "1",
         "name": "test",
@@ -146,7 +161,8 @@ async def test_create(client, ResourceEndpoint):
     assert "name" in json["errors"]
 
     res = await client.post(
-        "/api/resource", data={"name": "test2", "active": True, "unknown": 22}
+        "/api/resource",
+        data={"name": "test2", "active": True, "unknown": 22},
     )
     assert res.status_code == 200
     json = await res.json()
@@ -156,11 +172,23 @@ async def test_create(client, ResourceEndpoint):
 
 
 async def test_edit(client, resource, ResourceEndpoint):
-    res = await client.put("/api/resource/1", data={"name": "new"})
-    assert res.status_code == 200
+    res = await client.put(
+        "/api/resource/1",
+        data={"name": "new", "status": "inactive"},
+    )
     json = await res.json()
     assert json["name"] == "new"
     assert json["id"] == "1"
+    assert json["status"] == "inactive"
+    assert res.status_code == 200
+
+    res = await client.put(
+        "/api/resource/1",
+        data={"name": "new", "status": "unknown"},
+    )
+    assert res.status_code == 400
+    json = await res.json()
+    assert json["errors"]
 
 
 async def test_delete(client, resource, ResourceEndpoint, db):
@@ -274,7 +302,7 @@ async def test_batch_ops(client, ResourceEndpoint, db):
     assert res.status_code == 200
 
     assert not await db.manager.count(
-        Resource.select().where(Resource.id << ("11", "12", "13"))
+        Resource.select().where(Resource.id << ("11", "12", "13")),
     )
 
 
@@ -302,11 +330,9 @@ async def test_endpoint_inheritance():
 
 
 async def test_aiomodels(client, db, api):
-
     events = []
 
     class TestModel(db.Model):
-
         data = pw.CharField()
 
         async def save(self, **kwargs):

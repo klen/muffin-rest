@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple, Type, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Optional, Tuple, Type, cast, overload
 
+import marshmallow as ma
 import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ForeignKey
@@ -14,16 +15,17 @@ from muffin_rest.handler import RESTBase
 from muffin_rest.peewee.openapi import PeeweeOpenAPIMixin
 
 from .options import PWRESTOptions
+from .schemas import EnumField
+from .types import TVModel
 
 if TYPE_CHECKING:
-    import marshmallow as ma
     from asgi_tools.types import TJSON
     from muffin import Request
 
 # XXX: Patch apispec.MarshmallowPlugin to support ForeignKeyField
 MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 
-TVModel = TypeVar("TVModel", bound=pw.Model)
+assert issubclass(EnumField, ma.fields.Field)  # just register EnumField
 
 
 class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):

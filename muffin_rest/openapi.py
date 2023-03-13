@@ -4,8 +4,7 @@ import re
 from contextlib import suppress
 from functools import partial
 from http import HTTPStatus
-from types import ModuleType
-from typing import Callable, Dict, List, Optional, Tuple, cast
+from typing import Callable, Dict, List, Tuple, cast
 
 from apispec import utils
 from apispec.core import APISpec
@@ -18,10 +17,10 @@ from muffin import Response
 from . import LIMIT_PARAM, OFFSET_PARAM, openapi
 from .options import RESTOptions
 
-yaml_utils: Optional[ModuleType] = None
-
 with suppress(ImportError):
     from apispec import yaml_utils
+
+locals().setdefault("yaml_utils", None)
 
 
 DEFAULT_METHODS = ("get",)
@@ -45,7 +44,8 @@ def render_openapi(api, request):
     # Setup Specs
     options = dict(api.openapi_options)
     options.setdefault(
-        "servers", [{"url": str(request.url.with_query("").with_path(api.prefix))}],
+        "servers",
+        [{"url": str(request.url.with_query("").with_path(api.prefix))}],
     )
 
     spec = APISpec(
@@ -163,7 +163,6 @@ def return_type_to_response(fn: Callable) -> Dict:
         and issubclass(return_type, Response)
         and return_type.content_type
     ):
-
         responses[return_type.status_code] = {
             "description": HTTPStatus(return_type.status_code).description,
             "content": {return_type.content_type: {}},
