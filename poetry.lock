@@ -4,7 +4,7 @@
 name = "aio-databases"
 version = "0.13.2"
 description = "Async Support for various databases"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -230,7 +230,7 @@ files = [
 name = "click"
 version = "8.1.3"
 description = "Composable command line interface toolkit"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -245,7 +245,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 files = [
@@ -271,7 +271,7 @@ test = ["Sphinx", "pytest"]
 name = "databases"
 version = "0.7.0"
 description = "Async database support for Python."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -360,7 +360,7 @@ testing = ["covdefaults (>=2.2.2)", "coverage (>=7.0.1)", "pytest (>=7.2)", "pyt
 name = "greenlet"
 version = "2.0.2"
 description = "Lightweight in-process concurrent programming"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*"
 files = [
@@ -555,7 +555,7 @@ tests = ["pytest", "pytz", "simplejson"]
 name = "marshmallow-peewee"
 version = "4.0.0"
 description = "Peewee ORM integration with the Marshmallow (de)serialization library"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
@@ -571,7 +571,7 @@ peewee = ">=3.14.0,<4.0.0"
 name = "marshmallow-sqlalchemy"
 version = "0.27.0"
 description = "SQLAlchemy integration with the marshmallow (de)serialization library"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -655,7 +655,7 @@ tests = ["aiofile", "pytest", "pytest-aio[curio,trio] (>=1.1.1)", "pytest-mypy",
 name = "muffin-databases"
 version = "0.5.0"
 description = "Async support for a range of databases"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -698,7 +698,7 @@ tests = ["pytest", "pytest-aio[curio,trio]", "pytest-mypy", "ruff"]
 name = "muffin-peewee-aio"
 version = "0.9.6"
 description = "Peewee-AIO integration for Muffin framework"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -910,7 +910,7 @@ files = [
 name = "peewee"
 version = "3.16.0"
 description = "a little orm"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 files = [
@@ -921,7 +921,7 @@ files = [
 name = "peewee-aio"
 version = "0.16.3"
 description = "Peewee support for async frameworks (Asyncio, Trio)"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -947,7 +947,7 @@ triopg = ["aio-databases[triopg]"]
 name = "peewee-migrate"
 version = "1.6.6"
 description = "A simple migration engine for Peewee ORM"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1198,7 +1198,7 @@ pytest = [
 name = "pyyaml"
 version = "6.0"
 description = "YAML parser and emitter for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -1316,7 +1316,7 @@ files = [
 name = "sqlalchemy"
 version = "1.4.46"
 description = "Database Abstraction Library"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,>=2.7"
 files = [
@@ -1449,7 +1449,7 @@ files = [
 name = "typing-extensions"
 version = "4.5.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1660,7 +1660,12 @@ files = [
 idna = ">=2.0"
 multidict = ">=4.0"
 
+[extras]
+peewee = ["marshmallow-peewee", "muffin-peewee-aio"]
+sqlalchemy = ["marshmallow-sqlalchemy", "muffin-databases", "sqlalchemy"]
+yaml = ["pyyaml"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "2e96fee775d9f1c0d0caa5c1e03b6d4528b624c8701d1b3768a30e69f6eb5990"
+content-hash = "59eb8cb498250c05af8fd68cc2550eeb9fb4753c1616eb61fb45bcf4f8b7b01b"

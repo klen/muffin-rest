@@ -29,6 +29,19 @@ apispec = "^4"
 marshmallow = "^3.14"
 muffin = "^0.94"
 
+# Optional dependencies
+pyyaml = {version = "*", optional = true}
+muffin-peewee-aio = {version = "^0.9.6", optional = true}
+marshmallow-peewee = {version = "^4", optional = true}
+muffin-databases = {version = "^0.5.0", optional = true}
+marshmallow-sqlalchemy = {version = "^0.27.0", optional = true}
+sqlalchemy = {version = "*", optional = true}
+
+[tool.poetry.extras]
+yaml = ["pyyaml"]
+peewee = ["muffin-peewee-aio", "marshmallow-peewee"]
+sqlalchemy = ["muffin-databases", "marshmallow-sqlalchemy", "sqlalchemy"]
+
 [tool.poetry.group.tests.dependencies]
 aiosqlite = "*"
 marshmallow-peewee = "^4"
@@ -47,22 +60,11 @@ ruff = "*"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "*"
 
-[tool.poetry.group.yaml.dependencies]
-pyyaml = "*"
-
 [tool.poetry.group.example.dependencies]
 uvicorn = "*"
 muffin-peewee-aio = "^0.9.6"
 marshmallow-peewee = "^4"
 
-[tool.poetry.group.peewee.dependencies]
-muffin-peewee-aio = "^0.9.6"
-marshmallow-peewee = "^4"
-
-[tool.poetry.group.sqlalchemy.dependencies]
-muffin-databases = "^0.5.0"
-marshmallow-sqlalchemy = "*"
-sqlalchemy = "*"
 
 [tool.pytest.ini_options]
 addopts = "-xsv"

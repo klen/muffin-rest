@@ -16,7 +16,7 @@ clean:
 # =============
 
 $(VIRTUAL_ENV): pyproject.toml
-	@poetry install --with tests,dev,example,yaml
+	@poetry install --with tests,dev,example --extras yaml
 	@poetry self add poetry-bumpversion
 	@poetry run pre-commit install --hook-type pre-push
 	@touch $(VIRTUAL_ENV)
@@ -57,7 +57,7 @@ VERSION?=minor
 release: $(VIRTUAL_ENV)
 	@$(eval VFROM := $(shell poetry version -s))
 	@poetry version $(VERSION)
-	@git commit -am "Bump version from $(VFROM) → `poetry version -s`"
+	@git commit -am "Bump version $(VFROM) → `poetry version -s`"
 	@git tag `poetry version -s`
 	@git checkout master
 	@git merge develop
