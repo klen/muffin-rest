@@ -36,13 +36,15 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     @overload
     async def prepare_collection(
-        self: PWRESTBase[AIOModel], _: Request,
+        self: PWRESTBase[AIOModel],
+        _: Request,
     ) -> ModelSelect[TVModel]:
         ...
 
     @overload
     async def prepare_collection(
-        self: PWRESTBase[pw.Model], _: Request,
+        self: PWRESTBase[pw.Model],
+        _: Request,
     ) -> pw.ModelSelect:
         ...
 
@@ -73,13 +75,21 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     @overload
     async def paginate(
-        self: PWRESTBase[AIOModel], _: Request, *, limit: int = 0, offset: int = 0,
+        self: PWRESTBase[AIOModel],
+        _: Request,
+        *,
+        limit: int = 0,
+        offset: int = 0,
     ) -> Tuple[ModelSelect[TVModel], int]:
         ...
 
     @overload
     async def paginate(
-        self: PWRESTBase[pw.Model], _: Request, *, limit: int = 0, offset: int = 0,
+        self: PWRESTBase[pw.Model],
+        _: Request,
+        *,
+        limit: int = 0,
+        offset: int = 0,
     ) -> Tuple[pw.ModelSelect, int]:
         ...
 
@@ -136,10 +146,14 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
             for res in resources:
                 await meta.manager.delete_instance(res, recursive=meta.delete_recursive)
 
-    delete = remove
+    async def delete(self, request: Request, resource: TVModel | None = None):
+        return await self.remove(request, resource)
 
     async def get_schema(
-        self, request: Request, resource: Optional[TVModel] = None, **_,
+        self,
+        request: Request,
+        resource: Optional[TVModel] = None,
+        **_,
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
