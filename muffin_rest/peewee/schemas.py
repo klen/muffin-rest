@@ -1,6 +1,6 @@
 import marshmallow as ma
 from marshmallow_peewee import DefaultConverter
-from muffin_peewee.fields import IntEnumField, StrEnumField
+from muffin_peewee.fields import IntEnumField, StrEnumField, URLField
 
 
 class EnumField(ma.fields.Field):
@@ -32,5 +32,7 @@ def build_field(field, opts, **params):
     params.pop("validate", None)
     return EnumField(field.enum, **params)
 
+
+DefaultConverter.register(URLField, ma.fields.Url)
 
 # ruff: noqa: ARG001, ARG002
