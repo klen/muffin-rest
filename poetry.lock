@@ -553,14 +553,14 @@ tests = ["pytest", "pytz", "simplejson"]
 
 [[package]]
 name = "marshmallow-peewee"
-version = "4.0.1"
+version = "4.0.3"
 description = "Peewee ORM integration with the Marshmallow (de)serialization library"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "marshmallow_peewee-4.0.1-py3-none-any.whl", hash = "sha256:a7f9e9ea1d558d508a172d10665052c508a12de00ae748c250870cd919c8f0c4"},
-    {file = "marshmallow_peewee-4.0.1.tar.gz", hash = "sha256:866203f52eda929aa7567b2c9ad4819fb26ea7f810e1c562752c12b3c5786237"},
+    {file = "marshmallow_peewee-4.0.3-py3-none-any.whl", hash = "sha256:939ce8959e45516085e5f2bfdbd0a877eb1173287e62f98708b7bdf19ae29553"},
+    {file = "marshmallow_peewee-4.0.3.tar.gz", hash = "sha256:3c11387dfa1a85fb4fd89c15a53c0303ecf34492ebe06b3aa155b62499dbcaed"},
 ]
 
 [package.dependencies]
@@ -1668,4 +1668,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "75f69029ae0d66408747cfd3191c8953ec9ba9fa6db83df63d84ce48042d2463"
+content-hash = "edd5d7711b8ba5c2fe7c95a5dd8d5367f41cd25faa0fb1b7588800bf53a898ad"
