@@ -105,7 +105,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     async def get(self, request, *, resource: Optional[TVModel] = None) -> TJSON:
         """Get resource or collection of resources."""
-        if resource is not None and resource != "":
+        if resource:
             return await self.dump(request, resource=resource)
 
         resources = await self.meta.manager.fetchall(self.collection)

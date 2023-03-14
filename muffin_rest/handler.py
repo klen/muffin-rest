@@ -278,7 +278,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
         Specify a path param to load a resource.
         """
-        if resource is not None and resource != "":
+        if resource:
             return await self.dump(request, resource=resource)
 
         return await self.dump(request, data=self.collection, many=True)

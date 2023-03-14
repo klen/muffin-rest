@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
     from .types import TVResource
 
+
 class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
 
@@ -55,14 +56,19 @@ class MongoRESTHandler(RESTHandler):
         return MongoChain(self.meta.collection)
 
     async def paginate(
-        self, _: Request, *, limit: int = 0, offset: int = 0,
+        self,
+        _: Request,
+        *,
+        limit: int = 0,
+        offset: int = 0,
     ) -> Tuple[motor.AsyncIOMotorCursor, int]:
         """Paginate collection."""
         if self.meta.aggregate:
             pipeline_all = [*self.meta.aggregate, {"$skip": offset}, {"$limit": limit}]
             pipeline_num = [
                 *self.meta.aggregate,
-                {"$group": {self.meta.collection_id: None, "total": {"$sum": 1}}}]
+                {"$group": {self.meta.collection_id: None, "total": {"$sum": 1}}},
+            ]
             counts = list(self.collection.aggregate(pipeline_num))
             return (
                 self.collection.aggregate(pipeline_all),
@@ -73,7 +79,7 @@ class MongoRESTHandler(RESTHandler):
 
     async def get(self, request, *, resource: Optional[TVResource] = None):
         """Get resource or collection of resources."""
-        if resource is not None and resource != "":
+        if resource:
             return await self.dump(request, resource=resource)
 
         docs = await self.collection.to_list(None)
@@ -93,7 +99,10 @@ class MongoRESTHandler(RESTHandler):
             raise APIError.NOT_FOUND() from exc
 
     async def get_schema(
-        self, request: Request, resource: Optional[TVResource] = None, **_,
+        self,
+        request: Request,
+        resource: Optional[TVResource] = None,
+        **_,
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
@@ -107,7 +116,8 @@ class MongoRESTHandler(RESTHandler):
         meta = self.meta
         if resource.get(meta.collection_id):
             await self.collection.replace_one(
-                {meta.collection_id: resource[meta.collection_id]}, resource,
+                {meta.collection_id: resource[meta.collection_id]},
+                resource,
             )
 
         else:

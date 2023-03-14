@@ -50,7 +50,9 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
                         value = value(column)
 
                     data[data_key] = field._serialize(
-                        value, field.attribute or field.name, None,
+                        value,
+                        field.attribute or field.name,
+                        None,
                     )
 
         return data
@@ -119,7 +121,11 @@ class SARESTHandler(RESTHandler):
         return self.meta.table.select()
 
     async def paginate(
-        self, _: Request, *, limit: int = 0, offset: int = 0,
+        self,
+        _: Request,
+        *,
+        limit: int = 0,
+        offset: int = 0,
     ) -> Tuple[sa.sql.Select, int]:
         """Paginate the collection."""
         qs = sa.select([sa.func.count()]).select_from(
@@ -130,7 +136,7 @@ class SARESTHandler(RESTHandler):
 
     async def get(self, request, *, resource: Optional[TVResource] = None) -> TJSON:
         """Get resource or collection of resources."""
-        if resource is not None and resource != "":
+        if resource:
             return await self.dump(request, resource=resource)
 
         rows = await self.meta.database.fetch_all(self.collection)
@@ -149,7 +155,11 @@ class SARESTHandler(RESTHandler):
         return cast(TVResource, dict(resource))
 
     async def get_schema(
-        self, request: Request, *, resource: Optional[TVResource] = None, **_,
+        self,
+        request: Request,
+        *,
+        resource: Optional[TVResource] = None,
+        **_,
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
