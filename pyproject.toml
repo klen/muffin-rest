@@ -25,9 +25,9 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-apispec = "^4"
-marshmallow = "^3.14"
-muffin = "^0.94"
+apispec = "^6"
+marshmallow = "^3"
+muffin = "^0"
 
 # Optional dependencies
 pyyaml = {version = "*", optional = true}
