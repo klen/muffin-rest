@@ -2,7 +2,7 @@ from enum import Enum
 
 import peewee as pw
 import pytest
-from muffin_peewee import JSONField
+from muffin_peewee import JSONLikeField
 from muffin_peewee import Plugin as Peewee
 from muffin_peewee.fields import StrEnumField
 
@@ -37,7 +37,7 @@ class Resource(pw.Model):
     active = pw.BooleanField(default=False)
     name = pw.CharField(null=False)
     count = pw.IntegerField(null=True)
-    config = JSONField(default={})
+    config = JSONLikeField(default={})
     status = StrEnumField(Statuses, default=Statuses.ACTIVE)
 
 

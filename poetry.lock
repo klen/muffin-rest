@@ -700,21 +700,21 @@ tests = ["pytest", "pytest-aio[curio,trio]", "pytest-mypy", "ruff"]
 
 [[package]]
 name = "muffin-peewee-aio"
-version = "0.10.0"
+version = "0.11.0"
 description = "Peewee-AIO integration for Muffin framework"
 category = "main"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.8,<4.0"
 files = [
-    {file = "muffin-peewee-aio-0.10.0.tar.gz", hash = "sha256:4efc5aba3c52a6a5347cd8beca4c273589aae9ffd5cb98c39bbc5dd014415ad0"},
-    {file = "muffin_peewee_aio-0.10.0-py3-none-any.whl", hash = "sha256:511589f8af0af103fa66a7f37bbc50c830da770db6566f227316af189cb8742c"},
+    {file = "muffin_peewee_aio-0.11.0-py3-none-any.whl", hash = "sha256:cfbb874f1e4f2bbe7795d8dec2528c54d82521a467a826705051773305472c93"},
+    {file = "muffin_peewee_aio-0.11.0.tar.gz", hash = "sha256:871c60f3887cfafcdbde41e90596d4d257e80456205d3c49482c173c97eae184"},
 ]
 
 [package.dependencies]
-muffin = ">=0.92"
-peewee = ">=3"
-peewee-aio = ">=0.16.3"
-peewee-migrate = ">=1.6.6"
+muffin = ">=0,<1"
+peewee = ">=3,<4"
+peewee-aio = ">=0.17.2,<0.18.0"
+peewee-migrate = ">=1.6.6,<2.0.0"
 typing-extensions = {version = "*", markers = "python_version < \"3.11\""}
 
 [package.extras]
@@ -722,8 +722,6 @@ aiomysql = ["aiomysql"]
 aiopg = ["aiopg"]
 aiosqlite = ["aiosqlite"]
 asyncpg = ["asyncpg"]
-dev = ["bump2version", "pre-commit", "refurb"]
-tests = ["aiosqlite", "pytest", "pytest-aio", "pytest-mypy", "ruff", "types-setuptools", "uvicorn"]
 
 [[package]]
 name = "multidict"
@@ -1671,4 +1669,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "3cd88eb0c2e5bb0cf3ad74591fc52008ff22ffe3d13699ea3310d857ff118f5e"
+content-hash = "9ae2ea8ed3f758ddf453d3c9f13423c8e645183c77de1d555c4b46cc7ebbdb77"

@@ -48,7 +48,7 @@ marshmallow-peewee = "^4.0.3"
 marshmallow-sqlalchemy = "^0.27.0"
 muffin-databases = "^0.5.0"
 muffin-mongo = "^0.5.1"
-muffin-peewee-aio = "^0.10.0"
+muffin-peewee-aio = "*"
 pytest = "*"
 pytest-aio = {version = "*", extras = ["curio", "trio"]}
 pytest-mypy = "*"
@@ -62,7 +62,7 @@ pre-commit = "*"
 
 [tool.poetry.group.example.dependencies]
 uvicorn = "*"
-muffin-peewee-aio = "^0.10.0"
+muffin-peewee-aio = "*"
 marshmallow-peewee = "^4.0.3"
 
 
