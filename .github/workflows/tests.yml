@@ -21,7 +21,7 @@ jobs:
     steps:
 
     - uses: actions/checkout@main
-    - name: Install poetry
+    - name: install poetry
       run: pipx install poetry
 
     - name: Start MongoDB
