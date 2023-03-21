@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses as dc
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, overload
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union, overload
 
 from http_router import Router
 from muffin.utils import TV, to_awaitable
@@ -56,14 +56,17 @@ class API:
     @property
     def logger(self):
         """Proxy the application's logger."""
+        if self.app is None:
+            raise RuntimeError("API is not initialized yet")
+
         return self.app.logger
 
     def setup(
         self,
         app: muffin.Application,
+        *,
         prefix: str = "",
         openapi: Optional[bool] = None,
-        *,
         servers: Optional[List] = None,
         **openapi_info,
     ):
@@ -104,7 +107,9 @@ class API:
     def route(self, obj: TVHandler, *paths: str, **params) -> TVHandler:
         ...
 
-    def route(self, obj, *paths: str, **params):
+    def route(
+        self, obj: Union[str, TVHandler], *paths: str, **params
+    ) -> Union[Callable[[TV], TV], TVHandler]:
         """Route an endpoint by the API."""
         from .handler import RESTBase
 

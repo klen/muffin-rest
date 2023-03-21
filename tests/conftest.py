@@ -2,27 +2,31 @@ import muffin
 import pytest
 
 
-@pytest.fixture(params=[
-    pytest.param(('asyncio', {'use_uvloop': False}), id='asyncio'),
-    pytest.param('trio'), pytest.param('curio'),
-], autouse=True)
+@pytest.fixture(
+    params=[
+        pytest.param(("asyncio", {"use_uvloop": False}), id="asyncio"),
+        pytest.param("trio"),
+        pytest.param("curio"),
+    ],
+    autouse=True,
+)
 def aiolib(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture()
 def app():
     app = muffin.Application(debug=True)
 
-    @app.route('/')
-    async def index(request):
-        return 'OK'
+    @app.route("/")
+    async def index(_):
+        return "OK"
 
     return app
 
 
-@pytest.fixture
+@pytest.fixture()
 async def api(app):
     from muffin_rest import API
 
-    return API(app, '/api')
+    return API(app, "/api")

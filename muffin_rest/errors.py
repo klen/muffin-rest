@@ -43,5 +43,6 @@ class APIError(ResponseError):
 class InvalidEnpointError(TypeError):
     """Invalid endpoint."""
 
+
 class HandlerNotBindedError(RuntimeError):
     """Handler not binded."""

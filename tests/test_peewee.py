@@ -13,7 +13,7 @@ def aiolib():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_logging():
+def _setup_logging():
     import logging
 
     logger = logging.getLogger("peewee")
@@ -34,6 +34,7 @@ class Statuses(Enum):
 
 
 class Resource(pw.Model):
+    id = pw.AutoField()
     active = pw.BooleanField(default=False)
     name = pw.CharField(null=False)
     count = pw.IntegerField(null=True)
@@ -44,8 +45,6 @@ class Resource(pw.Model):
 @pytest.fixture(autouse=True)
 async def init(db):
     db.manager.register(Resource)
-    assert Resource._manager
-
     await db.manager.create_tables(Resource)
     return Resource
 

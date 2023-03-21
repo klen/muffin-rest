@@ -4,7 +4,7 @@ import re
 from contextlib import suppress
 from functools import partial
 from http import HTTPStatus
-from typing import Callable, Dict, List, Tuple, cast
+from typing import Any, Callable, Dict, List, Tuple, cast
 
 from apispec import utils
 from apispec.core import APISpec
@@ -115,7 +115,7 @@ def merge_dicts(source: Dict, merge: Dict) -> Dict:
 
 def route_to_spec(route: Route, spec: APISpec, tags: Dict) -> Dict:
     """Convert the given router to openapi operations."""
-    results: Dict = {"parameters": [], "operations": {}}
+    results: Dict[str, Any] = {"parameters": [], "operations": {}}
     if isinstance(route, DynamicRoute):
         for param in route.params:
             results["parameters"].append({"in": "path", "name": param})
