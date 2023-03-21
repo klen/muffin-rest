@@ -62,7 +62,6 @@ async def test_handler(api, client):
 
     @api.route("/simple")
     class Simple(RESTHandler):
-
         methods = "get", "put"
 
         class Meta:
@@ -226,7 +225,6 @@ async def test_bad_request(api, client):
 
     @api.route("/simple")
     class Simple(RESTHandler):
-
         methods = "get", "post"
 
         class Meta:
@@ -251,7 +249,6 @@ async def test_handlers_with_schema(api, client):
 
     @api.route("/pets", "/pets/{pet}")
     class Pet(RESTHandler):
-
         methods = "get", "post"
 
         class Meta:
@@ -289,7 +286,6 @@ async def test_handler_with_path(api, client):
 
     @api.route
     class Simple(RESTHandler):
-
         methods = "get", "patch"
 
         class Meta:
