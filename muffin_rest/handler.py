@@ -260,15 +260,13 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         )
 
     @overload
-    async def dump(
-        self, request, data, *, many: Literal[False] = False, **opts
-    ) -> TSchemaRes:
+    async def dump(  # type: ignore[misc]
+        self, request, data, *, many: Literal[True], **opts
+    ) -> List[TSchemaRes]:
         ...
 
     @overload
-    async def dump(
-        self, request, data, *, many: Literal[True], **opts
-    ) -> List[TSchemaRes]:
+    async def dump(self, request, data, *, many: bool = False, **opts) -> TSchemaRes:
         ...
 
     async def dump(
