@@ -1,14 +1,26 @@
 """Implement sorting."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generator, List, Mapping, Sequence, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generator,
+    Iterable,
+    List,
+    Mapping,
+    Sequence,
+    Tuple,
+    Type,
+    cast,
+)
 
 from .types import TVCollection
 from .utils import Mutate, Mutator
 
 if TYPE_CHECKING:
     from muffin import Request
-    from muffin.handler import Handler
+
+    from .handler import RESTBase
 
 SORT_PARAM = "sort"
 
@@ -28,13 +40,16 @@ class Sorting(Mutator):
     MUTATE_CLASS = Sort
     mutations: Mapping[str, Sort]
 
-    def __init__(self, handler: Handler, params: Sequence):
+    def __init__(self, handler: Type[RESTBase], params: Iterable):
         """Initialize the sorting."""
         self.default: List[Sort] = []
         super(Sorting, self).__init__(handler, params)
 
     async def apply(
-        self, request: Request, collection: TVCollection, **_,
+        self,
+        request: Request,
+        collection: TVCollection,
+        **_,
     ) -> TVCollection:
         """Sort the given collection."""
         data = request.url.query.get(SORT_PARAM)

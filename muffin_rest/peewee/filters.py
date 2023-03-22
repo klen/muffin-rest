@@ -47,7 +47,10 @@ class PWFilter(Filter):
             self.default_operator = operator
 
     async def filter(
-        self, collection: ModelSelect, *ops: Tuple[Callable, Any], **kwargs,
+        self,
+        collection: ModelSelect,
+        *ops: Tuple[Callable, Any],
+        **kwargs,
     ) -> ModelSelect:
         """Apply the filters to Peewee QuerySet.."""
         if self.field and ops:
@@ -57,7 +60,7 @@ class PWFilter(Filter):
     def query(self, qs: ModelSelect, column: Field, *ops: Tuple, **_) -> ModelSelect:
         """Filter a query."""
         if isinstance(column, Field):
-            return qs.where(*[op(column, val) for op, val in ops])
+            return cast(ModelSelect, qs.where(*[op(column, val) for op, val in ops]))
 
         return qs
 
@@ -72,9 +75,10 @@ class PWFilters(Filters):
         from . import PWRESTHandler
 
         handler = cast(PWRESTHandler, self.handler)
+        model_meta = handler.meta.model._meta  # type: ignore[]
         if isinstance(obj, PWFilter):
             if obj.field is None:
-                obj.field = handler.meta.model._meta.fields.get(obj.name)
+                obj.field = model_meta.fields.get(obj.name)
             return obj
 
         if isinstance(obj, Field):
@@ -85,7 +89,7 @@ class PWFilters(Filters):
             name = obj
             field = meta.pop("field", None) or name
             if isinstance(field, str):
-                field = handler.meta.model._meta.fields.get(field)
+                field = model_meta.fields.get(field)
 
         schema_field = meta.pop("schema_field", None)
         if schema_field is None and field:

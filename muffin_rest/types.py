@@ -1,4 +1,12 @@
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Type,
+    TypeVar,
+)
 
 if TYPE_CHECKING:
     from .handler import RESTBase
@@ -10,3 +18,4 @@ TVResource = TypeVar("TVResource", bound=Any)
 TAuth = Callable[[Request], Awaitable]
 TVAuth = TypeVar("TVAuth", bound=TAuth)
 TVHandler = TypeVar("TVHandler", bound=Type["RESTBase"])
+TSchemaRes = Dict[str, Any]

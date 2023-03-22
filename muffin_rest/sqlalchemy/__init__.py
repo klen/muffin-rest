@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, cast
 
 import marshmallow as ma
 import sqlalchemy as sa
@@ -15,7 +15,6 @@ from muffin_rest.sqlalchemy.filters import SAFilters
 from muffin_rest.sqlalchemy.sorting import SASorting
 
 if TYPE_CHECKING:
-    from asgi_tools.types import TJSON
     from muffin import Request
     from muffin_databases import Plugin as Database
 
@@ -110,11 +109,12 @@ class SARESTOptions(RESTOptions):
         )
 
 
-class SARESTHandler(RESTHandler):
+class SARESTHandler(RESTHandler[TVResource]):
     """Support SQLAlchemy Core."""
 
     meta: SARESTOptions
     meta_class: Type[SARESTOptions] = SARESTOptions
+    collection: sa.sql.Select
 
     async def prepare_collection(self, _: Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
@@ -128,19 +128,18 @@ class SARESTHandler(RESTHandler):
         offset: int = 0,
     ) -> Tuple[sa.sql.Select, int]:
         """Paginate the collection."""
-        qs = sa.select([sa.func.count()]).select_from(
-            self.collection.order_by(None).subquery(),
-        )
+        sqs = self.collection.order_by(None).subquery()
+        qs = sa.select([sa.func.count()]).select_from(sqs)
         total = await self.meta.database.fetch_val(qs)
         return self.collection.offset(offset).limit(limit), total
 
-    async def get(self, request, *, resource: Optional[TVResource] = None) -> TJSON:
+    async def get(self, request, *, resource: Optional[TVResource] = None) -> Any:
         """Get resource or collection of resources."""
         if resource:
-            return await self.dump(request, resource=resource)
+            return await self.dump(request, resource)
 
         rows = await self.meta.database.fetch_all(self.collection)
-        return await self.dump(request, data=rows, many=True)
+        return await self.dump(request, rows, many=True)
 
     async def prepare_resource(self, request: Request) -> Optional[TVResource]:
         """Load a resource."""

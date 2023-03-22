@@ -97,7 +97,7 @@ line-length = 100
 target-version = "py38"
 exclude = [".venv", "docs", "examples"]
 select = ["ALL"]
-ignore = ["D", "UP", "ANN", "DJ", "EM", "COM", "RSE", "SLF", "RET", "S101", "PLR2004", "PLR0912", "N804", "A003", "TRY003"]
+ignore = ["ARG", "D", "UP", "ANN", "DJ", "EM", "COM", "RSE", "SLF", "RET", "S101", "PLR2004", "PLR0912", "N804", "A003", "TRY003"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -16,7 +16,11 @@ class PWSort(Sort):
     """Sorter for Peewee."""
 
     async def apply(
-        self, collection: TVCollection, *, desc: bool = False, **_,
+        self,
+        collection: TVCollection,
+        *,
+        desc: bool = False,
+        **_,
     ) -> TVCollection:
         """Sort the collection."""
         return collection.order_by_extend(self.field if not desc else self.field.desc())
@@ -35,13 +39,14 @@ class PWSorting(Sorting):
             return obj
 
         handler = cast(PWRESTHandler, self.handler)
+        model_meta = handler.meta.model._meta  # type: ignore[]
 
         if isinstance(obj, Field):
             name, field = obj.name, obj
 
         else:
             name = obj
-            field = meta.get("field", handler.meta.model._meta.fields.get(name))
+            field = meta.get("field", model_meta.fields.get(name))
 
         if field:
             sort = self.MUTATE_CLASS(name, field=field, **meta)

@@ -13,12 +13,12 @@ from muffin_rest.mongo.schema import MongoSchema
 from muffin_rest.mongo.sorting import MongoSorting
 from muffin_rest.mongo.utils import MongoChain
 
+from .types import TVResource
+
 if TYPE_CHECKING:
     import marshmallow as ma
     from motor import motor_asyncio as motor
     from muffin import Request
-
-    from .types import TVResource
 
 
 class MongoRESTOptions(RESTOptions):
@@ -45,7 +45,7 @@ class MongoRESTOptions(RESTOptions):
         super().setup(cls)
 
 
-class MongoRESTHandler(RESTHandler):
+class MongoRESTHandler(RESTHandler[TVResource]):
     """Support Mongo DB."""
 
     meta: MongoRESTOptions
@@ -80,10 +80,10 @@ class MongoRESTHandler(RESTHandler):
     async def get(self, request, *, resource: Optional[TVResource] = None):
         """Get resource or collection of resources."""
         if resource:
-            return await self.dump(request, resource=resource)
+            return await self.dump(request, resource)
 
         docs = await self.collection.to_list(None)
-        return await self.dump(request, data=docs, many=True)
+        return await self.dump(request, docs, many=True)
 
     async def prepare_resource(self, request: Request) -> Optional[TVResource]:
         """Load a resource."""

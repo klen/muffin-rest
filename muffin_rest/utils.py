@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Mapping, Sequence, Type
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Type
 
 if TYPE_CHECKING:
     from muffin import Request
@@ -16,7 +16,7 @@ class Mutate(abc.ABC):
     def __init__(self, name: str, *, field=None, **meta):
         """Initialize a name."""
         self.name = name
-        self.field = name if field is None else field
+        self.field: Any = name if field is None else field
         self.meta = meta
 
     def __str__(self):
@@ -37,7 +37,7 @@ class Mutator(abc.ABC):
     MUTATE_CLASS: Type[Mutate]
     mutations: Mapping[str, Mutate]
 
-    def __init__(self, handler, params: Sequence):
+    def __init__(self, handler, params: Iterable):
         """Initialize the mutations."""
         self.handler = handler
         self.mutations = {}
@@ -70,7 +70,10 @@ class Mutator(abc.ABC):
 
     @abc.abstractmethod
     async def apply(
-        self, request: Request, collection: TVCollection, **options,
+        self,
+        request: Request,
+        collection: TVCollection,
+        **options,
     ) -> TVCollection:
         """Mutate a collection."""
         raise NotImplementedError

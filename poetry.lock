@@ -556,14 +556,14 @@ tests = ["pytest", "pytz", "simplejson"]
 
 [[package]]
 name = "marshmallow-peewee"
-version = "4.1.2"
+version = "4.2.1"
 description = "Peewee ORM integration with the Marshmallow (de)serialization library"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "marshmallow_peewee-4.1.2-py3-none-any.whl", hash = "sha256:f2d86aea5ee1284916ee312fca8a700b7fee761ed0d804a8b678727d6c237bb9"},
-    {file = "marshmallow_peewee-4.1.2.tar.gz", hash = "sha256:9cafc97424d1da5a13db0dd9aab6fd0de719f2401ccb9bb7769be7bd35cd3f1e"},
+    {file = "marshmallow_peewee-4.2.1-py3-none-any.whl", hash = "sha256:5f68039339a077d3c23b1c661f27222be43e59af20f8cb568680fa68886daef8"},
+    {file = "marshmallow_peewee-4.2.1.tar.gz", hash = "sha256:2fe8d0e8184071bd456298e4ebba6d7d19a5859e751e3715a6d31e0cc3967012"},
 ]
 
 [package.dependencies]
@@ -633,14 +633,14 @@ zstd = ["pymongo[zstd] (>=4.1,<5)"]
 
 [[package]]
 name = "muffin"
-version = "0.95.4"
+version = "0.95.5"
 description = "Muffin is a fast, simple and asyncronous web-framework for Python 3 (asyncio, trio, curio)"
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "muffin-0.95.4-py3-none-any.whl", hash = "sha256:e247b3f0f75da280a29dd872282ae7cd5f2ab43d7937c4f63bb817c98931c416"},
-    {file = "muffin-0.95.4.tar.gz", hash = "sha256:250f5d602d3def54af402d9ca3017d31b64a6425a9717461d910881e00a13e19"},
+    {file = "muffin-0.95.5-py3-none-any.whl", hash = "sha256:ca7df0f7396df5b3bb05da4c4eb39d10094cf31892c9cbd69463d74b4405066e"},
+    {file = "muffin-0.95.5.tar.gz", hash = "sha256:981149c4542ecc01b2c9555f5d9dd4c2c52f7a5c75eed482b49d87146c403fdc"},
 ]
 
 [package.dependencies]
@@ -920,14 +920,14 @@ files = [
 
 [[package]]
 name = "peewee-aio"
-version = "1.2.3"
+version = "1.2.5"
 description = "Async support for Peewee ORM"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "peewee_aio-1.2.3-py3-none-any.whl", hash = "sha256:cdb0b989f3087e120ec3eeadf8f2adb6c037058efee36fae5675b977625a4140"},
-    {file = "peewee_aio-1.2.3.tar.gz", hash = "sha256:aa5514be3b01e783aad2e4918698328366fa387c4c49946cd4affc69d904327d"},
+    {file = "peewee_aio-1.2.5-py3-none-any.whl", hash = "sha256:d3d2aac3c1e77144f7a8909d6c1b9eac2de39d0640afb504a9f9e031a0ebc90f"},
+    {file = "peewee_aio-1.2.5.tar.gz", hash = "sha256:9b8fa35ee4002524256f0034a85ffa2ceee449d5203bc5c64c2f9ffaf842fa20"},
 ]
 
 [package.dependencies]

@@ -11,16 +11,18 @@ from typing import (
     Generator,
     Generic,
     Iterable,
+    List,
+    Literal,
     Optional,
     Sequence,
     Tuple,
     Type,
     Union,
     cast,
+    overload,
 )
 
 from asgi_tools.response import parse_response
-from asgi_tools.types import TJSON
 from marshmallow import ValidationError
 from muffin.handler import Handler, HandlerMeta
 
@@ -38,6 +40,7 @@ if TYPE_CHECKING:
     from muffin_rest.api import API
     from muffin_rest.filters import Filter
     from muffin_rest.sorting import Sort
+    from muffin_rest.types import TSchemaRes
 
 
 class RESTHandlerMeta(HandlerMeta):
@@ -45,7 +48,7 @@ class RESTHandlerMeta(HandlerMeta):
 
     def __new__(mcs, name, bases, params):
         """Prepare options for the handler."""
-        kls = super().__new__(mcs, name, bases, params)
+        kls = cast(Type["RESTBase"], super().__new__(mcs, name, bases, params))
         kls.meta = kls.meta_class(kls)
 
         if getattr(kls.meta, kls.meta_class.base_property, None) is not None:
@@ -251,27 +254,35 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             return data
 
         return schema.load(
-            data,
+            cast(Union[dict, list], data),
             partial=resource is not None,
             many=isinstance(data, list),
         )
 
+    @overload
+    async def dump(
+        self, request, data, *, many: Literal[False] = False, **opts
+    ) -> TSchemaRes:
+        ...
+
+    @overload
+    async def dump(
+        self, request, data, *, many: Literal[True], **opts
+    ) -> List[TSchemaRes]:
+        ...
+
     async def dump(
         self,
         request: Request,
-        data: Optional[Iterable] = None,
-        resource: Optional[TVResource] = None,
+        data: Union[TVResource, Iterable[TVResource]],
+        *,
+        many: bool = False,
         **dump_schema_opts,
-    ) -> TJSON:
+    ) -> Union[TSchemaRes, List[TSchemaRes]]:
         """Serialize the given response."""
+        resource = data if not many else None
         schema = await self.get_schema(request, resource=resource)
-        if schema:
-            return schema.dump(
-                resource if resource is not None else data,
-                **dump_schema_opts,
-            )
-
-        return cast(TJSON, data)
+        return schema.dump(data, many=many, **dump_schema_opts)
 
     async def get(self, request: Request, *, resource: Optional[TVResource] = None):
         """Get a resource or a collection of resources.
@@ -279,7 +290,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         Specify a path param to load a resource.
         """
         if resource:
-            return await self.dump(request, resource=resource)
+            return await self.dump(request, resource)
 
         return await self.dump(request, data=self.collection, many=True)
 
@@ -297,7 +308,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             )
 
         res = await self.save(request, data)
-        return await self.dump(request, resource=res)
+        return await self.dump(request, res)
 
     async def put(self, request: Request, *, resource: Optional[TVResource] = None):
         """Update a resource."""
@@ -314,7 +325,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         return await self.remove(request, resource)
 
 
-class RESTHandler(RESTBase, openapi.OpenAPIMixin):
+class RESTHandler(RESTBase[TVResource], openapi.OpenAPIMixin):
     """Basic Handler Class."""
 
 

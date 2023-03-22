@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple, Type, cast, overload
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, Union, cast, overload
 
 import marshmallow as ma
 import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ForeignKey
-from peewee_aio.model import AIOModel, ModelSelect
+from peewee_aio.model import AIOModel, AIOModelSelect
 
 from muffin_rest.errors import APIError
 from muffin_rest.handler import RESTBase
@@ -19,8 +19,9 @@ from .schemas import EnumField
 from .types import TVModel
 
 if TYPE_CHECKING:
-    from asgi_tools.types import TJSON
     from muffin import Request
+    from peewee_aio.types import TVAIOModel
+
 
 # XXX: Patch apispec.MarshmallowPlugin to support ForeignKeyField
 MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
@@ -31,16 +32,18 @@ assert issubclass(EnumField, ma.fields.Field)  # just register EnumField
 class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     """Support Peeweee."""
 
-    resource: TVModel
+    if TYPE_CHECKING:
+        resource: TVModel
+        collection: Union[AIOModelSelect, pw.ModelSelect]
+
     meta: PWRESTOptions
     meta_class: Type[PWRESTOptions] = PWRESTOptions
-    collection: pw.ModelSelect
 
     @overload
     async def prepare_collection(
-        self: PWRESTBase[AIOModel],
+        self: PWRESTBase[TVAIOModel],
         _: Request,
-    ) -> ModelSelect[TVModel]:
+    ) -> AIOModelSelect[TVAIOModel]:
         ...
 
     @overload
@@ -77,12 +80,12 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     @overload
     async def paginate(
-        self: PWRESTBase[AIOModel],
+        self: PWRESTBase[TVAIOModel],
         _: Request,
         *,
         limit: int = 0,
         offset: int = 0,
-    ) -> Tuple[ModelSelect[TVModel], int]:
+    ) -> Tuple[AIOModelSelect[TVAIOModel], int]:
         ...
 
     @overload
@@ -97,19 +100,23 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):
         """Paginate the collection."""
-        cqs: pw.Select = self.collection.order_by()
-        if cqs._group_by:
-            cqs._returning = cqs._group_by
+        cqs = cast(pw.ModelSelect, self.collection.order_by())
+        if cqs._group_by:  # type: ignore[misc]
+            cqs._returning = cqs._group_by  # type: ignore[misc]
         count = await self.meta.manager.count(cqs)
-        return self.collection.offset(offset).limit(limit), count
 
-    async def get(self, request, *, resource: Optional[TVModel] = None) -> TJSON:
+        return (
+            cast(pw.ModelSelect, self.collection.offset(offset).limit(limit)),  # type: ignore[misc]
+            count,
+        )
+
+    async def get(self, request, *, resource: Optional[TVModel] = None) -> Any:
         """Get resource or collection of resources."""
         if resource:
-            return await self.dump(request, resource=resource)
+            return await self.dump(request, resource)
 
         resources = await self.meta.manager.fetchall(self.collection)
-        return await self.dump(request, data=resources, many=True)
+        return await self.dump(request, resources, many=True)
 
     async def save(self, _: Request, resource: TVModel) -> TVModel:
         """Save the given resource."""

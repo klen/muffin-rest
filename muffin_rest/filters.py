@@ -5,7 +5,7 @@ import operator
 from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping, Optional, Tuple, Type
 
 import marshmallow as ma
-from asgi_tools._compat import json_loads
+from asgi_tools._compat import json_loads  # type: ignore[]
 
 from .utils import Mutate, Mutator
 
@@ -83,8 +83,10 @@ class Filter(Mutate):
 
     async def filter(self, collection, *ops: Tuple[Callable, Any], **_):
         """Apply the filter to collection."""
+
         def validator(obj):
             return all(op(get_value(obj, self.name), val) for op, val in ops)
+
         return [o for o in collection if validator(o)]
 
     def parse(self, data: Mapping) -> Tuple[Tuple[Callable, Any], ...]:
@@ -118,7 +120,10 @@ class Filters(Mutator):
     mutations: Mapping[str, Filter]
 
     async def apply(
-        self, request: Request, collection: TVCollection, **options,
+        self,
+        request: Request,
+        collection: TVCollection,
+        **options,
     ) -> TVCollection:
         """Filter the given collection."""
         data = request.url.query.get(FILTERS_PARAM)
@@ -130,7 +135,9 @@ class Filters(Mutator):
                 for name in data:
                     if name in mutations:
                         _, collection = await mutations[name].apply(
-                            collection, data, **options,
+                            collection,
+                            data,
+                            **options,
                         )
 
             except (ValueError, TypeError, AssertionError):

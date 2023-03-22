@@ -36,8 +36,9 @@ class PWRESTOptions(RESTOptions):
 
     def setup(self, cls):
         """Prepare meta options."""
-        self.name = self.name or self.model._meta.table_name.lower()
-        self.model_pk = self.model_pk or self.model._meta.primary_key
+        meta = self.model._meta  # type: ignore[]
+        self.name = self.name or meta.table_name.lower()
+        self.model_pk = self.model_pk or meta.primary_key
         manager = getattr(self, "manager", getattr(self.model, "_manager", None))
         if manager is None:
             raise RuntimeError("Peewee-AIO ORM Manager is not available")
