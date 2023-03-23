@@ -27,6 +27,7 @@ class PWFilter(Filter):
     operators["$regexp"] = lambda f, v: f.regexp(v)
 
     list_ops = [*Filter.list_ops, "$between"]
+    field: Optional[Field] = None
 
     def __init__(
         self,
@@ -39,7 +40,8 @@ class PWFilter(Filter):
     ):
         """Support custom model fields."""
         self.name = name
-        self.field = field
+        if field:
+            self.field = field
         self.schema_field = schema_field or self.schema_field_cls(
             attribute=field and field.name or name,
         )
