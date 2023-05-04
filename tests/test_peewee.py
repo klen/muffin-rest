@@ -363,3 +363,16 @@ async def test_aiomodels(client, db, api):
     assert res.status_code == 200
 
     assert "custom-delete" in events
+
+
+async def test_custom_filter():
+    from muffin_rest.peewee.filters import PWFilter
+
+    class CustomFilter(PWFilter):
+        field = Resource.count
+
+    flt = CustomFilter("count")
+    assert flt
+    assert flt.field
+
+    assert CustomFilter.field

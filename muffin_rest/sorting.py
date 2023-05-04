@@ -46,17 +46,15 @@ class Sorting(Mutator):
         super(Sorting, self).__init__(handler, params)
 
     async def apply(
-        self,
-        request: Request,
-        collection: TVCollection,
-        **_,
+        self, request: Request, collection: TVCollection, **_
     ) -> TVCollection:
         """Sort the given collection."""
         data = request.url.query.get(SORT_PARAM)
         if data:
             for name, desc in to_sort(data.split(",")):
-                if name in self.mutations:
-                    collection = await self.mutations[name].apply(collection, desc=desc)
+                sort = self.mutations.get(name)
+                if sort:
+                    collection = await sort.apply(collection, desc=desc)
 
         elif self.default:
             return self.sort_default(collection)

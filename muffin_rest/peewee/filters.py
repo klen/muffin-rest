@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Type, Union, cast
 
 from peewee import Field, ModelSelect
 
@@ -49,10 +49,7 @@ class PWFilter(Filter):
             self.default_operator = operator
 
     async def filter(
-        self,
-        collection: ModelSelect,
-        *ops: Tuple[Callable, Any],
-        **kwargs,
+        self, collection: ModelSelect, *ops: Tuple[Callable, Any], **kwargs
     ) -> ModelSelect:
         """Apply the filters to Peewee QuerySet.."""
         if self.field and ops:
@@ -70,7 +67,7 @@ class PWFilter(Filter):
 class PWFilters(Filters):
     """Bind Peewee filter class."""
 
-    MUTATE_CLASS = PWFilter
+    MUTATE_CLASS: Type[PWFilter] = PWFilter
 
     def convert(self, obj: Union[str, Field, PWFilter], **meta):
         """Convert params to filters."""

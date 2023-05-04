@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, Type, Union, cast
 
 from peewee import Field
 
-from muffin_rest.sorting import Sort, Sorting
+from muffin_rest.sorting import SORT_PARAM, Sort, Sorting, to_sort
 
 if TYPE_CHECKING:
+    from muffin import Request
+
     from .types import TVCollection
 
 
@@ -16,11 +18,7 @@ class PWSort(Sort):
     """Sorter for Peewee."""
 
     async def apply(
-        self,
-        collection: TVCollection,
-        *,
-        desc: bool = False,
-        **_,
+        self, collection: TVCollection, *, desc: bool = False, **_
     ) -> TVCollection:
         """Sort the collection."""
         return collection.order_by_extend(self.field if not desc else self.field.desc())
@@ -29,7 +27,24 @@ class PWSort(Sort):
 class PWSorting(Sorting):
     """Sort Peewee ORM Queries."""
 
-    MUTATE_CLASS = PWSort
+    MUTATE_CLASS: Type[PWSort] = PWSort
+
+    async def apply(
+        self, request: Request, collection: TVCollection, **_
+    ) -> TVCollection:
+        """Sort the given collection. Reset sorting."""
+        data = request.url.query.get(SORT_PARAM)
+        if data:
+            collection = collection.order_by(None)
+            for name, desc in to_sort(data.split(",")):
+                sort = self.mutations.get(name)
+                if sort:
+                    collection = await sort.apply(collection, desc=desc)
+
+        elif self.default:
+            return self.sort_default(collection)
+
+        return collection
 
     def convert(self, obj: Union[str, Field, PWSort], **meta):
         """Prepare sorters."""

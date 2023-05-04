@@ -1,21 +1,11 @@
 PACKAGE = muffin_rest
 VIRTUAL_ENV ?= .venv
 
-all: $(VIRTUAL_ENV)
-
-.PHONY: clean
-# target: clean - Display callable targets
-clean:
-	rm -rf build/ dist/ docs/_build *.egg-info
-	find $(CURDIR) -name "*.py[co]" -delete
-	find $(CURDIR) -name "*.orig" -delete
-	find $(CURDIR)/$(MODULE) -name "__pycache__" | xargs rm -rf
-
 # =============
 #  Development
 # =============
 
-$(VIRTUAL_ENV): pyproject.toml
+$(VIRTUAL_ENV): poetry.lock
 	@poetry install --with tests,dev,example --extras yaml
 	@poetry self add poetry-bumpversion
 	@poetry run pre-commit install --hook-type pre-push
@@ -52,12 +42,11 @@ example-sqlalchemy: $(VIRTUAL_ENV)
 # ==============
 
 .PHONY: release
-VERSION?=minor
+VPART?=minor
 # target: release - Bump version
 release: $(VIRTUAL_ENV)
-	@$(eval VFROM := $(shell poetry version -s))
-	@poetry version $(VERSION)
-	@git commit -am "Bump version $(VFROM) → `poetry version -s`"
+	@poetry version $(VPART)
+	@git commit -am "Bump version: `poetry version -s`"
 	@git tag `poetry version -s`
 	@git checkout master
 	@git merge develop
@@ -70,8 +59,8 @@ minor: release
 
 .PHONY: patch
 patch:
-	make release VERSION=patch
+	make release VPART=patch
 
 .PHONY: major
 major:
-	make release VERSION=major
+	make release VPART=major
