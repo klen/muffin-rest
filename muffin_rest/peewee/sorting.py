@@ -61,7 +61,7 @@ class PWSorting(Sorting):
 
         else:
             name = obj
-            field = meta.get("field", model_meta.fields.get(name))
+            field = meta.pop("field", model_meta.fields.get(name))
 
         if field:
             sort = self.MUTATE_CLASS(name, field=field, **meta)

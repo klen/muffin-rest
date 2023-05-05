@@ -64,7 +64,11 @@ async def endpoint_cls(api):
             )
             limit = 10
             model = Resource
-            sorting = ("id", {"default": "desc"}), "name", Resource.count
+            sorting = (
+                ("id", {"field": Resource.id, "default": "desc"}),
+                "name",
+                Resource.count,
+            )
             delete_recursive = True
 
         @PWRESTHandler.route("/resource/action")
