@@ -42,7 +42,7 @@ class Filter(Mutate):
     list_ops = ["$in", "<<"]
 
     field: Any = None
-    schema_field = ma.fields.Raw()
+    schema_field: ma.fields.Field = ma.fields.Raw()
     default_operator = "$eq"
 
     def __init__(
@@ -126,10 +126,10 @@ class Filters(Mutator):
         **options,
     ) -> TVCollection:
         """Filter the given collection."""
-        data = request.url.query.get(FILTERS_PARAM)
-        if data is not None:
+        raw_data = request.url.query.get(FILTERS_PARAM)
+        if raw_data is not None:
             try:
-                data = json_loads(data)
+                data = json_loads(raw_data)
                 assert isinstance(data, dict)
                 mutations = self.mutations
                 for name in data:

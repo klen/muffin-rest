@@ -15,18 +15,20 @@ from pathlib import Path
 from muffin import Application, ResponseRedirect
 from muffin_peewee import Plugin as Peewee
 
+app: Application = Application("rest", debug=True)
 
-app = Application('rest', debug=True)
 
-
-@app.route('/')
+@app.route("/")
 async def home(request):
     """Redirect to Swagger documentation."""
-    return ResponseRedirect('/api/swagger')
+    return ResponseRedirect("/api/swagger")
 
-db = Peewee(app, connection=f"aiosqlite:///{ Path(__file__).parent.joinpath('db.sqlite')}")
+
+db: Peewee = Peewee(
+    app, connection=f"aiosqlite:///{ Path(__file__).parent.joinpath('db.sqlite')}"
+)
 
 # Register the API
-from .api import api # noqa
+from .api import api  # noqa
 
-api.setup(app, prefix='/api')
+api.setup(app, prefix="/api")

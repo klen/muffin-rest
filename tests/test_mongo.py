@@ -65,11 +65,11 @@ def test_imports():
         MongoSorting,
     )
 
-    assert MongoRESTHandler
-    assert MongoFilter
-    assert MongoFilters
-    assert MongoSort
-    assert MongoSorting
+    assert MongoRESTHandler is not None
+    assert MongoFilter is not None
+    assert MongoFilters is not None
+    assert MongoSort is not None
+    assert MongoSorting is not None
 
 
 async def test_base(api, ResourceEndpoint):
