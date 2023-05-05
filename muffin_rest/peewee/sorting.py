@@ -35,7 +35,7 @@ class PWSorting(Sorting):
         """Sort the given collection. Reset sorting."""
         data = request.url.query.get(SORT_PARAM)
         if data:
-            collection = collection.order_by(None)
+            collection = collection.order_by()
             for name, desc in to_sort(data.split(",")):
                 sort = self.mutations.get(name)
                 if sort:
