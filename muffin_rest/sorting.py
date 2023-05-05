@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import (
     TYPE_CHECKING,
     Any,
+    Dict,
     Generator,
     Iterable,
     List,
@@ -47,18 +48,25 @@ class Sorting(Mutator):
 
     async def apply(
         self, request: Request, collection: TVCollection, **_
-    ) -> TVCollection:
+    ) -> Tuple[TVCollection, Dict[str, Any]]:
         """Sort the given collection."""
         data = request.url.query.get(SORT_PARAM)
+        sorting = {}
         if data:
+            collection = self.prepare(collection)
             for name, desc in to_sort(data.split(",")):
                 sort = self.mutations.get(name)
                 if sort:
                     collection = await sort.apply(collection, desc=desc)
+                    sorting[sort.name] = desc
 
         elif self.default:
-            return self.sort_default(collection)
+            return self.sort_default(collection), sorting
 
+        return collection, sorting
+
+    def prepare(self, collection: TVCollection) -> TVCollection:
+        """Prepare the collection."""
         return collection
 
     def convert(self, obj, **meta) -> Sort:

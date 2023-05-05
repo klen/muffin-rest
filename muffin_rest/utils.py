@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Type
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Mapping, Tuple, Type
 
 if TYPE_CHECKING:
     from muffin import Request
@@ -12,8 +12,6 @@ if TYPE_CHECKING:
 
 class Mutate(abc.ABC):
     """Mutate collections."""
-
-    __slots__ = ("name", "field", "meta")
 
     def __init__(self, name: str, *, field=None, **meta):
         """Initialize a name."""
@@ -72,10 +70,7 @@ class Mutator(abc.ABC):
 
     @abc.abstractmethod
     async def apply(
-        self,
-        request: Request,
-        collection: TVCollection,
-        **options,
-    ) -> TVCollection:
+        self, request: Request, collection: TVCollection, **options
+    ) -> Tuple[TVCollection, Dict[str, Any]]:
         """Mutate a collection."""
         raise NotImplementedError

@@ -69,6 +69,8 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     meta: RESTOptions
     meta_class: Type[RESTOptions] = RESTOptions
     _api: Optional[API] = None
+    filters: Dict[str, Any] = {}
+    sorting: Dict[str, Any] = {}
 
     class Meta:
         """Tune the handler."""
@@ -105,11 +107,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         return cls
 
     async def __call__(
-        self,
-        request: Request,
-        *,
-        __meth__: Optional[str] = None,
-        **options,
+        self, request: Request, *, __meth__: Optional[str] = None, **options
     ) -> Any:
         """Dispatch the given request by HTTP method."""
         method = getattr(self, __meth__ or request.method.lower())
@@ -126,18 +124,14 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
         # Filter collection
         if meta.filters:
-            self.collection = await meta.filters.apply(
-                request,
-                self.collection,
-                **options,
+            self.collection, self.filters = await meta.filters.apply(
+                request, self.collection, **options
             )
 
         # Sort collection
         if meta.sorting:
-            self.collection = await meta.sorting.apply(
-                request,
-                self.collection,
-                **options,
+            self.collection, self.sorting = await meta.sorting.apply(
+                request, self.collection, **options
             )
 
         # Paginate the collection

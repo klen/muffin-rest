@@ -6,11 +6,9 @@ from typing import TYPE_CHECKING, Type, Union, cast
 
 from peewee import Field
 
-from muffin_rest.sorting import SORT_PARAM, Sort, Sorting, to_sort
+from muffin_rest.sorting import Sort, Sorting
 
 if TYPE_CHECKING:
-    from muffin import Request
-
     from .types import TVCollection
 
 
@@ -29,22 +27,9 @@ class PWSorting(Sorting):
 
     MUTATE_CLASS: Type[PWSort] = PWSort
 
-    async def apply(
-        self, request: Request, collection: TVCollection, **_
-    ) -> TVCollection:
-        """Sort the given collection. Reset sorting."""
-        data = request.url.query.get(SORT_PARAM)
-        if data:
-            collection = collection.order_by()
-            for name, desc in to_sort(data.split(",")):
-                sort = self.mutations.get(name)
-                if sort:
-                    collection = await sort.apply(collection, desc=desc)
-
-        elif self.default:
-            return self.sort_default(collection)
-
-        return collection
+    def prepare(self, collection: TVCollection) -> TVCollection:
+        """Prepare collection for sorting."""
+        return collection.order_by()
 
     def convert(self, obj: Union[str, Field, PWSort], **meta):
         """Prepare sorters."""

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping, Optional, Tuple  # py38
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads  # type: ignore[]
@@ -120,13 +120,11 @@ class Filters(Mutator):
     mutations: Mapping[str, Filter]
 
     async def apply(
-        self,
-        request: Request,
-        collection: TVCollection,
-        **options,
-    ) -> TVCollection:
+        self, request: Request, collection: TVCollection, **options
+    ) -> Tuple[TVCollection, Dict[str, Any]]:
         """Filter the given collection."""
         raw_data = request.url.query.get(FILTERS_PARAM)
+        filters = {}
         if raw_data is not None:
             try:
                 data = json_loads(raw_data)
@@ -134,17 +132,16 @@ class Filters(Mutator):
                 mutations = self.mutations
                 for name in data:
                     if name in mutations:
-                        _, collection = await mutations[name].apply(
-                            collection,
-                            data,
-                            **options,
+                        ops, collection = await mutations[name].apply(
+                            collection, data, **options
                         )
+                        filters[name] = ops
 
             except (ValueError, TypeError, AssertionError):
                 api = self.handler._api
                 api.logger.warning("Invalid filters data: %s", request.url)
 
-        return collection
+        return collection, filters
 
     def convert(self, obj, **meta):
         """Convert params to filters."""
