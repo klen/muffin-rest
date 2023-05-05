@@ -30,7 +30,6 @@ async def test_apispec(api, client):
 
     @api.route("/pets", "/pets/{pet}")
     class Pet(RESTHandler):
-
         methods = "get", "post"
 
         class Meta:
@@ -42,11 +41,9 @@ async def test_apispec(api, client):
 
     @api.route("/cats", "/cats/{cat}")
     class Cat(RESTHandler):
-
         methods = "get", "post"
 
     async with client.lifespan():
-
         res = await client.get("/api/swagger")
         assert res.status_code == 200
         assert "swagger" in await res.text()
