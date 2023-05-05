@@ -45,18 +45,18 @@ example-sqlalchemy: $(VIRTUAL_ENV)
 VPART?=minor
 # target: release - Bump version
 release: $(VIRTUAL_ENV)
-	@git checkout develop
-	@git pull
-	@git checkout master
-	@git merge develop
-	@git pull
+	git checkout develop
+	git pull
+	git checkout master
+	git merge develop
+	git pull
 	@poetry version $(VPART)
-	@git commit -am "Bump version: `poetry version -s`"
-	@git tag `poetry version -s`
-	@git checkout develop
-	@git merge master
-	@git push origin develop master
-	@git push --tags
+	git commit -am "Bump version: `poetry version -s`"
+	git tag `poetry version -s`
+	git checkout develop
+	git merge master
+	git push origin develop master
+	git push --tags
 
 .PHONY: minor
 minor: release
