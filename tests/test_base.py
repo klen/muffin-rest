@@ -58,7 +58,7 @@ async def test_handler(api, client):
     from muffin_rest.filters import Filters
     from muffin_rest.sorting import Sorting
 
-    assert RESTHandler
+    assert RESTHandler is not None
 
     @api.route("/simple")
     class Simple(RESTHandler):

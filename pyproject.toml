@@ -67,13 +67,11 @@ marshmallow-peewee = "^4.0.3"
 
 
 [tool.pytest.ini_options]
-addopts = "-xsv"
+addopts = "-xsv --mypy"
 log_cli = true
 
 [tool.mypy]
 packages = ["muffin_rest"]
-install_types = true
-non_interactive = true
 ignore_missing_imports = true
 
 [tool.tox]

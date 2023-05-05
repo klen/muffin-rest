@@ -14,19 +14,20 @@ from pathlib import Path
 import muffin
 import muffin_databases
 
+app: muffin.Application = muffin.Application("rest", debug=True)
 
-app = muffin.Application('rest', debug=True)
 
-
-@app.route('/')
+@app.route("/")
 async def home(request):
     """Redirect to Swagger documentation."""
-    return muffin.ResponseRedirect('/api/swagger')
+    return muffin.ResponseRedirect("/api/swagger")
 
 
-db = muffin_databases.Plugin(app, url=f"sqlite:///{ Path(__file__).parent.joinpath('db.sqlite')}")
+db: muffin_databases.Plugin = muffin_databases.Plugin(
+    app, url=f"sqlite:///{ Path(__file__).parent.joinpath('db.sqlite')}"
+)
 
 # Register the API
-from .api import api # noqa
+from .api import api  # noqa
 
-api.setup(app, prefix='/api')
+api.setup(app, prefix="/api")

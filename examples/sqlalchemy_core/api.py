@@ -2,17 +2,17 @@
 
 import random
 import string
-
-from muffin import ResponseText
-from muffin_rest import API, __version__
-from muffin_rest.sqlalchemy import SARESTHandler
 from pathlib import Path
 
+from muffin import ResponseText
+
+from muffin_rest import API
+from muffin_rest.sqlalchemy import SARESTHandler
+
 from . import db
-from .tables import Pet, Category
+from .tables import Category, Pet
 
-
-api = API(version=__version__, title='PetStore API', description='Example Petstore API')
+api = API(version="0.0.0", title="PetStore API", description="Example Petstore API")
 
 
 @api.authorization
@@ -32,10 +32,10 @@ async def authorization(request):
     # Decode tokens, load/check users and etc
     # ...
     # in the example we just ensure that the authorization header exists
-    return request.headers.get('authorization', '')
+    return request.headers.get("authorization", "")
 
 
-@api.route('/token')
+@api.route("/token")
 async def token(request) -> ResponseText:
     """A simple endpoint to get current API token.
 
@@ -57,7 +57,9 @@ async def token(request) -> ResponseText:
         security: []
 
     """
-    return ResponseText(''.join(random.choices(string.ascii_uppercase + string.digits, k=42)))
+    return ResponseText(
+        "".join(random.choices(string.ascii_uppercase + string.digits, k=42))
+    )
 
 
 @api.route
@@ -75,12 +77,12 @@ class Pets(SARESTHandler):
         limit = 10
 
         # Avalable sort params
-        sorting = ('id', {'default': 'desc'}), 'name'
+        sorting = ("id", {"default": "desc"}), "name"
 
         # Available filters
-        filters = 'status', 'category'
+        filters = "status", "category"
 
-    @SARESTHandler.route('/pet/{id}/uploadImage', methods='post')
+    @SARESTHandler.route("/pet/{id}/uploadImage", methods="post")
     async def upload_image(self, request, resource=None):
         """Uploads an image.
 
@@ -99,16 +101,16 @@ class Pets(SARESTHandler):
 
         """
         formdata = await request.form(upload_to=Path(__file__).parent)
-        resource['image'] = formdata['file'].name
+        resource["image"] = formdata["file"].name
         await self.save(request, resource)
-        return resource['image']
+        return resource["image"]
 
 
 @api.route
 class Categories(SARESTHandler):
     """Pets' categories."""
 
-    methods = 'get', 'post'
+    methods = "get", "post"
 
     class Meta:
         """Tune the resource."""

@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Any
 
 import peewee as pw
 import pytest
@@ -38,7 +39,7 @@ class Resource(pw.Model):
     active = pw.BooleanField(default=False)
     name = pw.CharField(null=False)
     count = pw.IntegerField(null=True)
-    config = JSONLikeField(default={})
+    config: Any = JSONLikeField(default={})
     status = StrEnumField(Statuses, default=Statuses.ACTIVE)
 
 
@@ -84,12 +85,12 @@ def test_imports():
     from muffin_rest import PWFilter, PWFilters, PWRESTHandler, PWSort, PWSorting
     from muffin_rest.peewee import PWRESTBase
 
-    assert PWRESTHandler
-    assert PWFilter
-    assert PWFilters
-    assert PWSort
-    assert PWSorting
-    assert PWRESTBase
+    assert PWRESTHandler is not None
+    assert PWFilter is not None
+    assert PWFilters is not None
+    assert PWSort is not None
+    assert PWSorting is not None
+    assert PWRESTBase is not None
 
 
 async def test_base(api, endpoint_cls):
