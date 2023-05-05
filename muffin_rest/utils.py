@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 class Mutate(abc.ABC):
     """Mutate collections."""
 
+    __slots__ = ("name", "field", "meta")
+
     def __init__(self, name: str, *, field=None, **meta):
         """Initialize a name."""
         self.name = name

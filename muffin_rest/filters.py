@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping, Optional, Tuple
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads  # type: ignore[]
@@ -22,27 +22,28 @@ class Filter(Mutate):
     """Base filter class."""
 
     operators: Dict[str, Callable] = {
-        "<": operator.lt,
         "$lt": operator.lt,
-        "<=": operator.le,
         "$le": operator.le,
-        ">": operator.gt,
         "$gt": operator.gt,
-        ">=": operator.ge,
         "$ge": operator.ge,
-        "==": operator.eq,
         "$eq": operator.eq,
-        "!": operator.ne,
         "$ne": operator.ne,
         "$in": operator.contains,
         "$nin": lambda v, c: v not in c,
     }
+    operators["<"] = operators["$lt"]
+    operators["<="] = operators["$le"]
+    operators[">"] = operators["$gt"]
+    operators[">="] = operators["$ge"]
+    operators["=="] = operators["$eq"]
+    operators["!="] = operators["$ne"]
     operators["<<"] = operators["$in"]
 
     list_ops = ["$in", "<<"]
 
-    schema_field_cls: Type[ma.fields.Field] = ma.fields.Raw
-    default_operator: str = "$eq"
+    field: Any = None
+    schema_field = ma.fields.Raw()
+    default_operator = "$eq"
 
     def __init__(
         self,
@@ -61,10 +62,9 @@ class Filter(Mutate):
 
         """
         super(Filter, self).__init__(name, **meta)
-        self.field = field
-        self.schema_field = schema_field or self.schema_field_cls()
-        if operator:
-            self.default_operator = operator
+        self.field = field if field is not None else self.field
+        self.schema_field: ma.fields.Field = schema_field or self.schema_field
+        self.default_operator = operator or self.default_operator
 
     async def apply(self, collection: Any, data: Optional[Mapping] = None, **kwargs):
         """Filter given collection."""

@@ -50,7 +50,7 @@ async def init(db):
 
 
 @pytest.fixture()
-async def ResourceEndpoint(api):
+async def endpoint_cls(api):
     from muffin_rest.peewee import PWRESTHandler
 
     @api.route
@@ -92,36 +92,36 @@ def test_imports():
     assert PWRESTBase
 
 
-async def test_base(api, ResourceEndpoint):
-    assert ResourceEndpoint
-    assert ResourceEndpoint.meta.name == "resource"
-    assert ResourceEndpoint.meta.manager
+async def test_base(api, endpoint_cls):
+    assert endpoint_cls
+    assert endpoint_cls.meta.name == "resource"
+    assert endpoint_cls.meta.manager
 
     # Schema
-    assert ResourceEndpoint.meta.Schema
-    assert ResourceEndpoint.meta.Schema._declared_fields
-    ff = ResourceEndpoint.meta.Schema._declared_fields["active"]
+    assert endpoint_cls.meta.Schema
+    assert endpoint_cls.meta.Schema._declared_fields
+    ff = endpoint_cls.meta.Schema._declared_fields["active"]
     assert ff.load_default is False
 
     from muffin_rest.peewee.schemas import EnumField
 
-    ef = ResourceEndpoint.meta.Schema._declared_fields["status"]
+    ef = endpoint_cls.meta.Schema._declared_fields["status"]
     assert isinstance(ef, EnumField)
 
     # Sorting
-    assert ResourceEndpoint.meta.sorting
-    assert list(ResourceEndpoint.meta.sorting.mutations.keys()) == [
+    assert endpoint_cls.meta.sorting
+    assert list(endpoint_cls.meta.sorting.mutations.keys()) == [
         "id",
         "name",
         "count",
     ]
-    assert ResourceEndpoint.meta.sorting.default == [Resource.id.desc()]
+    assert endpoint_cls.meta.sorting.default == [Resource.id.desc()]
 
     assert api.router.plain["/resource"]
     assert api.router.dynamic[0].pattern.pattern == "^/resource/(?P<id>[^/]+)$"
 
 
-async def test_get(client, ResourceEndpoint, resource):
+async def test_get(client, endpoint_cls, resource):
     res = await client.get("/api/resource")
     assert res.status_code == 200
     json = await res.json()
@@ -152,7 +152,7 @@ async def test_get(client, ResourceEndpoint, resource):
     assert json
 
 
-async def test_create(client, ResourceEndpoint):
+async def test_create(client, endpoint_cls):
     res = await client.post("/api/resource", json={"active": True})
     assert res.status_code == 400
     json = await res.json()
@@ -170,7 +170,7 @@ async def test_create(client, ResourceEndpoint):
     assert json["active"]
 
 
-async def test_edit(client, resource, ResourceEndpoint):
+async def test_edit(client, resource, endpoint_cls):
     res = await client.put(
         "/api/resource/1",
         data={"name": "new", "status": "inactive"},
@@ -190,7 +190,7 @@ async def test_edit(client, resource, ResourceEndpoint):
     assert json["errors"]
 
 
-async def test_delete(client, resource, ResourceEndpoint, db):
+async def test_delete(client, resource, endpoint_cls, db):
     res = await client.delete("/api/resource/1")
     assert res.status_code == 200
     json = await res.json()
@@ -199,7 +199,7 @@ async def test_delete(client, resource, ResourceEndpoint, db):
     assert not await db.manager.fetchone(Resource.select().where(Resource.id == 1))
 
 
-async def test_sort(client, ResourceEndpoint, db):
+async def test_sort(client, endpoint_cls, db):
     await db.manager.create(Resource, name="test2", count=2)
     await db.manager.create(Resource, name="test3", count=3)
     await db.manager.create(Resource, name="test4", count=1)
@@ -218,7 +218,7 @@ async def test_sort(client, ResourceEndpoint, db):
     assert json[1]["id"] == "1"
 
 
-async def test_filters(client, ResourceEndpoint, db):
+async def test_filters(client, endpoint_cls, db):
     await db.manager.create(Resource, name="test2", count=2)
     await db.manager.create(Resource, name="test3", count=3)
     await db.manager.create(Resource, name="test4", count=1)
@@ -254,7 +254,7 @@ async def test_filters(client, ResourceEndpoint, db):
     assert len(json) == 1
 
 
-async def test_paginate(client, ResourceEndpoint, db):
+async def test_paginate(client, endpoint_cls, db):
     for n in range(12):
         await db.manager.create(Resource, name=f"test{n}")
 
@@ -280,7 +280,7 @@ async def test_paginate(client, ResourceEndpoint, db):
     assert len(json) == 3
 
 
-async def test_batch_ops(client, ResourceEndpoint, db):
+async def test_batch_ops(client, endpoint_cls, db):
     # Batch operations (only POST/DELETE are supported for now)
     res = await client.post(
         "/api/resource",
@@ -305,7 +305,7 @@ async def test_batch_ops(client, ResourceEndpoint, db):
     )
 
 
-async def test_openapi(client, ResourceEndpoint):
+async def test_openapi(client, endpoint_cls):
     res = await client.get("/api/openapi.json")
     assert res.status_code == 200
     json = await res.json()

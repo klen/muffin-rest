@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Tuple, Union, cast
 
 from sqlalchemy import Column
 
 from muffin_rest.filters import Filter, Filters
 
 if TYPE_CHECKING:
-    import marshmallow as ma
 
     from .types import TVCollection
 
@@ -31,27 +30,8 @@ class SAFilter(Filter):
 
     list_ops = [*Filter.list_ops, "$between"]
 
-    def __init__(
-        self,
-        name: str,
-        *,
-        field: Optional[Column] = None,
-        schema_field: Optional[ma.fields.Field] = None,
-        operator: Optional[str] = None,
-        **_,
-    ):
-        """Support custom model fields."""
-        self.name = name
-        self.field = field
-        self.schema_field = schema_field or self.schema_field_cls(
-            attribute=field is not None and (field.key or field.name) or name,
-        )
-
-        if operator:
-            self.default_operator = operator
-
     async def filter(
-        self, collection: TVCollection, *ops: Tuple[Callable, Any], **kwargs,
+        self, collection: TVCollection, *ops: Tuple[Callable, Any], **kwargs
     ) -> TVCollection:
         """Apply the filters to SQLAlchemy Select."""
         column = self.field
