@@ -9,7 +9,6 @@ from sqlalchemy import Column
 from muffin_rest.filters import Filter, Filters
 
 if TYPE_CHECKING:
-
     from .types import TVCollection
 
 
