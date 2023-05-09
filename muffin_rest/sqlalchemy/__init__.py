@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from muffin import Request
     from muffin_databases import Plugin as Database
 
+    from muffin_rest.types import TVData
+
 from .types import TVResource
 
 # XXX: Monkey patch ModelConverter
@@ -167,16 +169,20 @@ class SARESTHandler(RESTHandler[TVResource]):
             exclude=request.url.query.get("schema_exclude", ()),
         )
 
-    async def save(self, _: Request, resource: TVResource) -> TVResource:
+    async def save(self, _: Request, resource: TVData[TVResource], *, update=False):
         """Save the given resource."""
-        table_pk = cast(sa.Column, self.meta.table_pk)
-        if resource.get(table_pk.name):
-            update = self.meta.table.update().where(table_pk == resource[table_pk.name])
-            await self.meta.database.execute(update, resource)
+        meta = self.meta
+        insert_query = meta.table.insert()
+        table_pk = cast(sa.Column, meta.table_pk)
+        for res in resource if isinstance(resource, list) else [resource]:
+            if update:
+                update_query = self.meta.table.update().where(
+                    table_pk == res[table_pk.name]
+                )
+                await meta.database.execute(update_query, res)
 
-        else:
-            insert = self.meta.table.insert()
-            resource[table_pk.name] = await self.meta.database.execute(insert, resource)
+            else:
+                res[table_pk.name] = await meta.database.execute(insert_query, resource)
 
         return resource
 

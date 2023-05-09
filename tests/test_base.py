@@ -144,7 +144,7 @@ async def test_handler2(api, client):
                 source[idx] = data
             return data
 
-        async def save(self, request, resource=None):
+        async def save(self, request, resource=None, *, update=False):
             if resource not in source:
                 source.append(resource)
             return resource
@@ -233,7 +233,7 @@ async def test_bad_request(api, client):
         async def prepare_collection(self, request):
             return f"SIMPLE {request.method}"
 
-        async def save(self, request, resource=None):
+        async def save(self, request, resource=None, *, update=False):
             pass
 
     res = await client.post(
@@ -260,7 +260,7 @@ async def test_handlers_with_schema(api, client):
         async def prepare_collection(self, request):
             return pets
 
-        async def save(self, request, resource):
+        async def save(self, request, resource, *, update=False):
             pets.append(resource)
             return resource
 

@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, Union, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+    overload,
+)
 
 import marshmallow as ma
 import peewee as pw
@@ -80,21 +90,13 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     @overload
     async def paginate(
-        self: PWRESTBase[TVAIOModel],
-        _: Request,
-        *,
-        limit: int = 0,
-        offset: int = 0,
+        self: PWRESTBase[TVAIOModel], _: Request, *, limit: int = 0, offset: int = 0
     ) -> Tuple[AIOModelSelect[TVAIOModel], int]:
         ...
 
     @overload
     async def paginate(
-        self: PWRESTBase[pw.Model],
-        _: Request,
-        *,
-        limit: int = 0,
-        offset: int = 0,
+        self: PWRESTBase[pw.Model], _: Request, *, limit: int = 0, offset: int = 0
     ) -> Tuple[pw.ModelSelect, int]:
         ...
 
@@ -118,13 +120,17 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         resources = await self.meta.manager.fetchall(self.collection)
         return await self.dump(request, resources, many=True)
 
-    async def save(self, _: Request, resource: TVModel) -> TVModel:
+    async def save(
+        self, request: Request, resource: Union[TVModel, List[TVModel]], *, update=False
+    ):
         """Save the given resource."""
         meta = self.meta
-        if issubclass(meta.model, AIOModel):
-            await resource.save()
-        else:
-            await meta.manager.save(resource)
+        manager = meta.manager
+        for res in resource if isinstance(resource, list) else [resource]:
+            if issubclass(meta.model, AIOModel):
+                await res.save()
+            else:
+                await manager.save(res)
 
         return resource
 

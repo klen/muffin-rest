@@ -31,7 +31,7 @@ from muffin_rest.errors import APIError
 
 from .errors import HandlerNotBindedError
 from .options import RESTOptions
-from .types import TVResource
+from .types import TVData, TVResource
 
 if TYPE_CHECKING:
     import marshmallow as ma
@@ -208,10 +208,26 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     # Manage data
     # -----------
+    @overload
     @abc.abstractmethod
-    async def save(self, request: Request, resource: TVResource) -> TVResource:
+    async def save(
+        self, request: Request, data: TVResource, *, update=False
+    ) -> TVResource:
+        ...
+
+    @overload
+    @abc.abstractmethod
+    async def save(
+        self, request: Request, data: List[TVResource], *, update=False
+    ) -> List[TVResource]:
+        ...
+
+    @abc.abstractmethod
+    async def save(
+        self, request: Request, data: TVData[TVResource], *, update=False
+    ) -> TVData[TVResource]:
         """Save the given resource."""
-        return resource
+        return data
 
     @abc.abstractmethod
     async def remove(self, request: Request, resource):
@@ -237,30 +253,33 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             raise APIError.BAD_REQUEST(str(exc)) from exc
 
     async def load(
-        self,
-        request: Request,
-        resource: Optional[TVResource] = None,
-    ) -> Any:
+        self, request: Request, resource: Optional[TVResource] = None
+    ) -> TVData[TVResource]:
         """Load data from request and create/update a resource."""
         data = await self.parse(request)
         schema = await self.get_schema(request, resource=resource)
         if not schema:
-            return data
+            return cast(TVData[TVResource], data)
 
-        return schema.load(
-            cast(Union[dict, list], data),
-            partial=resource is not None,
-            many=isinstance(data, list),
+        return cast(
+            TVData[TVResource],
+            schema.load(
+                cast(Union[dict, list], data),
+                partial=resource is not None,
+                many=isinstance(data, list),
+            ),
         )
 
     @overload
     async def dump(  # type: ignore[misc]
-        self, request, data, *, many: Literal[True], **opts
+        self, request, data: TVData, *, many: Literal[True], **opts
     ) -> List[TSchemaRes]:
         ...
 
     @overload
-    async def dump(self, request, data, *, many: bool = False, **opts) -> TSchemaRes:
+    async def dump(
+        self, request, data: TVData, *, many: bool = False, **opts
+    ) -> TSchemaRes:
         ...
 
     async def dump(
@@ -292,15 +311,8 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         The method accepts a single resource's data or a list of resources to create.
         """
         data = await self.load(request, resource)
-        if isinstance(data, list):
-            return await self.dump(
-                request,
-                data=[await self.save(request, res) for res in data],
-                many=True,
-            )
-
-        res = await self.save(request, data)
-        return await self.dump(request, res)
+        data = await self.save(request, data, update=resource is not None)
+        return await self.dump(request, data, many=isinstance(data, list))
 
     async def put(self, request: Request, *, resource: Optional[TVResource] = None):
         """Update a resource."""
