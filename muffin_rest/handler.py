@@ -208,26 +208,18 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     # Manage data
     # -----------
-    @overload
     @abc.abstractmethod
     async def save(
-        self, request: Request, data: TVResource, *, update=False
+        self, request: Request, resource: TVResource, *, update=False
     ) -> TVResource:
-        ...
+        """Save the given resource."""
+        return resource
 
-    @overload
-    @abc.abstractmethod
-    async def save(
+    async def save_many(
         self, request: Request, data: List[TVResource], *, update=False
     ) -> List[TVResource]:
-        ...
-
-    @abc.abstractmethod
-    async def save(
-        self, request: Request, data: TVData[TVResource], *, update=False
-    ) -> TVData[TVResource]:
-        """Save the given resource."""
-        return data
+        """Save many resources."""
+        return [await self.save(request, item, update=update) for item in data]
 
     @abc.abstractmethod
     async def remove(self, request: Request, resource):
@@ -311,8 +303,15 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         The method accepts a single resource's data or a list of resources to create.
         """
         data = await self.load(request, resource)
-        data = await self.save(request, data, update=resource is not None)
-        return await self.dump(request, data, many=isinstance(data, list))
+        many = isinstance(data, list)
+        if many:
+            data = await self.save_many(request, data, update=resource is not None)
+        else:
+            data = await self.save(
+                request, cast(TVResource, data), update=resource is not None
+            )
+
+        return await self.dump(request, data, many=many)
 
     async def put(self, request: Request, *, resource: Optional[TVResource] = None):
         """Update a resource."""

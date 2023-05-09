@@ -174,15 +174,16 @@ class SARESTHandler(RESTHandler[TVResource]):
         meta = self.meta
         insert_query = meta.table.insert()
         table_pk = cast(sa.Column, meta.table_pk)
-        for res in resource if isinstance(resource, list) else [resource]:
-            if update:
-                update_query = self.meta.table.update().where(
-                    table_pk == res[table_pk.name]
-                )
-                await meta.database.execute(update_query, res)
+        if update:
+            update_query = self.meta.table.update().where(
+                table_pk == resource[table_pk.name]
+            )
+            await meta.database.execute(update_query, resource)
 
-            else:
-                res[table_pk.name] = await meta.database.execute(insert_query, resource)
+        else:
+            resource[table_pk.name] = await meta.database.execute(
+                insert_query, resource
+            )
 
         return resource
 

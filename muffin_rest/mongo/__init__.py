@@ -20,8 +20,6 @@ if TYPE_CHECKING:
     from motor import motor_asyncio as motor
     from muffin import Request
 
-    from muffin_rest.types import TVData
-
 
 class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
@@ -113,19 +111,20 @@ class MongoRESTHandler(RESTHandler[TVResource]):
             exclude=request.url.query.get("schema_exclude", ()),
         )
 
-    async def save(self, _: Request, resource: TVData[TVResource], *, update=False):
+    async def save(
+        self, _: Request, resource: TVResource, *, update=False
+    ) -> TVResource:
         """Save the given resource."""
         meta = self.meta
         collection_id = meta.collection_id
-        for res in resource if isinstance(resource, list) else [resource]:
-            if update:
-                await self.collection.replace_one(
-                    {collection_id: res[collection_id]}, res
-                )
+        if update:
+            await self.collection.replace_one(
+                {collection_id: resource[collection_id]}, resource
+            )
 
-            else:
-                updated = await meta.collection.insert_one(res)
-                res[collection_id] = updated.inserted_id
+        else:
+            updated = await meta.collection.insert_one(resource)
+            resource[collection_id] = updated.inserted_id
 
         return resource
 

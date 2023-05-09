@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import (
     TYPE_CHECKING,
     Any,
-    List,
     Optional,
     Tuple,
     Type,
@@ -120,17 +119,14 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         resources = await self.meta.manager.fetchall(self.collection)
         return await self.dump(request, resources, many=True)
 
-    async def save(
-        self, request: Request, resource: Union[TVModel, List[TVModel]], *, update=False
-    ):
+    async def save(self, request: Request, resource: TVModel, *, update=False):
         """Save the given resource."""
         meta = self.meta
         manager = meta.manager
-        for res in resource if isinstance(resource, list) else [resource]:
-            if issubclass(meta.model, AIOModel):
-                await res.save()
-            else:
-                await manager.save(res)
+        if issubclass(meta.model, AIOModel):
+            await resource.save()
+        else:
+            await manager.save(resource)
 
         return resource
 
