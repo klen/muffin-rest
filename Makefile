@@ -68,3 +68,6 @@ patch:
 .PHONY: major
 major:
 	make release VPART=major
+
+version v:
+	@poetry version -s
