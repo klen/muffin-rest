@@ -95,16 +95,14 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             )
 
         for _, method in inspect.getmembers(cls, lambda m: hasattr(m, "__route__")):
-            cpaths, cparams = method.__route__
-            router.bind(cls, *cpaths, __meth__=method.__name__, **cparams)
+            paths, methods = method.__route__
+            router.bind(cls, *paths, methods=methods, method_name=method.__name__)
 
         return cls
 
-    async def __call__(
-        self, request: Request, *, __meth__: Optional[str] = None, **opts
-    ) -> Any:
+    async def __call__(self, request: Request, *, method_name: Optional[str] = None, **_) -> Any:
         """Dispatch the given request by HTTP method."""
-        method = getattr(self, __meth__ or request.method.lower())
+        method = getattr(self, method_name or request.method.lower())
         self.auth = await self.authorize(request)
         self.collection = await self.prepare_collection(request)
         resource = await self.prepare_resource(request)
@@ -118,15 +116,11 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
         # Filter collection
         if meta.filters:
-            self.collection, self.filters = await meta.filters.apply(
-                request, self.collection, **opts
-            )
+            self.collection, self.filters = await meta.filters.apply(request, self.collection)
 
         # Sort collection
         if meta.sorting:
-            self.collection, self.sorting = await meta.sorting.apply(
-                request, self.collection, **opts
-            )
+            self.collection, self.sorting = await meta.sorting.apply(request, self.collection)
 
         # Paginate the collection
         headers = {}
@@ -203,9 +197,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     # Manage data
     # -----------
     @abc.abstractmethod
-    async def save(
-        self, request: Request, resource: TVResource, *, update=False
-    ) -> TVResource:
+    async def save(self, request: Request, resource: TVResource, *, update=False) -> TVResource:
         """Save the given resource."""
         return resource
 
@@ -263,9 +255,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         ...
 
     @overload
-    async def dump(
-        self, request, data: TVData, *, many: bool = False, **opts
-    ) -> TSchemaRes:
+    async def dump(self, request, data: TVData, *, many: bool = False, **opts) -> TSchemaRes:
         ...
 
     async def dump(
@@ -281,9 +271,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         schema = await self.get_schema(request, resource=resource)
         return schema.dump(data, many=many, **dump_schema_opts)
 
-    async def get(
-        self, request: Request, *, resource: Optional[TVResource] = None
-    ) -> ResponseJSON:
+    async def get(self, request: Request, *, resource: Optional[TVResource] = None) -> ResponseJSON:
         """Get a resource or a collection of resources.
 
         Specify a path param to load a resource.
@@ -307,16 +295,12 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         if many:
             data = await self.save_many(request, data, update=resource is not None)
         else:
-            data = await self.save(
-                request, cast(TVResource, data), update=resource is not None
-            )
+            data = await self.save(request, cast(TVResource, data), update=resource is not None)
 
         res = await self.dump(request, data, many=many)
         return ResponseJSON(res)
 
-    async def put(
-        self, request: Request, *, resource: Optional[TVResource] = None
-    ) -> ResponseJSON:
+    async def put(self, request: Request, *, resource: Optional[TVResource] = None) -> ResponseJSON:
         """Update a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()

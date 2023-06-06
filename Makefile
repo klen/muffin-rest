@@ -25,6 +25,12 @@ mypy: $(VIRTUAL_ENV)
 	@echo 'Checking typing...'
 	@poetry run mypy
 
+.PHONY: lint
+# target: lint - Check code
+lint: $(VIRTUAL_ENV)
+	@poetry run mypy
+	@poetry run ruff $(PACKAGE)
+
 .PHONY: example-peewee
 # target: example-peewee - Run example
 example-peewee: $(VIRTUAL_ENV)

@@ -66,7 +66,7 @@ class Filter(Mutate):
         self.schema_field: ma.fields.Field = schema_field or self.schema_field
         self.default_operator = operator or self.default_operator
 
-    async def apply(self, collection: Any, data: Optional[Mapping] = None, **kwargs):
+    async def apply(self, collection: Any, data: Optional[Mapping] = None):
         """Filter given collection."""
         if not data:
             return None, collection
@@ -77,7 +77,7 @@ class Filter(Mutate):
             return None, collection
 
         if ops:
-            collection = await self.filter(collection, *ops, **kwargs)
+            collection = await self.filter(collection, *ops)
 
         return ops, collection
 
@@ -103,9 +103,11 @@ class Filter(Mutate):
         return tuple(
             (
                 self.operators[op],
-                (self.schema_field.deserialize(val))
-                if op not in self.list_ops
-                else [self.schema_field.deserialize(v) for v in val],
+                (
+                    (self.schema_field.deserialize(val))
+                    if op not in self.list_ops
+                    else [self.schema_field.deserialize(v) for v in val]
+                ),
             )
             for (op, val) in val.items()
             if op in self.operators
@@ -120,7 +122,7 @@ class Filters(Mutator):
     mutations: Mapping[str, Filter]
 
     async def apply(
-        self, request: Request, collection: TVCollection, **options
+        self, request: Request, collection: TVCollection
     ) -> Tuple[TVCollection, Dict[str, Any]]:
         """Filter the given collection."""
         raw_data = request.url.query.get(FILTERS_PARAM)
@@ -132,9 +134,7 @@ class Filters(Mutator):
                 mutations = self.mutations
                 for name in data:
                     if name in mutations:
-                        ops, collection = await mutations[name].apply(
-                            collection, data, **options
-                        )
+                        ops, collection = await mutations[name].apply(collection, data)
                         filters[name] = ops
 
             except (ValueError, TypeError, AssertionError):

@@ -26,7 +26,7 @@ class Mutate(abc.ABC):
         return f"<{self.__class__.__name__} '{self.name}'>"
 
     @abc.abstractmethod
-    async def apply(self, collection: TVCollection, **options) -> TVCollection:
+    async def apply(self, collection: TVCollection) -> TVCollection:
         """Apply the mutation."""
         raise NotImplementedError
 
@@ -70,7 +70,7 @@ class Mutator(abc.ABC):
 
     @abc.abstractmethod
     async def apply(
-        self, request: Request, collection: TVCollection, **options
+        self, request: Request, collection: TVCollection
     ) -> Tuple[TVCollection, Dict[str, Any]]:
         """Mutate a collection."""
         raise NotImplementedError

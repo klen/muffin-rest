@@ -1,10 +1,12 @@
 """Create openapi schema from the given API."""
+from __future__ import annotations
+
 import inspect
 import re
 from contextlib import suppress
 from functools import partial
 from http import HTTPStatus
-from typing import Any, Callable, Dict, List, Tuple, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, cast
 
 from apispec import utils
 from apispec.core import APISpec
@@ -14,8 +16,10 @@ from asgi_tools.types import TJSON
 from http_router.routes import DynamicRoute, Route
 from muffin import Response
 
-from . import LIMIT_PARAM, OFFSET_PARAM, openapi
-from .options import RESTOptions
+from . import LIMIT_PARAM, OFFSET_PARAM
+
+if TYPE_CHECKING:
+    from .options import RESTOptions
 
 with suppress(ImportError):
     from apispec import yaml_utils
@@ -129,8 +133,7 @@ def merge_dicts(source: Dict, merge: Dict) -> Dict:
                     if isinstance(source[key], dict) and isinstance(merge[key], dict)
                     else (
                         source[key] + merge[key]
-                        if isinstance(source[key], list)
-                        and isinstance(merge[key], list)
+                        if isinstance(source[key], list) and isinstance(merge[key], list)
                         else merge[key]
                     )
                 )
@@ -231,10 +234,7 @@ class OpenAPIMixin:
 
             # Update from the method
             meth = getattr(cls, method, None)
-            if (
-                isinstance(route.target, partial)
-                and "__meth__" in route.target.keywords
-            ):
+            if isinstance(route.target, partial) and "__meth__" in route.target.keywords:
                 meth = getattr(cls, route.target.keywords["__meth__"], None)
 
             elif method in {"post", "put"}:
@@ -244,12 +244,8 @@ class OpenAPIMixin:
                 }
 
             if meth:
-                (
-                    operations[method]["summary"],
-                    operations[method]["description"],
-                    mschema,
-                ) = openapi.parse_docs(
-                    meth,
+                (operations[method]["summary"], operations[method]["description"], mschema) = (
+                    parse_docs(meth)
                 )
                 return_type = meth.__annotations__.get("return")
                 if return_type in ("JSONType", TJSON):
