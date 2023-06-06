@@ -1,7 +1,9 @@
 import marshmallow as ma
+import pytest
 
 
-async def test_apispec(api, client):
+@pytest.fixture(autouse=True)
+def _setup(api):
     from muffin_rest import RESTHandler
 
     @api.authorization
@@ -28,7 +30,7 @@ async def test_apispec(api, client):
         """Get user token."""
         return "TOKEN"
 
-    @api.route("/pets", "/pets/{pet}")
+    @api.route("/pets", "/pets/{id}")
     class Pet(RESTHandler):
         methods = "get", "post"
 
@@ -39,10 +41,31 @@ async def test_apispec(api, client):
             class Schema(ma.Schema):
                 name = ma.fields.String(required=True)
 
-    @api.route("/cats", "/cats/{cat}")
+    @api.route("/cats", "/cats/{id}")
     class Cat(RESTHandler):
         methods = "get", "post"
 
+
+async def test_openapi(api):
+    from muffin_rest.openapi import render_openapi
+
+    spec = render_openapi(api)
+    assert spec
+    assert spec["openapi"]
+    assert spec["components"]
+    assert spec["paths"]
+
+    paths = spec["paths"]
+    assert "/token" in paths
+    assert "/pets" in paths
+
+    pets = paths["/pets"]
+    assert "get" in pets
+    assert "responses" in pets["get"]
+    assert pets["get"]["responses"]
+
+
+async def test_apispec(api, client):
     async with client.lifespan():
         res = await client.get("/api/swagger")
         assert res.status_code == 200
@@ -52,6 +75,8 @@ async def test_apispec(api, client):
         assert res.status_code == 200
         spec = await res.json()
         assert spec
+        assert spec["openapi"]
+        assert spec["info"]
         assert spec["paths"]
         assert spec["paths"]["/token"]
         assert spec["paths"]["/token"]["get"]

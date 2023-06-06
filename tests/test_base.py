@@ -88,7 +88,8 @@ async def test_handler(api, client):
 
     res = await client.get("/api/simple")
     assert res.status_code == 200
-    assert await res.body() == b"SIMPLE GET"
+    body = await res.body()
+    assert body == b'"SIMPLE GET"'
 
     res = await client.put("/api/simple")
     assert res.status_code == 404

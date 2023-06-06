@@ -35,23 +35,24 @@ HTTP_METHODS = [
     "TRACE",
     "CONNECT",
 ]
-RE_URL = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")
+RE_URL = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")  # TODO: Not used
 SKIP_PATH = {"/openapi.json", "/swagger", "/redoc"}
 
 
-def render_openapi(api, request):
+def render_openapi(api, request=None):
     """Prepare openapi specs."""
     # Setup Specs
     options = dict(api.openapi_options)
-    options.setdefault(
-        "servers",
-        [{"url": str(request.url.with_query("").with_path(api.prefix))}],
-    )
+    if request:
+        options.setdefault(
+            "servers",
+            [{"url": str(request.url.with_query("").with_path(api.prefix))}],
+        )
 
     spec = APISpec(
         options["info"].pop("title", f"{ api.app.cfg.name.title() } API"),
         options["info"].pop("version", "1.0.0"),
-        options.pop("openapi_version", "3.0.0"),
+        options.pop("openapi_version", "3.1.0"),
         **options,
         plugins=[MarshmallowPlugin()],
     )
@@ -74,6 +75,34 @@ def render_openapi(api, request):
         spec.path(route.path, **route_to_spec(route, spec, tags))
 
     return spec.to_dict()
+
+
+def route_to_spec(route: Route, spec: APISpec, tags: Dict) -> Dict:
+    """Convert the given router to openapi operations."""
+    results: Dict[str, Any] = {"parameters": [], "operations": {}}
+    if isinstance(route, DynamicRoute):
+        for param in route.params:
+            results["parameters"].append({"in": "path", "name": param})
+
+    target = cast(Callable, route.target)
+    if isinstance(target, partial):
+        target = target.func
+
+    if hasattr(target, "openapi"):
+        results["operations"] = target.openapi(route, spec, tags)
+        return results
+
+    summary, desc, schema = parse_docs(target)
+    responses = return_type_to_response(target)
+    for method in route_to_methods(route):
+        results["operations"][method] = {
+            "summary": summary,
+            "description": desc,
+            "responses": responses,
+        }
+
+    results["operations"] = merge_dicts(results["operations"], schema)
+    return results
 
 
 def parse_docs(cb: Callable) -> Tuple[str, str, Dict]:
@@ -111,34 +140,6 @@ def merge_dicts(source: Dict, merge: Dict) -> Dict:
             for key in merge
         },
     )
-
-
-def route_to_spec(route: Route, spec: APISpec, tags: Dict) -> Dict:
-    """Convert the given router to openapi operations."""
-    results: Dict[str, Any] = {"parameters": [], "operations": {}}
-    if isinstance(route, DynamicRoute):
-        for param in route.params:
-            results["parameters"].append({"in": "path", "name": param})
-
-    target = cast(Callable, route.target)
-    if isinstance(target, partial):
-        target = target.func
-
-    if hasattr(target, "openapi"):
-        results["operations"] = target.openapi(route, spec, tags)
-        return results
-
-    summary, desc, schema = parse_docs(target)
-    responses = return_type_to_response(target)
-    for method in route_to_methods(route):
-        results["operations"][method] = {
-            "summary": summary,
-            "description": desc,
-            "responses": responses,
-        }
-
-    results["operations"] = merge_dicts(results["operations"], schema)
-    return results
 
 
 def route_to_methods(route: Route) -> List[str]:

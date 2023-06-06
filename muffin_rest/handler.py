@@ -1,11 +1,8 @@
 """Base class for API REST Handlers."""
 
-from __future__ import annotations
-
 import abc
 import inspect
 from typing import (
-    TYPE_CHECKING,
     Any,
     Dict,
     Generator,
@@ -22,25 +19,22 @@ from typing import (
     overload,
 )
 
-from asgi_tools.response import parse_response
+import marshmallow as ma
+from asgi_tools.response import ResponseJSON, parse_response
 from marshmallow import ValidationError
+from muffin import Request
 from muffin.handler import Handler, HandlerMeta
 
 from muffin_rest import LIMIT_PARAM, OFFSET_PARAM, openapi
+from muffin_rest.api import API
 from muffin_rest.errors import APIError
+from muffin_rest.filters import Filter
+from muffin_rest.sorting import Sort
+from muffin_rest.types import TSchemaRes
 
 from .errors import HandlerNotBindedError
 from .options import RESTOptions
 from .types import TVData, TVResource
-
-if TYPE_CHECKING:
-    import marshmallow as ma
-    from muffin import Request
-
-    from muffin_rest.api import API
-    from muffin_rest.filters import Filter
-    from muffin_rest.sorting import Sort
-    from muffin_rest.types import TSchemaRes
 
 
 class RESTHandlerMeta(HandlerMeta):
@@ -107,7 +101,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         return cls
 
     async def __call__(
-        self, request: Request, *, __meth__: Optional[str] = None, **options
+        self, request: Request, *, __meth__: Optional[str] = None, **opts
     ) -> Any:
         """Dispatch the given request by HTTP method."""
         method = getattr(self, __meth__ or request.method.lower())
@@ -125,13 +119,13 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         # Filter collection
         if meta.filters:
             self.collection, self.filters = await meta.filters.apply(
-                request, self.collection, **options
+                request, self.collection, **opts
             )
 
         # Sort collection
         if meta.sorting:
             self.collection, self.sorting = await meta.sorting.apply(
-                request, self.collection, **options
+                request, self.collection, **opts
             )
 
         # Paginate the collection
@@ -287,17 +281,23 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         schema = await self.get_schema(request, resource=resource)
         return schema.dump(data, many=many, **dump_schema_opts)
 
-    async def get(self, request: Request, *, resource: Optional[TVResource] = None):
+    async def get(
+        self, request: Request, *, resource: Optional[TVResource] = None
+    ) -> ResponseJSON:
         """Get a resource or a collection of resources.
 
         Specify a path param to load a resource.
         """
-        if resource:
-            return await self.dump(request, resource)
+        res = await (
+            self.dump(request, resource)
+            if resource
+            else self.dump(request, data=self.collection, many=True)
+        )
+        return ResponseJSON(res)
 
-        return await self.dump(request, data=self.collection, many=True)
-
-    async def post(self, request: Request, *, resource: Optional[TVResource] = None):
+    async def post(
+        self, request: Request, *, resource: Optional[TVResource] = None
+    ) -> ResponseJSON:
         """Create a resource.
 
         The method accepts a single resource's data or a list of resources to create.
@@ -311,30 +311,32 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
                 request, cast(TVResource, data), update=resource is not None
             )
 
-        return await self.dump(request, data, many=many)
+        res = await self.dump(request, data, many=many)
+        return ResponseJSON(res)
 
-    async def put(self, request: Request, *, resource: Optional[TVResource] = None):
+    async def put(
+        self, request: Request, *, resource: Optional[TVResource] = None
+    ) -> ResponseJSON:
         """Update a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()
 
         return await self.post(request, resource=resource)
 
-    async def delete(self, request: Request, resource: TVResource | None = None):
+    async def delete(self, request: Request, resource: Optional[TVResource] = None):
         """Delete a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()
 
-        return await self.remove(request, resource)
+        res = await self.remove(request, resource)
+        return ResponseJSON(res)
 
 
 class RESTHandler(RESTBase[TVResource], openapi.OpenAPIMixin):
     """Basic Handler Class."""
 
 
-def to_sort(
-    sort_params: Sequence[str],
-) -> Generator[Tuple[str, bool], None, None]:
+def to_sort(sort_params: Sequence[str]) -> Generator[Tuple[str, bool], None, None]:
     """Generate sort params."""
     for name in sort_params:
         n, desc = name.strip("-"), name.startswith("-")

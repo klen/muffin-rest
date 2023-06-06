@@ -55,8 +55,7 @@ release: $(VIRTUAL_ENV)
 	git tag `poetry version -s`
 	git checkout develop
 	git merge master
-	git push origin develop master
-	git push --tags
+	git push --tags origin develop master
 
 .PHONY: minor
 minor: release

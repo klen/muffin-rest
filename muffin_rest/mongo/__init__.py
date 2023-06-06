@@ -56,11 +56,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
         return MongoChain(self.meta.collection)
 
     async def paginate(
-        self,
-        _: Request,
-        *,
-        limit: int = 0,
-        offset: int = 0,
+        self, _: Request, *, limit: int = 0, offset: int = 0
     ) -> Tuple[motor.AsyncIOMotorCursor, int]:
         """Paginate collection."""
         if self.meta.aggregate:
@@ -72,7 +68,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
             counts = list(self.collection.aggregate(pipeline_num))
             return (
                 self.collection.aggregate(pipeline_all),
-                counts and counts[0]["total"] or 0,
+                counts and counts[0]["total"] or 0,  # type: ignore[]
             )
         total = await self.collection.count()
         return self.collection.skip(offset).limit(limit), total
@@ -99,10 +95,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
             raise APIError.NOT_FOUND() from exc
 
     async def get_schema(
-        self,
-        request: Request,
-        resource: Optional[TVResource] = None,
-        **_,
+        self, request: Request, resource: Optional[TVResource] = None, **_
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
@@ -128,7 +121,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
 
         return resource
 
-    async def remove(self, request: Request, resource: Optional[TVResource] = None):
+    async def delete(self, request: Request, resource: Optional[TVResource] = None):
         """Remove the given resource(s)."""
         meta = self.meta
         oids = (
@@ -144,5 +137,3 @@ class MongoRESTHandler(RESTHandler[TVResource]):
 
         oids = [bson.ObjectId(idx) for idx in oids]
         await meta.collection.delete_many({meta.collection_id: {"$in": oids}})
-
-    delete = remove
