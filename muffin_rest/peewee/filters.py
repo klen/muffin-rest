@@ -84,5 +84,9 @@ def get_model_field_by_name(handler, name) -> Optional[Field]:
         if field.column_name == name:
             return field
 
-    warn(f"{handler.__qualname__} {handler.meta.model} has no field {name}", stacklevel=3)
+    warn(
+        f"{handler.__qualname__} {handler.meta.model} has no field {name}",
+        category=RuntimeWarning,
+        stacklevel=5,
+    )
     return None
