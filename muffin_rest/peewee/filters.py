@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, Callable, Optional, Tuple, Type, Union, cast
-from warnings import warn
+from typing import Any, Callable, Tuple, Type, Union, cast
 
 from peewee import Field, ModelSelect
 
 from muffin_rest.filters import Filter, Filters
+
+from .utils import get_model_field_by_name
 
 
 class PWFilter(Filter):
@@ -53,8 +54,6 @@ class PWFilters(Filters):
 
         handler = cast(PWRESTHandler, self.handler)
         if isinstance(obj, PWFilter):
-            if obj.field is None:
-                obj.field = get_model_field_by_name(handler, obj.name)
             return obj
 
         if isinstance(obj, Field):
@@ -71,22 +70,3 @@ class PWFilters(Filters):
         if schema_field is None and field:
             schema_field = handler.meta.Schema._declared_fields.get(field.name)
         return self.MUTATE_CLASS(name, field=field, schema_field=schema_field, **meta)
-
-
-def get_model_field_by_name(handler, name) -> Optional[Field]:
-    """Get model field by name."""
-    fields = handler.meta.model._meta.fields
-    candidate = fields.get(name)
-    if candidate:
-        return candidate
-
-    for field in fields.values():
-        if field.column_name == name:
-            return field
-
-    warn(
-        f"{handler.__qualname__} {handler.meta.model} has no field {name}",
-        category=RuntimeWarning,
-        stacklevel=5,
-    )
-    return None

@@ -8,6 +8,8 @@ from peewee import Field
 
 from muffin_rest.sorting import Sort, Sorting
 
+from .utils import get_model_field_by_name
+
 if TYPE_CHECKING:
     from .types import TVCollection
 
@@ -15,9 +17,7 @@ if TYPE_CHECKING:
 class PWSort(Sort):
     """Sorter for Peewee."""
 
-    async def apply(
-        self, collection: TVCollection, *, desc: bool = False, **_
-    ) -> TVCollection:
+    async def apply(self, collection: TVCollection, *, desc: bool = False, **_) -> TVCollection:
         """Sort the collection."""
         return collection.order_by_extend(self.field if not desc else self.field.desc())
 
@@ -39,14 +39,15 @@ class PWSorting(Sorting):
             return obj
 
         handler = cast(PWRESTHandler, self.handler)
-        model_meta = handler.meta.model._meta  # type: ignore[]
 
         if isinstance(obj, Field):
             name, field = obj.name, obj
 
         else:
             name = obj
-            field = meta.pop("field", model_meta.fields.get(name))
+            field = meta.pop("field", None) or name
+            if isinstance(field, str):
+                field = get_model_field_by_name(handler, field)
 
         if field:
             sort = self.MUTATE_CLASS(name, field=field, **meta)
