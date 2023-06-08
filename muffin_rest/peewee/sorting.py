@@ -17,9 +17,11 @@ if TYPE_CHECKING:
 class PWSort(Sort):
     """Sorter for Peewee."""
 
-    async def apply(self, collection: TVCollection, *, desc: bool = False, **_) -> TVCollection:
+    async def apply(self, collection: TVCollection, *, desc: bool = False) -> TVCollection:
         """Sort the collection."""
-        return collection.order_by_extend(self.field if not desc else self.field.desc())
+        return collection.order_by_extend(
+            self.field.asc(nulls="LAST") if not desc else self.field.desc(nulls="LAST")
+        )
 
 
 class PWSorting(Sorting):

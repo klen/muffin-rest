@@ -95,6 +95,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         cqs = cast(pw.ModelSelect, self.collection.order_by())
         if cqs._group_by:  # type: ignore[misc]
             cqs._returning = cqs._group_by  # type: ignore[misc]
+            cqs._having = None  # type: ignore[misc]
         count = await self.meta.manager.count(cqs)
 
         return (
