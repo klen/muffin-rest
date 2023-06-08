@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, Callable, Tuple, Type, Union, cast
+from typing import Any, Callable, Optional, Tuple, Type, Union, cast
 
 from peewee import Field, ModelSelect
 
@@ -51,10 +51,10 @@ class PWFilters(Filters):
         from . import PWRESTHandler
 
         handler = cast(PWRESTHandler, self.handler)
-        model_meta = handler.meta.model._meta  # type: ignore[]
+        model = handler.meta.model
         if isinstance(obj, PWFilter):
             if obj.field is None:
-                obj.field = model_meta.fields.get(obj.name)
+                obj.field = get_model_field_by_name(model, obj.name)
             return obj
 
         if isinstance(obj, Field):
@@ -65,9 +65,23 @@ class PWFilters(Filters):
             name = obj
             field = meta.pop("field", None) or name
             if isinstance(field, str):
-                field = model_meta.fields.get(field)
+                field = get_model_field_by_name(model, field)
 
         schema_field = meta.pop("schema_field", None)
         if schema_field is None and field:
             schema_field = handler.meta.Schema._declared_fields.get(field.name)
         return self.MUTATE_CLASS(name, field=field, schema_field=schema_field, **meta)
+
+
+def get_model_field_by_name(model, name) -> Optional[Field]:
+    """Get model field by name."""
+    mfields = model._meta.fields
+    candidate = mfields.get(name)
+    if candidate:
+        return candidate
+
+    for field in mfields.values():
+        if field.column_name == name:
+            return field
+
+    raise AttributeError(f"Model {model} has no field {name}")

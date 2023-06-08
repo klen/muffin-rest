@@ -12,7 +12,6 @@ class Category(pw.Model):
 
 @db.register
 class Pet(pw.Model):
-
     created = pw.DateTimeField(default=dt.datetime.utcnow)
     name = pw.CharField()
     image = pw.CharField(null=True)
@@ -23,9 +22,9 @@ class Pet(pw.Model):
     category = pw.ForeignKeyField(Category)
 
 
-# don't do on production, this is only for the example
+# don't do on production, this is only for the example propouse
 @app.on_startup
 async def create_schema():
-    with db.allow_sync():
+    with db.manager.allow_sync():
         Category.create_table()
         Pet.create_table()

@@ -34,6 +34,10 @@ class Statuses(Enum):
     INACTIVE = "inactive"
 
 
+class Group(pw.Model):
+    name = pw.CharField(null=True)
+
+
 class Resource(pw.Model):
     id = pw.AutoField()
     active = pw.BooleanField(default=False)
@@ -41,6 +45,8 @@ class Resource(pw.Model):
     count = pw.IntegerField(null=True)
     config: Any = JSONLikeField(default={})
     status = StrEnumField(Statuses, default=Statuses.ACTIVE)
+
+    group = pw.ForeignKeyField(Group, null=True)
 
 
 @pytest.fixture(autouse=True)
@@ -60,6 +66,7 @@ async def endpoint_cls(api):
             filters = (
                 "active",
                 "name",
+                "group_id",
                 ("oid", {"field": "id"}),
             )
             limit = 10
@@ -115,15 +122,12 @@ async def test_base(api, endpoint_cls):
 
     # Sorting
     assert endpoint_cls.meta.sorting
-    assert list(endpoint_cls.meta.sorting.mutations.keys()) == [
-        "id",
-        "name",
-        "count",
-    ]
+    assert list(endpoint_cls.meta.sorting.mutations.keys()) == ["id", "name", "count"]
     assert endpoint_cls.meta.sorting.default == [Resource.id.desc()]
 
     assert api.router.plain["/resource"]
     assert api.router.dynamic[0].pattern.pattern == "^/resource/(?P<id>[^/]+)$"
+    assert "group_id" in endpoint_cls.meta.filters.mutations
 
 
 async def test_get(client, endpoint_cls, resource):
@@ -145,6 +149,7 @@ async def test_get(client, endpoint_cls, resource):
         "count": None,
         "id": "1",
         "name": "test",
+        "group": None,
     }
 
     res = await client.get("/api/resource/unknown")

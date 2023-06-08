@@ -58,7 +58,7 @@ async def token(request) -> ResponseText:
 
     """
     return ResponseText(
-        "".join(random.choices(string.ascii_uppercase + string.digits, k=42))
+        "".join(random.choices(string.ascii_uppercase + string.digits, k=42))  # noqa: S311
     )
 
 

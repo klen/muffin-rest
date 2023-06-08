@@ -14,6 +14,8 @@ from pathlib import Path
 import muffin
 import muffin_databases
 
+DB_PATH = Path(__file__).parent.parent.absolute() / "db.sqlite"
+
 app: muffin.Application = muffin.Application("rest", debug=True)
 
 
@@ -23,11 +25,9 @@ async def home(request):
     return muffin.ResponseRedirect("/api/swagger")
 
 
-db: muffin_databases.Plugin = muffin_databases.Plugin(
-    app, url=f"sqlite:///{ Path(__file__).parent.joinpath('db.sqlite')}"
-)
+db: muffin_databases.Plugin = muffin_databases.Plugin(app, url=f"sqlite:///{ DB_PATH }")
 
 # Register the API
-from .api import api  # noqa
+from .api import api  # noqa: E402
 
 api.setup(app, prefix="/api")

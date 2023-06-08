@@ -58,7 +58,7 @@ async def token(request) -> ResponseText:
 
     """
     return ResponseText(
-        "".join(random.choices(string.ascii_uppercase + string.digits, k=42))
+        "".join(random.choices(string.ascii_uppercase + string.digits, k=42))  # noqa: S311
     )
 
 
@@ -85,7 +85,7 @@ class Pets(PWRESTHandler):
         filters = "status", "category"
 
     @PWRESTHandler.route("/pet/{id}/uploadImage", methods="post")
-    async def upload_image(self, request, resource=None):
+    async def upload_image(self, request, *, resource: Pet):
         """Uploads an image.
 
         ---

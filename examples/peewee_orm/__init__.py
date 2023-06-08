@@ -15,6 +15,8 @@ from pathlib import Path
 from muffin import Application, ResponseRedirect
 from muffin_peewee import Plugin as Peewee
 
+DB_PATH = Path(__file__).parent.parent / "db.sqlite"
+
 app: Application = Application("rest", debug=True)
 
 
@@ -24,11 +26,9 @@ async def home(request):
     return ResponseRedirect("/api/swagger")
 
 
-db: Peewee = Peewee(
-    app, connection=f"aiosqlite:///{ Path(__file__).parent.joinpath('db.sqlite')}"
-)
+db: Peewee = Peewee(app, connection=f"aiosqlite:////{ DB_PATH }")
 
 # Register the API
-from .api import api  # noqa
+from .api import api  # noqa: E402
 
 api.setup(app, prefix="/api")

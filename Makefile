@@ -31,9 +31,9 @@ lint: $(VIRTUAL_ENV)
 	@poetry run mypy
 	@poetry run ruff $(PACKAGE)
 
-.PHONY: example-peewee
+.PHONY: example-peewee example-pw example
 # target: example-peewee - Run example
-example-peewee: $(VIRTUAL_ENV)
+example-peewee example-pw example: $(VIRTUAL_ENV)
 	@echo 'Run example...'
 	@poetry run uvicorn examples.peewee_orm:app --reload --port=5000
 
