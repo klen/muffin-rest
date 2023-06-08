@@ -4,7 +4,7 @@ from __future__ import annotations
 import operator
 from typing import Any, Callable, Tuple, Type, Union, cast
 
-from peewee import Field, ModelSelect
+from peewee import ColumnBase, Field, ModelSelect
 
 from muffin_rest.filters import Filter, Filters
 
@@ -37,7 +37,7 @@ class PWFilter(Filter):
 
     def query(self, qs: ModelSelect, column: Field, *ops: Tuple, **_) -> ModelSelect:
         """Filter a query."""
-        if isinstance(column, Field):
+        if isinstance(column, ColumnBase):
             return cast(ModelSelect, qs.where(*[op(column, val) for op, val in ops]))
 
         return qs
