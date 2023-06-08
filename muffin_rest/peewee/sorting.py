@@ -47,7 +47,7 @@ class PWSorting(Sorting):
             name = obj
             field = meta.pop("field", None) or name
             if isinstance(field, str):
-                field = get_model_field_by_name(handler, field)
+                field = get_model_field_by_name(handler, field, stacklevel=6)
 
         if field:
             sort = self.MUTATE_CLASS(name, field=field, **meta)
