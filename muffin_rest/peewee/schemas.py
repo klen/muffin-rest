@@ -17,7 +17,10 @@ class EnumField(ma.fields.Field):
         if value is None:
             return None
 
-        return value.value
+        try:
+            return value.value
+        except AttributeError:
+            raise ma.ValidationError(f"{obj}: {attr} value is invalid: {value}") from None
 
     def _deserialize(self, value, attr, data, **kwargs):
         try:
