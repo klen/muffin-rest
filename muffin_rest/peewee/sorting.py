@@ -19,8 +19,9 @@ class PWSort(Sort):
 
     async def apply(self, collection: TVCollection, *, desc: bool = False) -> TVCollection:
         """Sort the collection."""
+        params = {"nulls": "LAST"} if self.field.null else {}
         return collection.order_by_extend(
-            self.field.asc(nulls="LAST") if not desc else self.field.desc(nulls="LAST")
+            self.field.asc(**params) if not desc else self.field.desc(**params)
         )
 
 
