@@ -68,5 +68,5 @@ class PWFilters(Filters):
 
         schema_field = meta.pop("schema_field", None)
         if schema_field is None and field:
-            schema_field = handler.meta.Schema._declared_fields.get(field.name)
+            schema_field = handler.meta.Schema._declared_fields.get(name)
         return self.MUTATE_CLASS(name, field=field, schema_field=schema_field, **meta)
