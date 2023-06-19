@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class SAFilter(Filter):
     """Custom filter for sqlalchemy."""
 
-    operators = Filter.operators
+    operators = dict(Filter.operators)
     operators["$between"] = lambda c, v: c.between(*v)
     operators["$ends"] = lambda c, v: c.endswith(v)
     operators["$ilike"] = lambda c, v: c.ilike(v)

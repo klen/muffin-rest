@@ -28,8 +28,15 @@ class Filter(Mutate):
         "$ge": operator.ge,
         "$eq": operator.eq,
         "$ne": operator.ne,
+        "$like": lambda v, c: c in v,
+        # List ops
         "$in": operator.contains,
         "$nin": lambda v, c: v not in c,
+        # Logic ops
+        "$or": lambda v, c: any(f(v, c) for f in v),
+        "$and": lambda v, c: all(f(v, c) for f in v),
+        "$not": lambda v, c: not v(c),
+        "$nor": lambda v, c: not any(f(v, c) for f in v),
     }
     operators["<"] = operators["$lt"]
     operators["<="] = operators["$le"]
@@ -39,7 +46,8 @@ class Filter(Mutate):
     operators["!="] = operators["$ne"]
     operators["<<"] = operators["$in"]
 
-    list_ops = ["$in", "<<"]
+    list_ops = ("$in", "<<", "$nin")
+    logic_ops = ("$or", "$and", "$not", "$nor")
 
     field: Any = None
     schema_field: ma.fields.Field = ma.fields.Raw()
@@ -63,7 +71,7 @@ class Filter(Mutate):
         """
         super(Filter, self).__init__(name, **meta)
         self.field = field if field is not None else self.field
-        self.schema_field: ma.fields.Field = schema_field or self.schema_field
+        self.schema_field = schema_field or self.schema_field
         self.default_operator = operator or self.default_operator
 
     async def apply(self, collection: Any, data: Optional[Mapping] = None):
@@ -87,31 +95,32 @@ class Filter(Mutate):
         def validator(obj):
             return all(op(get_value(obj, self.name), val) for op, val in ops)
 
-        return [o for o in collection if validator(o)]
+        return [item for item in collection if validator(item)]
 
-    def parse(self, data: Mapping) -> Tuple[Tuple[Callable, Any], ...]:
+    def parse(self, data: Mapping):
         """Parse operator and value from filter's data."""
-        val = data.get(self.name, ma.missing)
-        if not isinstance(val, dict):
-            return (
-                (
-                    self.operators[self.default_operator],
-                    self.schema_field.deserialize(val),
-                ),
-            )
+        value = data.get(self.name, ma.missing)
+        return tuple(self._parse(value))
 
-        return tuple(
-            (
-                self.operators[op],
-                (
-                    (self.schema_field.deserialize(val))
-                    if op not in self.list_ops
-                    else [self.schema_field.deserialize(v) for v in val]
-                ),
-            )
-            for (op, val) in val.items()
-            if op in self.operators
-        )
+    def _parse(self, value):
+        deserialize = self.schema_field.deserialize
+        if isinstance(value, dict):
+            for op, val in value.items():
+                operator = self.operators.get(op)
+                if operator is None:
+                    continue
+
+                if op in self.list_ops:
+                    yield operator, [deserialize(v) for v in val]
+
+                elif op in self.logic_ops:
+                    yield operator, [t for v in val for t in tuple(self._parse(v))]
+
+                else:
+                    yield operator, deserialize(val)
+
+        else:
+            yield (self.operators[self.default_operator], deserialize(value))
 
 
 class Filters(Mutator):

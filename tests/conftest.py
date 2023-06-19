@@ -1,5 +1,11 @@
+from json import dumps
+
 import muffin
 import pytest
+from asgi_tools.tests import ASGITestClient
+
+from muffin_rest.filters import FILTERS_PARAM
+from muffin_rest.sorting import SORT_PARAM
 
 
 @pytest.fixture(
@@ -30,3 +36,38 @@ async def api(app):
     from muffin_rest import API
 
     return API(app, "/api")
+
+
+@pytest.fixture()
+def apiclient(app):
+    return APITestClient(app)
+
+
+class APITestClient(ASGITestClient):
+    """Support auth and filters."""
+
+    async def request(  # noqa: PLR0913
+        self,
+        path: str,
+        method: str = "GET",
+        *,
+        filters: dict | None = None,
+        sort: tuple[str, ...] | str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        **kwargs,
+    ):
+        kwargs.setdefault("query", {})
+        if filters:
+            kwargs["query"][FILTERS_PARAM] = dumps(filters)
+
+        if sort:
+            kwargs["query"][SORT_PARAM] = ",".join(sort) if isinstance(sort, tuple | list) else sort
+
+        if limit is not None:
+            kwargs["query"]["limit"] = str(limit)
+
+        if offset is not None:
+            kwargs["query"]["offset"] = str(offset)
+
+        return await super().request(path, method, **kwargs)

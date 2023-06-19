@@ -63,19 +63,10 @@ async def endpoint_cls(api):
     @api.route
     class ResourceEndpoint(PWRESTHandler[Resource]):
         class Meta:
-            filters = (
-                "active",
-                "name",
-                "group_id",
-                ("oid", {"field": "id"}),
-            )
+            filters = ("active", "name", "group_id", ("oid", {"field": "id"}), "count")
             limit = 10
             model = Resource
-            sorting = (
-                ("id", {"field": Resource.id, "default": "desc"}),
-                "name",
-                Resource.count,
-            )
+            sorting = (("id", {"field": Resource.id, "default": "desc"}), "name", Resource.count)
             delete_recursive = True
 
         @PWRESTHandler.route("/resource/action")
@@ -169,10 +160,7 @@ async def test_create(client, endpoint_cls):
     assert json["errors"]
     assert "name" in json["errors"]
 
-    res = await client.post(
-        "/api/resource",
-        data={"name": "test2", "active": True, "unknown": 22},
-    )
+    res = await client.post("/api/resource", data={"name": "test2", "active": True, "unknown": 22})
     assert res.status_code == 200
     json = await res.json()
     assert json["id"] == "1"
@@ -181,20 +169,14 @@ async def test_create(client, endpoint_cls):
 
 
 async def test_edit(client, resource, endpoint_cls):
-    res = await client.put(
-        "/api/resource/1",
-        data={"name": "new", "status": "inactive"},
-    )
+    res = await client.put("/api/resource/1", data={"name": "new", "status": "inactive"})
     json = await res.json()
     assert json["name"] == "new"
     assert json["id"] == "1"
     assert json["status"] == "inactive"
     assert res.status_code == 200
 
-    res = await client.put(
-        "/api/resource/1",
-        data={"name": "new", "status": "unknown"},
-    )
+    res = await client.put("/api/resource/1", data={"name": "new", "status": "unknown"})
     assert res.status_code == 400
     json = await res.json()
     assert json["errors"]
@@ -209,71 +191,83 @@ async def test_delete(client, resource, endpoint_cls, db):
     assert not await db.manager.fetchone(Resource.select().where(Resource.id == 1))
 
 
-async def test_sort(client, endpoint_cls, db):
+async def test_sort(apiclient, endpoint_cls, db):
     await db.manager.create(Resource, name="test2", count=2)
     await db.manager.create(Resource, name="test3", count=3)
     await db.manager.create(Resource, name="test4", count=1)
 
     # Default sort
-    res = await client.get("/api/resource")
+    res = await apiclient.get("/api/resource")
     assert res.status_code == 200
     json = await res.json()
     assert json[0]["id"] == "3"
     assert json[1]["id"] == "2"
 
-    res = await client.get("/api/resource?sort=-count")
+    res = await apiclient.get("/api/resource", sort="-count")
     assert res.status_code == 200
     json = await res.json()
     assert json[0]["id"] == "2"
     assert json[1]["id"] == "1"
 
 
-async def test_filters(client, endpoint_cls, db):
+async def test_filters(apiclient, endpoint_cls, db):
     await db.manager.create(Resource, name="test2", count=2)
     await db.manager.create(Resource, name="test3", count=3)
     await db.manager.create(Resource, name="test4", count=1)
+    await db.manager.create(Resource, name="name5", count=4)
+    await db.manager.create(Resource, name="name6", count=5)
 
-    res = await client.get('/api/resource?where={"name":"test"}')
+    res = await apiclient.get("/api/resource", filters={"name": "test"})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 0
 
-    res = await client.get('/api/resource?where={"name": {"$in": ["test3", "test2"]}}')
+    res = await apiclient.get("/api/resource", filters={"name": {"$in": ["test3", "test2"]}})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 2
 
-    res = await client.get('/api/resource?where={"name": {"$starts": "test"}}')
+    res = await apiclient.get("/api/resource", filters={"name": {"$starts": "test"}})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 3
 
-    res = await client.get('/api/resource?where={"name": {"$ends": "3"}}')
+    res = await apiclient.get("/api/resource", filters={"name": {"$ends": "3"}})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 1
 
-    res = await client.get('/api/resource?where={"oid": {"$between": ["2", "3"]}}')
+    res = await apiclient.get("/api/resource", filters={"oid": {"$between": ["2", "3"]}})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 2
 
-    res = await client.get('/api/resource?where={"oid": {"$gt": "2"}}')
+    res = await apiclient.get("/api/resource", filters={"oid": {"$gt": "2"}})
     assert res.status_code == 200
     json = await res.json()
-    assert len(json) == 1
+    for data in json:
+        assert int(data["id"]) > 2
+
+    res = await apiclient.get(
+        "/api/resource",
+        filters={"count": {"$or": [{"$between": ["1", "2"]}, {"$between": ["4", "5"]}]}},
+    )
+    assert res.status_code == 200
+    json = await res.json()
+    for data in json:
+        assert data["count"] in [1, 2, 4, 5]
 
 
-async def test_paginate(client, endpoint_cls, db):
+async def test_paginate(apiclient, endpoint_cls, db):
     for n in range(12):
         await db.manager.create(Resource, name=f"test{n}")
 
-    res = await client.get("/api/resource")
+    res = await apiclient.get("/api/resource")
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 10
 
-    res = await client.get("/api/resource?limit=5")
+    res = await apiclient.get("/api/resource", limit=5)
     assert res.status_code == 200
     assert res.headers["x-total"] == "12"
     assert res.headers["x-limit"] == "5"
@@ -281,7 +275,7 @@ async def test_paginate(client, endpoint_cls, db):
     json = await res.json()
     assert len(json) == 5
 
-    res = await client.get("/api/resource?limit=5&offset=9")
+    res = await apiclient.get("/api/resource", limit=5, offset=9)
     assert res.status_code == 200
     assert res.headers["x-total"] == "12"
     assert res.headers["x-limit"] == "5"

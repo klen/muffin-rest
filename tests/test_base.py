@@ -109,7 +109,7 @@ async def test_handler(api, client):
     }
 
 
-async def test_handler2(api, client):
+async def test_handler2(api, apiclient):
     from muffin_rest import APIError, RESTHandler
 
     source = [1, 2, 3]
@@ -161,63 +161,63 @@ async def test_handler2(api, client):
     assert Source.meta.filters.mutations
 
     # Get collection
-    res = await client.get("/api/source")
+    res = await apiclient.get("/api/source")
     assert res.status_code == 200
     assert await res.json() == source
 
     # Get a resource
-    res = await client.get("/api/source/1")
+    res = await apiclient.get("/api/source/1")
     assert res.status_code == 200
     assert await res.json() == 2
 
     # Get an unknown resource
-    res = await client.get("/api/source/99")
+    res = await apiclient.get("/api/source/99")
     assert res.status_code == 404
     assert await res.json() == {"error": True, "message": "Resource not found"}
 
     # Create a resource
-    res = await client.post("/api/source", json=42)
+    res = await apiclient.post("/api/source", json=42)
     assert res.status_code == 200
     assert await res.json() == 42
 
     # Update a resource
-    res = await client.put("/api/source/3", json=99)
+    res = await apiclient.put("/api/source/3", json=99)
     assert res.status_code == 200
     assert await res.json() == 99
     assert source == [1, 2, 3, 99]
 
     # Delete a resource
-    res = await client.delete("/api/source/3")
+    res = await apiclient.delete("/api/source/3")
     assert res.status_code == 200
     assert source == [1, 2, 3]
 
     # Filter results
-    res = await client.get('/api/source?where={"val": 2}')
+    res = await apiclient.get("/api/source", filters={"val": 2})
     assert res.status_code == 200
     assert await res.json() == [2]
 
     # Filter results
-    res = await client.get('/api/source?where={"val": {">=": 2}}')
+    res = await apiclient.get("/api/source", filters={"val": {">=": 2}})
     assert res.status_code == 200
     assert await res.json() == [2, 3]
 
     # Paginate results
-    res = await client.get("/api/source?limit=2")
+    res = await apiclient.get("/api/source", limit=2)
     assert res.status_code == 200
     assert res.headers["x-total"] == str(len(source))
     assert res.headers["x-limit"] == "2"
     assert res.headers["x-offset"] == "0"
     assert await res.json() == [1, 2]
 
-    res = await client.get("/api/source?limit=2&offset=1")
+    res = await apiclient.get("/api/source", limit=2, offset=1)
     assert res.status_code == 200
     assert await res.json() == [2, 3]
 
-    res = await client.get("/api/source/custom")
+    res = await apiclient.get("/api/source/custom")
     assert res.status_code == 200
     assert await res.text() == "source: custom"
 
-    res = await client.post("/api/source/custom")
+    res = await apiclient.post("/api/source/custom")
     assert res.status_code == 405
 
 

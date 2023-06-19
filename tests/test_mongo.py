@@ -162,7 +162,7 @@ async def test_sort(client, ResourceEndpoint, resources):
     assert json[1]["count"] == 2
 
 
-async def test_filters(client, ResourceEndpoint, resources):
+async def test_filters(apiclient, ResourceEndpoint, resources):
     await resources.insert_many(
         [
             {"name": "test4", "count": 2},
@@ -170,43 +170,43 @@ async def test_filters(client, ResourceEndpoint, resources):
             {"name": "test2", "count": 1},
         ]
     )
-    res = await client.get('/api/resources?where={"name":"test"}')
+    res = await apiclient.get("/api/resources", filters={"name": "test"})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 0
 
-    res = await client.get('/api/resources?where={"name": {"$in": ["test3", "test2"]}}')
+    res = await apiclient.get("/api/resources", filters={"name": {"$in": ["test3", "test2"]}})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 2
 
-    res = await client.get('/api/resources?where={"name": {"$starts": "test"}}')
+    res = await apiclient.get("/api/resources", filters={"name": {"$starts": "test"}})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 3
 
-    res = await client.get('/api/resources?where={"name": {"$ends": "3"}}')
+    res = await apiclient.get("/api/resources", filters={"name": {"$ends": "3"}})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 1
 
     _id = json[0]["_id"]
 
-    res = await client.get('/api/resources?where={"oid": "%s"}' % _id)
+    res = await apiclient.get("/api/resources", filters={"oid": _id})
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 1
 
 
-async def test_paginate(client, ResourceEndpoint, resources):
+async def test_paginate(apiclient, ResourceEndpoint, resources):
     await resources.insert_many([{"name": "test%d" % n} for n in range(12)])
 
-    res = await client.get("/api/resources")
+    res = await apiclient.get("/api/resources")
     assert res.status_code == 200
     json = await res.json()
     assert len(json) == 10
 
-    res = await client.get("/api/resources?limit=5")
+    res = await apiclient.get("/api/resources", limit=5)
     assert res.status_code == 200
     assert res.headers["x-total"] == "12"
     assert res.headers["x-limit"] == "5"
@@ -214,7 +214,7 @@ async def test_paginate(client, ResourceEndpoint, resources):
     json = await res.json()
     assert len(json) == 5
 
-    res = await client.get("/api/resources?limit=5&offset=9")
+    res = await apiclient.get("/api/resources", limit=5, offset=9)
     assert res.status_code == 200
     assert res.headers["x-total"] == "12"
     assert res.headers["x-limit"] == "5"

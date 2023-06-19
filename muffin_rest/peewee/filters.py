@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import operator
+from functools import reduce
 from typing import Any, Callable, Tuple, Type, Union, cast
 
 from peewee import ColumnBase, Field, ModelSelect
@@ -14,7 +15,7 @@ from .utils import get_model_field_by_name
 class PWFilter(Filter):
     """Support Peewee."""
 
-    operators = Filter.operators
+    operators = dict(Filter.operators)
     operators["$in"] = operator.lshift
     operators["$none"] = operator.rshift
     operators["$like"] = operator.mod
@@ -24,6 +25,10 @@ class PWFilter(Filter):
     operators["$ends"] = lambda f, v: f.endswith(v)
     operators["$between"] = lambda f, v: f.between(*v)
     operators["$regexp"] = lambda f, v: f.regexp(v)
+    operators["$or"] = lambda col, value: reduce(operator.or_, [op(col, val) for op, val in value])
+    operators["$and"] = lambda col, value: reduce(
+        operator.and_, [op(col, val) for op, val in value]
+    )
 
     list_ops = [*Filter.list_ops, "$between"]
 
@@ -31,16 +36,10 @@ class PWFilter(Filter):
         self, collection: ModelSelect, *ops: Tuple[Callable, Any], **kwargs
     ) -> ModelSelect:
         """Apply the filters to Peewee QuerySet.."""
-        if self.field and ops:
-            return self.query(collection, self.field, *ops, **kwargs)
-        return collection
-
-    def query(self, qs: ModelSelect, column: Field, *ops: Tuple, **_) -> ModelSelect:
-        """Filter a query."""
+        column = self.field
         if isinstance(column, ColumnBase):
-            return cast(ModelSelect, qs.where(*[op(column, val) for op, val in ops]))
-
-        return qs
+            collection = cast(ModelSelect, collection.where(*[op(column, val) for op, val in ops]))
+        return collection
 
 
 class PWFilters(Filters):
