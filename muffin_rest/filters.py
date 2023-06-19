@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping, Optional, Tuple  # py38
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Mapping, Optional, Tuple  # py38
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads  # type: ignore[]
@@ -46,8 +46,8 @@ class Filter(Mutate):
     operators["!="] = operators["$ne"]
     operators["<<"] = operators["$in"]
 
-    list_ops = ("$in", "<<", "$nin")
-    logic_ops = ("$or", "$and", "$not", "$nor")
+    list_ops: Iterable[str] = ("$in", "<<", "$nin")
+    logic_ops: Iterable[str] = ("$or", "$and", "$not", "$nor")
 
     field: Any = None
     schema_field: ma.fields.Field = ma.fields.Raw()

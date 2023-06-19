@@ -30,7 +30,7 @@ class PWFilter(Filter):
         operator.and_, [op(col, val) for op, val in value]
     )
 
-    list_ops = [*Filter.list_ops, "$between"]
+    list_ops = (*Filter.list_ops, "$between")
 
     async def filter(
         self, collection: ModelSelect, *ops: Tuple[Callable, Any], **kwargs
