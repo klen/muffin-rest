@@ -63,7 +63,9 @@ class APITestClient(ASGITestClient):
             kwargs["query"][FILTERS_PARAM] = dumps(filters)
 
         if sort:
-            kwargs["query"][SORT_PARAM] = ",".join(sort) if isinstance(sort, tuple | list) else sort
+            kwargs["query"][SORT_PARAM] = (
+                ",".join(sort) if isinstance(sort, (tuple, list)) else sort
+            )
 
         if limit is not None:
             kwargs["query"]["limit"] = str(limit)
