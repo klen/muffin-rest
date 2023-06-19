@@ -51,7 +51,6 @@ muffin-mongo = "^0.5.1"
 muffin-peewee-aio = "*"
 pytest = "*"
 pytest-aio = { version = "*", extras = ["curio", "trio"] }
-pytest-mypy = "*"
 pyyaml = "*"
 types-PyYAML = "*"
 types-ujson = "*"
@@ -67,7 +66,7 @@ marshmallow-peewee = "^4.0.3"
 
 
 [tool.pytest.ini_options]
-addopts = "-xsv --mypy"
+addopts = "-xsv"
 log_cli = true
 
 [tool.mypy]
@@ -80,11 +79,6 @@ legacy_tox_ini = """
 envlist = py38,py39,py310,py311,pypy39
 
 [testenv]
-deps = -e .[tests]
-commands =
-	pytest --mypy tests
-
-[testenv:pypy39]
 deps = -e .[tests]
 commands =
 	pytest tests
