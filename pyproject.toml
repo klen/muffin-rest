@@ -55,6 +55,7 @@ pyyaml = "*"
 types-PyYAML = "*"
 types-ujson = "*"
 ruff = "*"
+mypy = "*"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "*"
