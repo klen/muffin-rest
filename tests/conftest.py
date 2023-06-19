@@ -1,4 +1,5 @@
 from json import dumps
+from typing import Any, Dict, Optional, Tuple, Union
 
 import muffin
 import pytest
@@ -51,10 +52,10 @@ class APITestClient(ASGITestClient):
         path: str,
         method: str = "GET",
         *,
-        filters: dict | None = None,
-        sort: tuple[str, ...] | str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
+        filters: Optional[Dict[str, Any]] = None,
+        sort: Union[Tuple[str, ...], str, None] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
         **kwargs,
     ):
         kwargs.setdefault("query", {})
