@@ -21,7 +21,6 @@ from typing import (
 
 import marshmallow as ma
 from asgi_tools.response import ResponseJSON, parse_response
-from marshmallow import ValidationError
 from muffin import Request
 from muffin.handler import Handler, HandlerMeta
 
@@ -106,34 +105,33 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         method = getattr(self, method_name or request.method.lower())
         self.auth = await self.authorize(request)
         self.collection = await self.prepare_collection(request)
-        headers = None
         resource = await self.prepare_resource(request)
-        if request.method == "GET" and resource is None:
-            meta = self.meta
+        if not (request.method == "GET" and resource is None):
+            return await method(request, resource=resource)
 
-            # Filter collection
-            if meta.filters:
-                self.collection, self.filters = await meta.filters.apply(request, self.collection)
+        headers = None
+        meta = self.meta
 
-            # Sort collection
-            if meta.sorting:
-                self.collection, self.sorting = await meta.sorting.apply(request, self.collection)
+        # Filter collection
+        if meta.filters:
+            self.collection, self.filters = await meta.filters.apply(request, self.collection)
 
-            # Paginate the collection
-            if meta.limit:
-                limit, offset = self.paginate_prepare_params(request)
-                if limit and offset >= 0:
-                    self.collection, total = await self.paginate(
-                        request,
-                        limit=limit,
-                        offset=offset,
-                    )
-                    headers = self.paginate_prepare_headers(limit, offset, total)
+        # Sort collection
+        if meta.sorting:
+            self.collection, self.sorting = await meta.sorting.apply(request, self.collection)
 
-        try:
-            response = await method(request, resource=resource)
-        except ValidationError as exc:
-            raise APIError.BAD_REQUEST("Bad request data", errors=exc.messages) from exc
+        # Paginate the collection
+        if meta.limit:
+            limit, offset = self.paginate_prepare_params(request)
+            if limit and offset >= 0:
+                self.collection, total = await self.paginate(
+                    request,
+                    limit=limit,
+                    offset=offset,
+                )
+                headers = self.paginate_prepare_headers(limit, offset, total)
+
+        response = await method(request)
 
         if headers:
             response = parse_response(response)
@@ -184,11 +182,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     @abc.abstractmethod
     async def paginate(
-        self,
-        request: Request,
-        *,
-        limit: int = 0,
-        offset: int = 0,
+        self, request: Request, *, limit: int = 0, offset: int = 0
     ) -> Tuple[Any, int]:
         """Paginate the results."""
         raise NotImplementedError
