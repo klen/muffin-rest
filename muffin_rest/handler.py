@@ -29,6 +29,7 @@ from muffin_rest import LIMIT_PARAM, OFFSET_PARAM, openapi
 from muffin_rest.api import API
 from muffin_rest.errors import APIError
 from muffin_rest.filters import Filter
+from muffin_rest.marshmallow import load_data
 from muffin_rest.sorting import Sort
 from muffin_rest.types import TSchemaRes
 
@@ -221,29 +222,13 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             exclude=query.get("schema_exclude", ()),
         )
 
-    async def parse(self, request: Request):
-        """Parse data from the given request."""
-        try:
-            return await request.data(raise_errors=True)
-        except (ValueError, TypeError) as exc:
-            raise APIError.BAD_REQUEST(str(exc)) from exc
-
     async def load(
         self, request: Request, resource: Optional[TVResource] = None
     ) -> TVData[TVResource]:
         """Load data from request and create/update a resource."""
-        data = await self.parse(request)
         schema = await self.get_schema(request, resource=resource)
-        if not schema:
-            return cast(TVData[TVResource], data)
-
         return cast(
-            TVData[TVResource],
-            schema.load(
-                cast(Union[dict, list], data),
-                partial=resource is not None,
-                many=isinstance(data, list),
-            ),
+            TVData[TVResource], await load_data(request, schema, partial=resource is not None)
         )
 
     @overload
