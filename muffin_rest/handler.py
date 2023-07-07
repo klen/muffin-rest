@@ -105,36 +105,34 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         method = getattr(self, method_name or request.method.lower())
         self.auth = await self.authorize(request)
         self.collection = await self.prepare_collection(request)
+        headers = None
         resource = await self.prepare_resource(request)
-        if resource or request.method != "GET":
-            try:
-                return await method(request, resource=resource)
-            except ValidationError as exc:
-                raise APIError.BAD_REQUEST("Invalid data", errors=exc.messages) from exc
+        if request.method == "GET" and resource is None:
+            meta = self.meta
 
-        meta = self.meta
+            # Filter collection
+            if meta.filters:
+                self.collection, self.filters = await meta.filters.apply(request, self.collection)
 
-        # Filter collection
-        if meta.filters:
-            self.collection, self.filters = await meta.filters.apply(request, self.collection)
+            # Sort collection
+            if meta.sorting:
+                self.collection, self.sorting = await meta.sorting.apply(request, self.collection)
 
-        # Sort collection
-        if meta.sorting:
-            self.collection, self.sorting = await meta.sorting.apply(request, self.collection)
+            # Paginate the collection
+            if meta.limit:
+                limit, offset = self.paginate_prepare_params(request)
+                if limit and offset >= 0:
+                    self.collection, total = await self.paginate(
+                        request,
+                        limit=limit,
+                        offset=offset,
+                    )
+                    headers = self.paginate_prepare_headers(limit, offset, total)
 
-        # Paginate the collection
-        headers = {}
-        if meta.limit:
-            limit, offset = self.paginate_prepare_params(request)
-            if limit and offset >= 0:
-                self.collection, total = await self.paginate(
-                    request,
-                    limit=limit,
-                    offset=offset,
-                )
-                headers = self.paginate_prepare_headers(limit, offset, total)
-
-        response = await method(request, resource=resource)
+        try:
+            response = await method(request, resource=resource)
+        except ValidationError as exc:
+            raise APIError.BAD_REQUEST("Bad request data", errors=exc.messages) from exc
 
         if headers:
             response = parse_response(response)
