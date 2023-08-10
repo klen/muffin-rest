@@ -207,14 +207,15 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     # Parse data
     # -----------
-    async def get_schema(self, request: Request, **_) -> ma.Schema:
+    async def get_schema(
+        self, request: Request, *, resource: Optional[TVResource] = None, **options
+    ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         assert self.meta.Schema, "RESTHandler.meta.Schema is required."
         query = request.url.query
-        return self.meta.Schema(
-            only=query.get("schema_only"),
-            exclude=query.get("schema_exclude", ()),
-        )
+        options.setdefault("only", query.get("schema_only"))
+        options.setdefault("exclude", query.get("schema_exclude", ()))
+        return self.meta.Schema(**options)
 
     async def load(
         self, request: Request, resource: Optional[TVResource] = None
@@ -244,8 +245,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         **dump_schema_opts,
     ) -> Union[TSchemaRes, List[TSchemaRes]]:
         """Serialize the given response."""
-        resource = data if not many else None
-        schema = await self.get_schema(request, resource=resource)
+        schema = await self.get_schema(request)
         return schema.dump(data, many=many, **dump_schema_opts)
 
     async def get(self, request: Request, *, resource: Optional[TVResource] = None) -> ResponseJSON:

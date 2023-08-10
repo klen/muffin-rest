@@ -153,13 +153,14 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         return await self.remove(request, resource)
 
     async def get_schema(
-        self, request: Request, resource: Optional[TVModel] = None, **_
+        self, request: Request, *, resource: Optional[TVModel] = None, **options
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return self.meta.Schema(
             instance=resource,
             only=request.url.query.get("schema_only"),
             exclude=request.url.query.get("schema_exclude", ()),
+            **options,
         )
 
 
