@@ -226,12 +226,12 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     @overload
     async def dump(  # type: ignore[misc]
-        self, request, data: TVData, *, many: Literal[True], **opts
+        self, request, data: TVData, *, many: Literal[True]
     ) -> List[TSchemaRes]:
         ...
 
     @overload
-    async def dump(self, request, data: TVData, *, many: bool = False, **opts) -> TSchemaRes:
+    async def dump(self, request, data: TVData, *, many: bool = False) -> TSchemaRes:
         ...
 
     async def dump(
@@ -240,11 +240,10 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         data: Union[TVResource, Iterable[TVResource]],
         *,
         many: bool = False,
-        **dump_schema_opts,
     ) -> Union[TSchemaRes, List[TSchemaRes]]:
         """Serialize the given response."""
         schema = self.get_schema(request)
-        return schema.dump(data, many=many, **dump_schema_opts)
+        return schema.dump(data, many=many)
 
     async def get(self, request: Request, *, resource: Optional[TVResource] = None) -> ResponseJSON:
         """Get a resource or a collection of resources.
