@@ -94,26 +94,18 @@ class MongoRESTHandler(RESTHandler[TVResource]):
         except InvalidId as exc:
             raise APIError.NOT_FOUND() from exc
 
-    async def get_schema(
-        self, request: Request, resource: Optional[TVResource] = None, **_
+    def get_schema(
+        self, request: Request, resource: Optional[TVResource] = None, **options
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
-        return self.meta.Schema(
-            instance=resource,
-            only=request.url.query.get("schema_only"),
-            exclude=request.url.query.get("schema_exclude", ()),
-        )
+        return super().get_schema(request, instance=resource, **options)
 
-    async def save(
-        self, _: Request, resource: TVResource, *, update=False
-    ) -> TVResource:
+    async def save(self, _: Request, resource: TVResource, *, update=False) -> TVResource:
         """Save the given resource."""
         meta = self.meta
         collection_id = meta.collection_id
         if update:
-            await self.collection.replace_one(
-                {collection_id: resource[collection_id]}, resource
-            )
+            await self.collection.replace_one({collection_id: resource[collection_id]}, resource)
 
         else:
             updated = await meta.collection.insert_one(resource)
@@ -124,11 +116,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
     async def delete(self, request: Request, resource: Optional[TVResource] = None):
         """Remove the given resource(s)."""
         meta = self.meta
-        oids = (
-            [resource[meta.collection_id]]
-            if resource
-            else cast(List[str], await request.data())
-        )
+        oids = [resource[meta.collection_id]] if resource else cast(List[str], await request.data())
         if not oids:
             raise APIError.NOT_FOUND()
 

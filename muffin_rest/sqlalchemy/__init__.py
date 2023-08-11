@@ -35,9 +35,7 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
 
         https://github.com/encode/databases/issues/72
         """
-        cols_to_fields = {
-            f.attribute or f.name: f for f in self.declared_fields.values()
-        }
+        cols_to_fields = {f.attribute or f.name: f for f in self.declared_fields.values()}
         if not partial:
             for column in self.opts.table.columns:
                 field = cols_to_fields.get(column.name)
@@ -155,19 +153,15 @@ class SARESTHandler(RESTHandler[TVResource]):
             raise APIError.NOT_FOUND("Resource not found")
         return cast(TVResource, dict(resource))
 
-    async def get_schema(
+    def get_schema(
         self,
         request: Request,
         *,
         resource: Optional[TVResource] = None,
-        **_,
+        **options,
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
-        return self.meta.Schema(
-            instance=resource,
-            only=request.url.query.get("schema_only"),
-            exclude=request.url.query.get("schema_exclude", ()),
-        )
+        return super().get_schema(request, instance=resource, **options)
 
     async def save(self, _: Request, resource: TVData[TVResource], *, update=False):
         """Save the given resource."""
@@ -175,15 +169,11 @@ class SARESTHandler(RESTHandler[TVResource]):
         insert_query = meta.table.insert()
         table_pk = cast(sa.Column, meta.table_pk)
         if update:
-            update_query = self.meta.table.update().where(
-                table_pk == resource[table_pk.name]
-            )
+            update_query = self.meta.table.update().where(table_pk == resource[table_pk.name])
             await meta.database.execute(update_query, resource)
 
         else:
-            resource[table_pk.name] = await meta.database.execute(
-                insert_query, resource
-            )
+            resource[table_pk.name] = await meta.database.execute(insert_query, resource)
 
         return resource
 
