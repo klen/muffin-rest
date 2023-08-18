@@ -95,10 +95,10 @@ class MongoRESTHandler(RESTHandler[TVResource]):
             raise APIError.NOT_FOUND() from exc
 
     def get_schema(
-        self, request: Request, resource: Optional[TVResource] = None, **options
+        self, request: Request, resource: Optional[TVResource] = None, **schema_options
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
-        return super().get_schema(request, instance=resource, **options)
+        return super().get_schema(request, instance=resource, **schema_options)
 
     async def save(self, _: Request, resource: TVResource, *, update=False) -> TVResource:
         """Save the given resource."""

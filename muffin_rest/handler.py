@@ -207,19 +207,19 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     # Parse data
     # -----------
     def get_schema(
-        self, request: Request, *, resource: Optional[TVResource] = None, **options
+        self, request: Request, *, resource: Optional[TVResource] = None, **schema_options
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         query = request.url.query
-        options.setdefault("only", query.get("schema_only"))
-        options.setdefault("exclude", query.get("schema_exclude", ()))
-        return self.meta.Schema(**options)
+        schema_options.setdefault("only", query.get("schema_only"))
+        schema_options.setdefault("exclude", query.get("schema_exclude", ()))
+        return self.meta.Schema(**schema_options)
 
     async def load(
-        self, request: Request, resource: Optional[TVResource] = None
+        self, request: Request, resource: Optional[TVResource] = None, **schema_options
     ) -> TVData[TVResource]:
         """Load data from request and create/update a resource."""
-        schema = self.get_schema(request, resource=resource)
+        schema = self.get_schema(request, resource=resource, **schema_options)
         return cast(
             TVData[TVResource], await load_data(request, schema, partial=resource is not None)
         )
