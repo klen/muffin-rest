@@ -378,5 +378,6 @@ async def test_custom_filter():
     flt = CustomFilter("count")
     assert flt
     assert flt.field
+    assert flt.field is Resource.count
 
     assert CustomFilter.field

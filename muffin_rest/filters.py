@@ -18,7 +18,6 @@ FILTERS_PARAM = "where"
 
 
 class Filter(Mutate):
-
     """Base filter class."""
 
     operators: Dict[str, Callable] = {
@@ -49,7 +48,6 @@ class Filter(Mutate):
     list_ops: Iterable[str] = ("$in", "<<", "$nin")
     logic_ops: Iterable[str] = ("$or", "$and", "$not", "$nor")
 
-    field: Any = None
     schema_field: ma.fields.Field = ma.fields.Raw()
     default_operator = "$eq"
 
@@ -124,7 +122,6 @@ class Filter(Mutate):
 
 
 class Filters(Mutator):
-
     """Build filters for handlers."""
 
     MUTATE_CLASS = Filter
