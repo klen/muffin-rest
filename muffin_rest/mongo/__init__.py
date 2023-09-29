@@ -57,7 +57,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
 
     async def paginate(
         self, _: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[motor.AsyncIOMotorCursor, int | None]:
+    ) -> Tuple[motor.AsyncIOMotorCursor, Optional[int]]:
         """Paginate collection."""
         if self.meta.aggregate:
             pipeline_all = [*self.meta.aggregate, {"$skip": offset}, {"$limit": limit}]

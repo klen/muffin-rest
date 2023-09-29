@@ -126,7 +126,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         *,
         limit: int = 0,
         offset: int = 0,
-    ) -> Tuple[sa.sql.Select, int | None]:
+    ) -> Tuple[sa.sql.Select, Optional[int]]:
         """Paginate the collection."""
         sqs = self.collection.order_by(None).subquery()
         qs = sa.select([sa.func.count()]).select_from(sqs)

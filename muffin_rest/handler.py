@@ -181,7 +181,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     @abc.abstractmethod
     async def paginate(
         self, request: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[Any, int | None]:
+    ) -> Tuple[Any, Optional[int]]:
         """Paginate the results."""
         raise NotImplementedError
 
