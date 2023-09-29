@@ -126,11 +126,13 @@ class SARESTHandler(RESTHandler[TVResource]):
         *,
         limit: int = 0,
         offset: int = 0,
-    ) -> Tuple[sa.sql.Select, int]:
+    ) -> Tuple[sa.sql.Select, int | None]:
         """Paginate the collection."""
         sqs = self.collection.order_by(None).subquery()
         qs = sa.select([sa.func.count()]).select_from(sqs)
-        total = await self.meta.database.fetch_val(qs)
+        total = None
+        if self.meta.limit_total:
+            total = await self.meta.database.fetch_val(qs)
         return self.collection.offset(offset).limit(limit), total
 
     async def get(self, request, *, resource: Optional[TVResource] = None) -> Any:

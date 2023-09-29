@@ -16,7 +16,12 @@ class RESTOptions:
 
     # limit: Paginate results (set to None for disable pagination)
     limit: int = 0
+
+    # limit_max: Max limit for pagination
     limit_max: int = 0
+
+    # limit_total: Return total count of results
+    limit_total: bool = True
 
     # Base class for filters
     filters: Filters

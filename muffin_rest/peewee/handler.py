@@ -81,13 +81,13 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     @overload
     async def paginate(
         self: PWRESTBase[TVAIOModel], _: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[AIOModelSelect[TVAIOModel], int]:
+    ) -> Tuple[AIOModelSelect[TVAIOModel], int | None]:
         ...
 
     @overload
     async def paginate(
         self: PWRESTBase[pw.Model], _: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[pw.ModelSelect, int]:
+    ) -> Tuple[pw.ModelSelect, int | None]:
         ...
 
     async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):
@@ -96,7 +96,9 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         if cqs._group_by:  # type: ignore[misc]
             cqs._returning = cqs._group_by  # type: ignore[misc]
             cqs._having = None  # type: ignore[misc]
-        count = await self.meta.manager.count(cqs)
+        count = None
+        if self.meta.limit_total:
+            count = await self.meta.manager.count(self.collection)
 
         return (
             cast(pw.ModelSelect, self.collection.offset(offset).limit(limit)),  # type: ignore[misc]

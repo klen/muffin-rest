@@ -123,11 +123,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         if meta.limit:
             limit, offset = self.paginate_prepare_params(request)
             if limit and offset >= 0:
-                self.collection, total = await self.paginate(
-                    request,
-                    limit=limit,
-                    offset=offset,
-                )
+                self.collection, total = await self.paginate(request, limit=limit, offset=offset)
                 headers = self.paginate_prepare_headers(limit, offset, total)
 
         response = await method(request)
@@ -165,9 +161,12 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     # Paginate
     # --------
-    def paginate_prepare_headers(self, limit, offset, total):
+    def paginate_prepare_headers(self, limit, offset, total=None):
         """Prepare pagination headers."""
-        return {"x-total": total, "x-limit": limit, "x-offset": offset}
+        headers = {"x-limit": limit, "x-offset": offset}
+        if total is not None:
+            headers["x-total"] = total
+        return headers
 
     def paginate_prepare_params(self, request: Request) -> Tuple[int, int]:
         """Prepare pagination params."""
@@ -182,7 +181,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     @abc.abstractmethod
     async def paginate(
         self, request: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[Any, int]:
+    ) -> Tuple[Any, int | None]:
         """Paginate the results."""
         raise NotImplementedError
 
