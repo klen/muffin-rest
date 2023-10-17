@@ -138,8 +138,8 @@ class Filters(Mutator):
                 data = json_loads(raw_data)
                 assert isinstance(data, dict)
                 mutations = self.mutations
-                for name in data:
-                    if name in mutations:
+                for name in mutations:
+                    if name in data:
                         ops, collection = await mutations[name].apply(collection, data)
                         filters[name] = ops
 

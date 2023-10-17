@@ -35,7 +35,6 @@ class Sort(Mutate):
 
 
 class Sorting(Mutator):
-
     """Build sorters for handlers."""
 
     MUTATE_CLASS = Sort
@@ -54,9 +53,11 @@ class Sorting(Mutator):
         sorting = {}
         if data:
             collection = self.prepare(collection)
-            for name, desc in to_sort(data.split(",")):
-                sort = self.mutations.get(name)
-                if sort:
+            sorting = dict(to_sort(data.split(",")))
+            for name in self.mutations:
+                sort = self.mutations[name]
+                if name in sorting:
+                    desc = sorting[name]
                     collection = await sort.apply(collection, desc=desc)
                     sorting[sort.name] = desc
 
