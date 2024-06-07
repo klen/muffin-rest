@@ -1,4 +1,4 @@
-from typing import Optional, Type
+from typing import Type
 
 import peewee as pw
 from marshmallow_peewee import ModelSchema
@@ -27,7 +27,7 @@ class PWRESTOptions(RESTOptions):
     base_property: str = "model"
 
     model: Type[pw.Model]
-    model_pk: Optional[pw.Field] = None
+    model_pk: pw.Field
 
     manager: Manager
 
@@ -38,7 +38,7 @@ class PWRESTOptions(RESTOptions):
         """Prepare meta options."""
         meta = self.model._meta  # type: ignore[]
         self.name = self.name or meta.table_name.lower()
-        self.model_pk = self.model_pk or meta.primary_key
+        self.model_pk = getattr(self, "model_pk", None) or meta.primary_key
         manager = getattr(self, "manager", getattr(self.model, "_manager", None))
         if manager is None:
             raise RuntimeError("Peewee-AIO ORM Manager is not available")

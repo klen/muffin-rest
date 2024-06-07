@@ -38,9 +38,9 @@ class Filter(Mutate):
         "$nor": lambda v, c: not any(f(v, c) for f in v),
     }
     operators["<"] = operators["$lt"]
-    operators["<="] = operators["$le"]
+    operators["<="] = operators["$lte"] = operators["$le"]
     operators[">"] = operators["$gt"]
-    operators[">="] = operators["$ge"]
+    operators[">="] = operators["$gte"] = operators["$ge"]
     operators["=="] = operators["$eq"]
     operators["!="] = operators["$ne"]
     operators["<<"] = operators["$in"]

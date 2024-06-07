@@ -77,7 +77,7 @@ class SARESTOptions(RESTOptions):
     schema_base: Type[SQLAlchemyAutoSchema] = SQLAlchemyAutoSchema
 
     table: sa.Table
-    table_pk: Optional[sa.Column] = None
+    table_pk: sa.Column
     database: Database
 
     base_property = "table"
@@ -88,7 +88,7 @@ class SARESTOptions(RESTOptions):
             raise ValueError("'SARESTHandler.Meta.database' is required")
 
         self.name = self.name or self.table.name
-        self.table_pk = self.table_pk or self.table.c.id
+        self.table_pk = getattr(self, "table_pk", None) or self.table.c.id
 
         super().setup(cls)
 
