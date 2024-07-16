@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "muffin-rest"
-version = "7.3.4"
+version = "7.3.5"
 description = "The package provides enhanced support for writing REST APIs with Muffin framework"
 readme = "README.rst"
 homepage = "https://github.com/klen/muffin-rest"
