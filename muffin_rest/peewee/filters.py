@@ -25,6 +25,7 @@ class PWFilter(Filter):
     operators["$ends"] = lambda f, v: f.endswith(v)
     operators["$between"] = lambda f, v: f.between(*v)
     operators["$regexp"] = lambda f, v: f.regexp(v)
+    operators["$null"] = lambda f, v: f.is_null(v)
     operators["$or"] = lambda col, value: reduce(operator.or_, [op(col, val) for op, val in value])
     operators["$and"] = lambda col, value: reduce(
         operator.and_, [op(col, val) for op, val in value]
