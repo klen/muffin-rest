@@ -87,10 +87,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         else:
             router.bind(cls, f"/{ cls.meta.name }", methods=methods, **params)
             router.bind(
-                cls,
-                f"/{ cls.meta.name }/{{{ cls.meta.name_id }}}",
-                methods=methods,
-                **params,
+                cls, f"/{ cls.meta.name }/{{{ cls.meta.name_id }}}", methods=methods, **params
             )
 
         for _, method in inspect.getmembers(cls, lambda m: hasattr(m, "__route__")):
@@ -102,14 +99,17 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     async def __call__(self, request: Request, *, method_name: Optional[str] = None, **_) -> Any:
         """Dispatch the given request by HTTP method."""
         method = getattr(self, method_name or request.method.lower())
+        meta = self.meta
         self.auth = await self.authorize(request)
+        if meta.rate_limit:
+            await self.rate_limit(request)
+
         self.collection = await self.prepare_collection(request)
         resource = await self.prepare_resource(request)
         if not (request.method == "GET" and resource is None):
             return await method(request, resource=resource)
 
         headers = None
-        meta = self.meta
 
         # Filter collection
         if meta.filters:
@@ -147,6 +147,11 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         if not auth:
             raise APIError.UNAUTHORIZED()
         return auth
+
+    async def rate_limit(self, request: Request):
+        """Default rate limit method. Proxy rate limit to self.api."""
+        if not await self.meta.rate_limiter.check(f"{self.auth}"):
+            raise APIError.TOO_MANY_REQUESTS()
 
     # Prepare data
     # ------------

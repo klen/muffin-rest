@@ -1,8 +1,10 @@
 """REST Options."""
 
-from typing import Dict, Type
+from typing import Any, Dict, Type
 
 import marshmallow as ma
+
+from muffin_rest.limits import MemoryRateLimiter, RateLimiter
 
 from .filters import Filters
 from .sorting import Sorting
@@ -13,6 +15,10 @@ class RESTOptions:
 
     name: str = ""
     name_id: str = "id"
+    base_property: str = "name"
+
+    # Pagination
+    # ----------
 
     # limit: Paginate results (set to None for disable pagination)
     limit: int = 0
@@ -23,13 +29,22 @@ class RESTOptions:
     # limit_total: Return total count of results
     limit_total: bool = True
 
+    # Filters
+    # -------
+
     # Base class for filters
     filters: Filters
     filters_cls: Type[Filters] = Filters
 
+    # Sorting
+    # -------
+
     # Base class for sorting
     sorting: Sorting
     sorting_cls: Type[Sorting] = Sorting
+
+    # Serialization/Deserialization
+    # -----------------------------
 
     # Auto generation for schemas
     Schema: Type[ma.Schema]
@@ -38,7 +53,13 @@ class RESTOptions:
     schema_meta: Dict = {}
     schema_unknown: str = ma.EXCLUDE
 
-    base_property: str = "name"
+    # Rate Limiting
+    # -------------
+
+    rate_limit: int = 0
+    rate_limit_period: int = 60
+    rate_limit_cls: Type[RateLimiter] = MemoryRateLimiter
+    rate_limit_cls_opts: Dict[str, Any] = {}
 
     def __init__(self, cls):
         """Inherit meta options."""
@@ -64,6 +85,11 @@ class RESTOptions:
 
         if not self.limit_max:
             self.limit_max = self.limit
+
+        if self.rate_limit:
+            self.rate_limiter = self.rate_limit_cls(
+                self.rate_limit, self.rate_limit_period, **self.rate_limit_cls_opts
+            )
 
     def setup_schema_meta(self, _):
         """Generate meta for schemas."""

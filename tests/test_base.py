@@ -1,6 +1,8 @@
 import marshmallow as ma
 import pytest
 
+from muffin_rest.handler import RESTHandler
+
 
 class FakeSchema(ma.Schema):
     def dump(self, data, **_):
@@ -289,7 +291,7 @@ async def test_handler_with_path(api, client):
     class Simple(RESTHandler):
         methods = "get", "patch"
 
-        class Meta:
+        class Meta:  # type: ignore[]
             name = "simple"
 
         async def prepare_collection(self, request):
@@ -303,3 +305,25 @@ async def test_handler_with_path(api, client):
 
     res = await client.patch("/api/simple")
     assert res.status_code == 200
+
+
+async def test_rate_limit(api, client, aiolib):
+    @api.route
+    class Simple(RESTHandler):
+        methods = "get", "patch"
+
+        class Meta:  # type: ignore[]
+            rate_limit = 10
+
+        async def authorize(self, request):
+            return aiolib[0]
+
+        async def prepare_collection(self, request):
+            return [1, 2, 3, 4]
+
+    for _ in range(10):
+        res = await client.get("/api/simple")
+        assert res.status_code == 200
+
+    res = await client.get("/api/simple")
+    assert res.status_code == 429
