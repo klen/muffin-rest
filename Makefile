@@ -6,6 +6,7 @@ VIRTUAL_ENV ?= .venv
 # =============
 
 $(VIRTUAL_ENV): poetry.lock .pre-commit-config.yaml
+	@[ -d $(VIRTUAL_ENV) ] || python -m venv $(VIRTUAL_ENV)
 	@poetry install --with tests,dev,example --extras yaml
 	@poetry self add poetry-bumpversion
 	@poetry run pre-commit install
