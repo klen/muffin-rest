@@ -1,6 +1,6 @@
 """REST Options."""
 
-from typing import Any, Dict, Type
+from typing import Any
 
 import marshmallow as ma
 
@@ -34,23 +34,23 @@ class RESTOptions:
 
     # Base class for filters
     filters: Filters
-    filters_cls: Type[Filters] = Filters
+    filters_cls: type[Filters] = Filters
 
     # Sorting
     # -------
 
     # Base class for sorting
     sorting: Sorting
-    sorting_cls: Type[Sorting] = Sorting
+    sorting_cls: type[Sorting] = Sorting
 
     # Serialization/Deserialization
     # -----------------------------
 
     # Auto generation for schemas
-    Schema: Type[ma.Schema]
-    schema_base: Type[ma.Schema] = ma.Schema
-    schema_fields: Dict = {}
-    schema_meta: Dict = {}
+    Schema: type[ma.Schema]
+    schema_base: type[ma.Schema] = ma.Schema
+    schema_fields: dict = {}
+    schema_meta: dict = {}
     schema_unknown: str = ma.EXCLUDE
 
     # Rate Limiting
@@ -58,8 +58,8 @@ class RESTOptions:
 
     rate_limit: int = 0
     rate_limit_period: int = 60
-    rate_limit_cls: Type[RateLimiter] = MemoryRateLimiter
-    rate_limit_cls_opts: Dict[str, Any] = {}
+    rate_limit_cls: type[RateLimiter] = MemoryRateLimiter
+    rate_limit_cls_opts: dict[str, Any] = {}
 
     def __init__(self, cls):
         """Inherit meta options."""

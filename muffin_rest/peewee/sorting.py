@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Type, Union, cast
+from typing import TYPE_CHECKING, Union, cast
 
 from peewee import Field
 
@@ -28,7 +28,7 @@ class PWSort(Sort):
 class PWSorting(Sorting):
     """Sort Peewee ORM Queries."""
 
-    MUTATE_CLASS: Type[PWSort] = PWSort
+    MUTATE_CLASS: type[PWSort] = PWSort
 
     def prepare(self, collection: TVCollection) -> TVCollection:
         """Prepare collection for sorting."""

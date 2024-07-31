@@ -6,7 +6,7 @@ import re
 from contextlib import suppress
 from functools import partial
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from apispec import utils
 from apispec.core import APISpec
@@ -81,9 +81,9 @@ def render_openapi(api, request=None):
     return spec.to_dict()
 
 
-def route_to_spec(route: Route, spec: APISpec, tags: Dict) -> Dict:
+def route_to_spec(route: Route, spec: APISpec, tags: dict) -> dict:
     """Convert the given router to openapi operations."""
-    results: Dict[str, Any] = {"parameters": [], "operations": {}}
+    results: dict[str, Any] = {"parameters": [], "operations": {}}
     if isinstance(route, DynamicRoute):
         for param in route.params:
             results["parameters"].append({"in": "path", "name": param})
@@ -109,7 +109,7 @@ def route_to_spec(route: Route, spec: APISpec, tags: Dict) -> Dict:
     return results
 
 
-def parse_docs(cb: Callable) -> Tuple[str, str, Dict]:
+def parse_docs(cb: Callable) -> tuple[str, str, dict]:
     """Parse docs from the given callback."""
     if yaml_utils is None:
         return "", "", {}
@@ -122,7 +122,7 @@ def parse_docs(cb: Callable) -> Tuple[str, str, Dict]:
     return summary, description.strip(), schema
 
 
-def merge_dicts(source: Dict, merge: Dict) -> Dict:
+def merge_dicts(source: dict, merge: dict) -> dict:
     """Merge dicts."""
     return dict(
         source,
@@ -145,15 +145,15 @@ def merge_dicts(source: Dict, merge: Dict) -> Dict:
     )
 
 
-def route_to_methods(route: Route) -> List[str]:
+def route_to_methods(route: Route) -> list[str]:
     """Get sorted methods from the route."""
     methods = [m for m in HTTP_METHODS if m in (route.methods or [])]
     return [m.lower() for m in methods or DEFAULT_METHODS]
 
 
-def return_type_to_response(fn: Callable) -> Dict:
+def return_type_to_response(fn: Callable) -> dict:
     """Generate reponses specs based on the given function's return type."""
-    responses: Dict[int, Dict] = {}
+    responses: dict[int, dict] = {}
     return_type = fn.__annotations__.get("return")
     if return_type is None:
         return responses
@@ -180,13 +180,13 @@ class OpenAPIMixin:
     meta: RESTOptions
 
     @classmethod
-    def openapi(cls, route: Route, spec: APISpec, tags: Dict) -> Dict:  # noqa: C901
+    def openapi(cls, route: Route, spec: APISpec, tags: dict) -> dict:  # noqa: C901
         """Get openapi specs for the endpoint."""
         meta = cls.meta
         if getattr(meta, meta.base_property, None) is None:
             return {}
 
-        operations: Dict = {}
+        operations: dict = {}
         summary, desc, schema = parse_docs(cls)
         if cls not in tags:
             tags[cls] = meta.name

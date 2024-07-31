@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import marshmallow as ma
 import sqlalchemy as sa
@@ -69,12 +69,12 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
 class SARESTOptions(RESTOptions):
     """Support SQLAlchemy Core."""
 
-    filters_cls: Type[SAFilters] = SAFilters
-    sorting_cls: Type[SASorting] = SASorting
+    filters_cls: type[SAFilters] = SAFilters
+    sorting_cls: type[SASorting] = SASorting
 
     # Schema auto generation params
-    Schema: Type[SQLAlchemyAutoSchema]
-    schema_base: Type[SQLAlchemyAutoSchema] = SQLAlchemyAutoSchema
+    Schema: type[SQLAlchemyAutoSchema]
+    schema_base: type[SQLAlchemyAutoSchema] = SQLAlchemyAutoSchema
 
     table: sa.Table
     table_pk: sa.Column
@@ -113,7 +113,7 @@ class SARESTHandler(RESTHandler[TVResource]):
     """Support SQLAlchemy Core."""
 
     meta: SARESTOptions
-    meta_class: Type[SARESTOptions] = SARESTOptions
+    meta_class: type[SARESTOptions] = SARESTOptions
     collection: sa.sql.Select
 
     async def prepare_collection(self, _: Request) -> sa.sql.Select:
@@ -126,7 +126,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         *,
         limit: int = 0,
         offset: int = 0,
-    ) -> Tuple[sa.sql.Select, Optional[int]]:
+    ) -> tuple[sa.sql.Select, Optional[int]]:
         """Paginate the collection."""
         sqs = self.collection.order_by(None).subquery()
         qs = sa.select([sa.func.count()]).select_from(sqs)

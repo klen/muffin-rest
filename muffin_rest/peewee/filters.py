@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import operator
 from functools import reduce
-from typing import Any, Callable, Tuple, Type, Union, cast
+from typing import Any, Callable, Union, cast
 
 from peewee import ColumnBase, Field, ModelSelect
 
@@ -34,7 +34,7 @@ class PWFilter(Filter):
     list_ops = (*Filter.list_ops, "$between")
 
     async def filter(
-        self, collection: ModelSelect, *ops: Tuple[Callable, Any], **kwargs
+        self, collection: ModelSelect, *ops: tuple[Callable, Any], **kwargs
     ) -> ModelSelect:
         """Apply the filters to Peewee QuerySet.."""
         column = self.field
@@ -46,7 +46,7 @@ class PWFilter(Filter):
 class PWFilters(Filters):
     """Bind Peewee filter class."""
 
-    MUTATE_CLASS: Type[PWFilter] = PWFilter
+    MUTATE_CLASS: type[PWFilter] = PWFilter
 
     def convert(self, obj: Union[str, Field, PWFilter], **meta):
         """Convert params to filters."""

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Mapping, Optional, Tuple  # py38
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping, Optional  # py39
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads  # type: ignore[]
@@ -20,7 +20,7 @@ FILTERS_PARAM = "where"
 class Filter(Mutate):
     """Base filter class."""
 
-    operators: Dict[str, Callable] = {
+    operators: dict[str, Callable] = {
         "$lt": operator.lt,
         "$le": operator.le,
         "$gt": operator.gt,
@@ -87,7 +87,7 @@ class Filter(Mutate):
 
         return ops, collection
 
-    async def filter(self, collection, *ops: Tuple[Callable, Any], **_):
+    async def filter(self, collection, *ops: tuple[Callable, Any], **_) -> Any:
         """Apply the filter to collection."""
 
         def validator(obj):
@@ -129,7 +129,7 @@ class Filters(Mutator):
 
     async def apply(
         self, request: Request, collection: TVCollection
-    ) -> Tuple[TVCollection, Dict[str, Any]]:
+    ) -> tuple[TVCollection, dict[str, Any]]:
         """Filter the given collection."""
         raw_data = request.url.query.get(FILTERS_PARAM)
         filters = {}
@@ -161,7 +161,7 @@ class Filters(Mutator):
         return self.MUTATE_CLASS(obj, field=field, schema_field=schema_field, **meta)
 
     @property
-    def openapi(self) -> Dict:
+    def openapi(self) -> dict:
         """Prepare OpenAPI params."""
         return {
             "name": FILTERS_PARAM,

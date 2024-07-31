@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 from muffin import ResponseError
 
@@ -24,7 +24,7 @@ class APIError(ResponseError):
         """Create JSON with errors information."""
         response = {"error": True, "message": HTTPStatus(status_code).description}
 
-        if isinstance(content, Dict):
+        if isinstance(content, dict):
             response = content
 
         elif content is not None:

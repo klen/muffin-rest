@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Awaitable, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Awaitable, Union
 
 if TYPE_CHECKING:
     from motor import motor_asyncio as motor
 
 
 class MongoChain:
-
     """Support query chains.
 
     Only for `find` and `find_one` methods.
@@ -53,12 +52,14 @@ class MongoChain:
     def __init__(self, collection: motor.AsyncIOMotorCollection):
         """Initialize the resource."""
         self.collection = collection
-        self.query: List = []
+        self.query: list = []
         self.projection = None
-        self.sorting: List[Tuple[str, int]] = []
+        self.sorting: list[tuple[str, int]] = []
 
     def find(
-        self, query: Union[List, Dict, None] = None, projection=None,
+        self,
+        query: Union[list, dict, None] = None,
+        projection=None,
     ) -> MongoChain:
         """Store filters in self."""
         self.query = self.__update__(query)
@@ -66,7 +67,9 @@ class MongoChain:
         return self
 
     def find_one(
-        self, query: Union[List, Dict, None] = None, projection=None,
+        self,
+        query: Union[list, dict, None] = None,
+        projection=None,
     ) -> Awaitable:
         """Apply filters and return cursor."""
         query = self.__update__(query)

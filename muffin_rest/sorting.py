@@ -1,19 +1,7 @@
 """Implement sorting."""
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Mapping,
-    Sequence,
-    Tuple,
-    Type,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Generator, Iterable, Mapping, Sequence, cast
 
 from .types import TVCollection
 from .utils import Mutate, Mutator
@@ -40,14 +28,14 @@ class Sorting(Mutator):
     MUTATE_CLASS = Sort
     mutations: Mapping[str, Sort]
 
-    def __init__(self, handler: Type[RESTBase], params: Iterable):
+    def __init__(self, handler: type[RESTBase], params: Iterable):
         """Initialize the sorting."""
-        self.default: List[Sort] = []
+        self.default: list[Sort] = []
         super(Sorting, self).__init__(handler, params)
 
     async def apply(
         self, request: Request, collection: TVCollection
-    ) -> Tuple[TVCollection, Dict[str, Any]]:
+    ) -> tuple[TVCollection, dict[str, Any]]:
         """Sort the given collection."""
         data = request.url.query.get(SORT_PARAM)
         sorting = {}
@@ -97,7 +85,7 @@ class Sorting(Mutator):
 
 def to_sort(
     sort_params: Sequence[str],
-) -> Generator[Tuple[str, bool], None, None]:
+) -> Generator[tuple[str, bool], None, None]:
     """Generate sort params."""
     for name in sort_params:
         n, desc = name.strip("-"), name.startswith("-")

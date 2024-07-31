@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Mapping, Tuple, Type
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 if TYPE_CHECKING:
     from muffin import Request
@@ -36,7 +36,7 @@ class Mutate(abc.ABC):
 class Mutator(abc.ABC):
     """Mutate collections."""
 
-    MUTATE_CLASS: Type[Mutate]
+    MUTATE_CLASS: type[Mutate]
     mutations: Mapping[str, Mutate]
 
     def __init__(self, handler, params: Iterable):
@@ -73,6 +73,6 @@ class Mutator(abc.ABC):
     @abc.abstractmethod
     async def apply(
         self, request: Request, collection: TVCollection
-    ) -> Tuple[TVCollection, Dict[str, Any]]:
+    ) -> tuple[TVCollection, dict[str, Any]]:
         """Mutate a collection."""
         raise NotImplementedError

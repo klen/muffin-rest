@@ -3,9 +3,6 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Dict,
-    List,
-    Type,
     TypeVar,
     Union,
 )
@@ -17,8 +14,8 @@ from muffin import Request
 
 TVCollection = TypeVar("TVCollection", bound=Any)
 TVResource = TypeVar("TVResource", bound=Any)
-TVData = Union[TVResource, List[TVResource]]
+TVData = Union[TVResource, list[TVResource]]
 TAuth = Callable[[Request], Awaitable]
 TVAuth = TypeVar("TVAuth", bound=TAuth)
-TVHandler = TypeVar("TVHandler", bound=Type["RESTBase"])
-TSchemaRes = Dict[str, Any]
+TVHandler = TypeVar("TVHandler", bound=type["RESTBase"])
+TSchemaRes = dict[str, Any]

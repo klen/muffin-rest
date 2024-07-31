@@ -1,5 +1,3 @@
-from typing import Type
-
 import peewee as pw
 from marshmallow_peewee import ModelSchema
 from peewee_aio import Manager
@@ -14,19 +12,19 @@ class PWRESTOptions(RESTOptions):
     """Support Peewee."""
 
     # Base filters class
-    filters_cls: Type[PWFilters] = PWFilters
+    filters_cls: type[PWFilters] = PWFilters
 
     # Base sorting class
-    sorting_cls: Type[PWSorting] = PWSorting
+    sorting_cls: type[PWSorting] = PWSorting
 
-    Schema: Type[ModelSchema]
+    Schema: type[ModelSchema]
 
     # Schema auto generation params
-    schema_base: Type[ModelSchema] = ModelSchema
+    schema_base: type[ModelSchema] = ModelSchema
 
     base_property: str = "model"
 
-    model: Type[pw.Model]
+    model: type[pw.Model]
     model_pk: pw.Field
 
     manager: Manager

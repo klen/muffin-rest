@@ -1,7 +1,7 @@
-from typing import Any, Dict, TypeVar
+from typing import Any, TypeVar
 
 from .utils import MongoChain
 
+TResource = dict[str, Any]
 TVCollection = TypeVar("TVCollection", bound=MongoChain)
-TResource = Dict[str, Any]
 TVResource = TypeVar("TVResource", bound=TResource)

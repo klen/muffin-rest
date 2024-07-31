@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Union, cast
 
 from sqlalchemy import Column
 
@@ -30,7 +30,7 @@ class SAFilter(Filter):
     list_ops = [*Filter.list_ops, "$between"]
 
     async def filter(
-        self, collection: TVCollection, *ops: Tuple[Callable, Any], **kwargs
+        self, collection: TVCollection, *ops: tuple[Callable, Any], **kwargs
     ) -> TVCollection:
         """Apply the filters to SQLAlchemy Select."""
         column = self.field

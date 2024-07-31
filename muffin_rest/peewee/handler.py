@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Optional, Union, cast, overload
 
 import marshmallow as ma
 import peewee as pw
@@ -37,7 +37,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         collection: Union[AIOModelSelect, pw.ModelSelect]
 
     meta: PWRESTOptions
-    meta_class: Type[PWRESTOptions] = PWRESTOptions
+    meta_class: type[PWRESTOptions] = PWRESTOptions
 
     @overload
     async def prepare_collection(
@@ -81,13 +81,13 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     @overload
     async def paginate(
         self: PWRESTBase[TVAIOModel], _: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[AIOModelSelect[TVAIOModel], int | None]:
+    ) -> tuple[AIOModelSelect[TVAIOModel], int | None]:
         ...
 
     @overload
     async def paginate(
         self: PWRESTBase[pw.Model], _: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[pw.ModelSelect, int | None]:
+    ) -> tuple[pw.ModelSelect, int | None]:
         ...
 
     async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):

@@ -1,8 +1,8 @@
-from typing import Any, Dict, TypeVar
+from typing import Any, TypeVar
 
 from sqlalchemy import sql
 
 TVCollection = TypeVar("TVCollection", bound=sql.Select)
 
-TResource = Dict[str, Any]
+TResource = dict[str, Any]
 TVResource = TypeVar("TVResource", bound=TResource)

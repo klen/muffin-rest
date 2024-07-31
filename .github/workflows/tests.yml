@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
 
@@ -37,13 +37,13 @@ jobs:
       run: poetry install --with tests
 
     - name: Check code
-      run: poetry run ruff muffin_rest
+      run: poetry run ruff check muffin_rest
 
     - name: Check typing
       run: poetry run mypy
 
     - name: Test with pytest
-      run: poetry run pytest tests
+      run: poetry run pytest
 
   notify:
     runs-on: ubuntu-latest

@@ -4,16 +4,12 @@ import abc
 import inspect
 from typing import (
     Any,
-    Dict,
     Generator,
     Generic,
     Iterable,
-    List,
     Literal,
     Optional,
     Sequence,
-    Tuple,
-    Type,
     Union,
     cast,
     overload,
@@ -42,7 +38,7 @@ class RESTHandlerMeta(HandlerMeta):
 
     def __new__(mcs, name, bases, params):
         """Prepare options for the handler."""
-        kls = cast(Type["RESTBase"], super().__new__(mcs, name, bases, params))
+        kls = cast(type["RESTBase"], super().__new__(mcs, name, bases, params))
         kls.meta = kls.meta_class(kls)
 
         if getattr(kls.meta, kls.meta_class.base_property, None) is not None:
@@ -60,22 +56,22 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     resource: Any
 
     meta: RESTOptions
-    meta_class: Type[RESTOptions] = RESTOptions
+    meta_class: type[RESTOptions] = RESTOptions
     _api: Optional[API] = None
-    filters: Dict[str, Any] = {}
-    sorting: Dict[str, Any] = {}
+    filters: dict[str, Any] = {}
+    sorting: dict[str, Any] = {}
 
     class Meta:
         """Tune the handler."""
 
         # Resource filters
-        filters: Sequence[Union[str, Tuple[str, str], Filter]] = ()
+        filters: Sequence[Union[str, tuple[str, str], Filter]] = ()
 
         # Define allowed resource sorting params
-        sorting: Sequence[Union[str, Tuple[str, Dict], Sort]] = ()
+        sorting: Sequence[Union[str, tuple[str, dict], Sort]] = ()
 
         # Serialize/Deserialize Schema class
-        Schema: Optional[Type[ma.Schema]] = None
+        Schema: Optional[type[ma.Schema]] = None
 
     @classmethod
     def __route__(cls, router, *paths, **params):
@@ -173,7 +169,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             headers["x-total"] = total
         return headers
 
-    def paginate_prepare_params(self, request: Request) -> Tuple[int, int]:
+    def paginate_prepare_params(self, request: Request) -> tuple[int, int]:
         """Prepare pagination params."""
         meta = self.meta
         query = request.url.query
@@ -186,7 +182,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     @abc.abstractmethod
     async def paginate(
         self, request: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[Any, Optional[int]]:
+    ) -> tuple[Any, Optional[int]]:
         """Paginate the results."""
         raise NotImplementedError
 
@@ -198,8 +194,8 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         return resource
 
     async def save_many(
-        self, request: Request, data: List[TVResource], *, update=False
-    ) -> List[TVResource]:
+        self, request: Request, data: list[TVResource], *, update=False
+    ) -> list[TVResource]:
         """Save many resources."""
         return [await self.save(request, item, update=update) for item in data]
 
@@ -231,7 +227,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     @overload
     async def dump(  # type: ignore[misc]
         self, request, data: TVData, *, many: Literal[True]
-    ) -> List[TSchemaRes]:
+    ) -> list[TSchemaRes]:
         ...
 
     @overload
@@ -244,7 +240,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         data: Union[TVResource, Iterable[TVResource]],
         *,
         many: bool = False,
-    ) -> Union[TSchemaRes, List[TSchemaRes]]:
+    ) -> Union[TSchemaRes, list[TSchemaRes]]:
         """Serialize the given response."""
         schema = self.get_schema(request)
         return schema.dump(data, many=many)
@@ -298,7 +294,7 @@ class RESTHandler(RESTBase[TVResource], openapi.OpenAPIMixin):
     """Basic Handler Class."""
 
 
-def to_sort(sort_params: Sequence[str]) -> Generator[Tuple[str, bool], None, None]:
+def to_sort(sort_params: Sequence[str]) -> Generator[tuple[str, bool], None, None]:
     """Generate sort params."""
     for name in sort_params:
         n, desc = name.strip("-"), name.startswith("-")

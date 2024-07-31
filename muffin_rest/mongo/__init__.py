@@ -1,7 +1,7 @@
 """Mongo DB support."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import bson
 from bson.errors import InvalidId
@@ -24,17 +24,17 @@ if TYPE_CHECKING:
 class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
 
-    filters_cls: Type[MongoFilters] = MongoFilters
-    sorting_cls: Type[MongoSorting] = MongoSorting
-    schema_base: Type[MongoSchema] = MongoSchema
+    filters_cls: type[MongoFilters] = MongoFilters
+    sorting_cls: type[MongoSorting] = MongoSorting
+    schema_base: type[MongoSchema] = MongoSchema
 
-    aggregate: Optional[List] = None  # Support aggregation. Set to pipeline.
+    aggregate: Optional[list] = None  # Support aggregation. Set to pipeline.
     collection_id: str = "_id"
     collection: motor.AsyncIOMotorCollection
 
     base_property: str = "collection"
 
-    Schema: Type[MongoSchema]
+    Schema: type[MongoSchema]
 
     def setup(self, cls):
         """Prepare meta options."""
@@ -49,7 +49,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
     """Support Mongo DB."""
 
     meta: MongoRESTOptions
-    meta_class: Type[MongoRESTOptions] = MongoRESTOptions
+    meta_class: type[MongoRESTOptions] = MongoRESTOptions
 
     async def prepare_collection(self, _: Request) -> MongoChain:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
@@ -57,7 +57,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
 
     async def paginate(
         self, _: Request, *, limit: int = 0, offset: int = 0
-    ) -> Tuple[motor.AsyncIOMotorCursor, Optional[int]]:
+    ) -> tuple[motor.AsyncIOMotorCursor, Optional[int]]:
         """Paginate collection."""
         if self.meta.aggregate:
             pipeline_all = [*self.meta.aggregate, {"$skip": offset}, {"$limit": limit}]
@@ -118,7 +118,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
     async def delete(self, request: Request, resource: Optional[TVResource] = None):
         """Remove the given resource(s)."""
         meta = self.meta
-        oids = [resource[meta.collection_id]] if resource else cast(List[str], await request.data())
+        oids = [resource[meta.collection_id]] if resource else cast(list[str], await request.data())
         if not oids:
             raise APIError.NOT_FOUND()
 

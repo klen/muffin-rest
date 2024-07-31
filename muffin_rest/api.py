@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses as dc
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, overload
 
 from http_router import Router
 from muffin.utils import TV, to_awaitable
@@ -31,7 +31,7 @@ class API:
         prefix: str = "",
         *,
         openapi: bool = True,
-        servers: Optional[List] = None,
+        servers: Optional[list] = None,
         **openapi_info,
     ):
         """Post initialize the API if we have an application already."""
@@ -39,7 +39,7 @@ class API:
         self.prefix = prefix
 
         self.openapi = openapi
-        self.openapi_options: Dict[str, Any] = {"info": openapi_info}
+        self.openapi_options: dict[str, Any] = {"info": openapi_info}
         if servers:
             self.openapi_options["servers"] = servers
 
@@ -67,7 +67,7 @@ class API:
         *,
         prefix: str = "",
         openapi: Optional[bool] = None,
-        servers: Optional[List] = None,
+        servers: Optional[list] = None,
         **openapi_info,
     ):
         """Initialize the API."""
