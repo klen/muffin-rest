@@ -22,8 +22,7 @@ if TYPE_CHECKING:
 
 from .types import TVResource
 
-# XXX: Monkey patch ModelConverter
-ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore[assignment]  # noqa:
+ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore[method-assign]
 
 
 class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
@@ -129,7 +128,7 @@ class SARESTHandler(RESTHandler[TVResource]):
     ) -> tuple[sa.sql.Select, Optional[int]]:
         """Paginate the collection."""
         sqs = self.collection.order_by(None).subquery()
-        qs = sa.select([sa.func.count()]).select_from(sqs)
+        qs = sa.select(sa.func.count()).select_from(sqs)
         total = None
         if self.meta.limit_total:
             total = await self.meta.database.fetch_val(qs)
@@ -167,11 +166,11 @@ class SARESTHandler(RESTHandler[TVResource]):
         insert_query = meta.table.insert()
         table_pk = cast(sa.Column, meta.table_pk)
         if update:
-            update_query = self.meta.table.update().where(table_pk == resource[table_pk.name])
+            update_query = self.meta.table.update().where(table_pk == resource[table_pk.name])  # type: ignore[call-overload]
             await meta.database.execute(update_query, resource)
 
         else:
-            resource[table_pk.name] = await meta.database.execute(insert_query, resource)
+            resource[table_pk.name] = await meta.database.execute(insert_query, resource)  # type: ignore[call-overload]
 
         return resource
 
@@ -182,7 +181,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         if not pks:
             raise APIError.NOT_FOUND()
 
-        delete = self.meta.table.delete(table_pk.in_(pks))
+        delete = self.meta.table.delete().where(table_pk.in_(cast(list[Any], pks)))
         await self.meta.database.execute(delete)
 
     delete = remove

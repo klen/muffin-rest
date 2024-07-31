@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Union, cast
 
 from sqlalchemy import Column
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class SAFilter(Filter):
     """Custom filter for sqlalchemy."""
 
-    operators = dict(Filter.operators)
+    operators: ClassVar = dict(Filter.operators)
     operators["$between"] = lambda c, v: c.between(*v)
     operators["$ends"] = lambda c, v: c.endswith(v)
     operators["$ilike"] = lambda c, v: c.ilike(v)
@@ -27,7 +27,7 @@ class SAFilter(Filter):
     operators["$notlike"] = lambda c, v: c.notlike(v)
     operators["$starts"] = lambda c, v: c.startswith(v)
 
-    list_ops = [*Filter.list_ops, "$between"]
+    list_ops = (*Filter.list_ops, "$between")
 
     async def filter(
         self, collection: TVCollection, *ops: tuple[Callable, Any], **kwargs
@@ -62,7 +62,7 @@ class SAFilters(Filters):
 
         if isinstance(obj, Column):
             name = obj.name
-            field = obj
+            field: Any = obj
 
         else:
             name = obj

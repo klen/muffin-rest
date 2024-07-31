@@ -1,10 +1,14 @@
-from collections.abc import Mapping
-from typing import Optional, Union, cast
+from __future__ import annotations
 
-from asgi_tools import Request
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Optional, Union, cast
+
 from marshmallow import Schema, ValidationError
 
 from muffin_rest.errors import APIError
+
+if TYPE_CHECKING:
+    from asgi_tools import Request
 
 
 async def load_data(request: Request, schema: Optional[Schema] = None, **params):

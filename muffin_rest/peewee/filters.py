@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import operator
 from functools import reduce
-from typing import Any, Callable, Union, cast
+from typing import Any, Callable, ClassVar, Union, cast
 
 from peewee import ColumnBase, Field, ModelSelect
 
@@ -15,7 +15,7 @@ from .utils import get_model_field_by_name
 class PWFilter(Filter):
     """Support Peewee."""
 
-    operators = dict(Filter.operators)
+    operators: ClassVar = dict(Filter.operators)
     operators["$in"] = operator.lshift
     operators["$none"] = operator.rshift
     operators["$like"] = operator.mod

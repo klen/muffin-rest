@@ -1,5 +1,4 @@
 """Base class for API REST Handlers."""
-
 import abc
 import inspect
 from typing import (
@@ -58,8 +57,9 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     meta: RESTOptions
     meta_class: type[RESTOptions] = RESTOptions
     _api: Optional[API] = None
-    filters: dict[str, Any] = {}
-    sorting: dict[str, Any] = {}
+
+    filters: Optional[dict[str, Any]] = None
+    sorting: Optional[dict[str, Any]] = None
 
     class Meta:
         """Tune the handler."""

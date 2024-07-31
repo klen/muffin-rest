@@ -89,6 +89,8 @@ commands =
 line-length = 100
 target-version = "py39"
 exclude = [".venv", "docs", "examples"]
+
+[tool.ruff.lint]
 select = ["ALL"]
 ignore = [
   "A003",
@@ -98,6 +100,8 @@ ignore = [
   "D",
   "DJ",
   "EM",
+  "FIX",
+  "FA100",
   "N804",
   "PLR0912",
   "PLR2004",

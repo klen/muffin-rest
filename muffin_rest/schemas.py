@@ -1,8 +1,10 @@
+from typing import ClassVar
+
 import marshmallow as ma
 
 
 class EnumField(ma.fields.Field):
-    default_error_messages = {
+    default_error_messages: ClassVar = {  # type: ignore[misc]
         "unknown": "Must be one of: {choices}.",
     }
 

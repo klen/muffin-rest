@@ -1,6 +1,6 @@
 """REST Options."""
 
-from typing import Any
+from typing import Any, ClassVar
 
 import marshmallow as ma
 
@@ -49,8 +49,8 @@ class RESTOptions:
     # Auto generation for schemas
     Schema: type[ma.Schema]
     schema_base: type[ma.Schema] = ma.Schema
-    schema_fields: dict = {}
-    schema_meta: dict = {}
+    schema_fields: ClassVar[dict] = {}
+    schema_meta: ClassVar[dict] = {}
     schema_unknown: str = ma.EXCLUDE
 
     # Rate Limiting
@@ -59,7 +59,7 @@ class RESTOptions:
     rate_limit: int = 0
     rate_limit_period: int = 60
     rate_limit_cls: type[RateLimiter] = MemoryRateLimiter
-    rate_limit_cls_opts: dict[str, Any] = {}
+    rate_limit_cls_opts: ClassVar[dict[str, Any]] = {}
 
     def __init__(self, cls):
         """Inherit meta options."""

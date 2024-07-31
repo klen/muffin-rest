@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from peewee_aio.types import TVAIOModel
 
 
-# XXX: Patch apispec.MarshmallowPlugin to support ForeignKeyField
+# TODO: Patch apispec.MarshmallowPlugin to support ForeignKeyField
 MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 
 assert issubclass(EnumField, ma.fields.Field)  # just register EnumField
@@ -70,7 +70,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
             resource = await meta.manager.fetchone(
                 self.collection.where(meta.model_pk == pk),
             )
-        except Exception:  # noqa:
+        except Exception:  # noqa: BLE001
             resource = None
 
         if resource is None:

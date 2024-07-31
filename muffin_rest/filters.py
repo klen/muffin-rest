@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping, Optional  # py39
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping, Optional  # py39
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads  # type: ignore[]
@@ -20,7 +20,7 @@ FILTERS_PARAM = "where"
 class Filter(Mutate):
     """Base filter class."""
 
-    operators: dict[str, Callable] = {
+    operators: ClassVar[dict[str, Callable]] = {
         "$lt": operator.lt,
         "$le": operator.le,
         "$gt": operator.gt,
