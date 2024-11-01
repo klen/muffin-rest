@@ -92,18 +92,18 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):
         """Paginate the collection."""
-        cqs = cast(pw.ModelSelect, self.collection.order_by())
-        if cqs._group_by:  # type: ignore[misc]
-            cqs._returning = cqs._group_by  # type: ignore[misc]
-            cqs._having = None  # type: ignore[misc]
-        count = None
         if self.meta.limit_total:
-            count = await self.meta.manager.count(self.collection)
+            cqs = cast(pw.ModelSelect, self.collection.order_by())
+            if cqs._group_by:  # type: ignore[misc]
+                cqs._returning = cqs._group_by  # type: ignore[misc]
+                cqs._having = None  # type: ignore[misc]
 
-        return (
-            cast(pw.ModelSelect, self.collection.offset(offset).limit(limit)),  # type: ignore[misc]
-            count,
-        )
+            count = await self.meta.manager.count(cqs)
+
+        else:
+            count = None
+
+        return self.collection.offset(offset).limit(limit), count
 
     async def get(self, request, *, resource: Optional[TVModel] = None) -> Any:
         """Get resource or collection of resources."""
