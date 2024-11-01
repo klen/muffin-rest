@@ -29,7 +29,7 @@ from muffin_rest.types import TSchemaRes
 
 from .errors import HandlerNotBindedError
 from .options import RESTOptions
-from .types import TVData, TVResource
+from .types import TVCollection, TVData, TVResource
 
 
 class RESTHandlerMeta(HandlerMeta):
@@ -94,28 +94,26 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     async def __call__(self, request: Request, *, method_name: Optional[str] = None, **_) -> Any:
         """Dispatch the given request by HTTP method."""
-        method = getattr(self, method_name or request.method.lower())
-        meta = self.meta
         self.auth = await self.authorize(request)
+
+        meta = self.meta
         if meta.rate_limit:
             await self.rate_limit(request)
 
         self.collection = await self.prepare_collection(request)
         resource = await self.prepare_resource(request)
-        if not (request.method == "GET" and resource is None):
+        method = getattr(self, method_name or request.method.lower())
+        if not (request.method == "GET" and resource is None and not method_name):
             return await method(request, resource=resource)
 
-        headers = None
-
         # Filter collection
-        if meta.filters:
-            self.collection, self.filters = await meta.filters.apply(request, self.collection)
+        self.collection, self.filters = await self.filter(request, self.collection)
 
         # Sort collection
-        if meta.sorting:
-            self.collection, self.sorting = await meta.sorting.apply(request, self.collection)
+        self.collection, self.sorting = await self.sort(request, self.collection)
 
         # Paginate the collection
+        headers = None
         if meta.limit:
             limit, offset = self.paginate_prepare_params(request)
             if limit and offset >= 0:
@@ -159,6 +157,21 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     async def prepare_resource(self, request: Request) -> Any:
         """Load a resource."""
         return request["path_params"].get(self.meta.name_id)
+
+    async def filter(self, request: Request, collection: TVCollection) -> tuple[TVCollection, Any]:
+        """Filter the collection."""
+        filters = self.meta.filters
+        if filters:
+            return await filters.apply(request, collection)
+
+        return collection, None
+
+    async def sort(self, request: Request, collection: TVCollection) -> tuple[TVCollection, Any]:
+        sorting = self.meta.sorting
+        if sorting:
+            return await sorting.apply(request, collection)
+
+        return collection, None
 
     # Paginate
     # --------
