@@ -24,9 +24,8 @@ def _setup_logging():
 @pytest.fixture()
 async def db(app):
     db = Peewee(app, connection="sqlite:///:memory:", auto_connection=False)
-    async with db:
-        async with db.connection():
-            yield db
+    async with db, db.connection():
+        yield db
 
 
 class Statuses(Enum):

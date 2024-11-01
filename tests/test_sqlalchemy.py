@@ -11,9 +11,8 @@ def aiolib():
 @pytest.fixture()
 async def db(app):
     db = DB(app, url="sqlite:///:memory:", params={"force_rollback": True})
-    await db.connect()
-    yield db
-    await db.disconnect()
+    async with db, db.connection():
+        yield db
 
 
 @pytest.fixture()
@@ -31,9 +30,7 @@ async def Resource(db):
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("active", sa.Boolean, server_default="0", nullable=False),
         sa.Column("name", sa.String, nullable=False),
-        sa.Column(
-            "created", sa.DateTime, server_default=sa.func.datetime(), nullable=False
-        ),
+        sa.Column("created", sa.DateTime, server_default=sa.func.datetime(), nullable=False),
         sa.Column("count", sa.Integer),
         sa.Column(
             "category_id",
@@ -240,9 +237,7 @@ async def test_filters(client, ResourceEndpoint, db, Resource):
 
 
 async def test_paginate(client, ResourceEndpoint, db, Resource):
-    await db.execute_many(
-        Resource.insert(), [{"name": "test%d" % n} for n in range(12)]
-    )
+    await db.execute_many(Resource.insert(), [{"name": "test%d" % n} for n in range(12)])
 
     res = await client.get("/api/resource")
     assert res.status_code == 200
