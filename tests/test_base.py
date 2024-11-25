@@ -12,7 +12,7 @@ class FakeSchema(ma.Schema):
         return data
 
 
-@pytest.fixture()
+@pytest.fixture
 def api(app):
     from muffin_rest import API
 
@@ -66,7 +66,7 @@ async def test_handler(api, client):
     class Simple(RESTHandler):
         methods = "get", "put"
 
-        class Meta:
+        class Meta(RESTHandler.Meta):
             name = "simple"
             sorting = ("test",)
             schema_base = FakeSchema

@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Union, cast
 
 from sqlalchemy import Column
 
 from muffin_rest.filters import Filter, Filters
 
 if TYPE_CHECKING:
+    from muffin_rest.types import TFilterValue
+
     from .types import TVCollection
 
 
@@ -29,17 +31,15 @@ class SAFilter(Filter):
 
     list_ops = (*Filter.list_ops, "$between")
 
-    async def filter(
-        self, collection: TVCollection, *ops: tuple[Callable, Any], **kwargs
-    ) -> TVCollection:
+    async def filter(self, collection: TVCollection, *ops: TFilterValue) -> TVCollection:
         """Apply the filters to SQLAlchemy Select."""
         column = self.field
         if ops and column is not None:
-            return self.query(collection, column, *ops, **kwargs)
+            return self.query(collection, column, *ops)
 
         return collection
 
-    def query(self, select: TVCollection, column: Column, *ops, **_) -> TVCollection:
+    def query(self, select: TVCollection, column: Column, *ops: TFilterValue) -> TVCollection:
         """Filter a select."""
         return select.where(*[op(column, val) for op, val in ops])
 

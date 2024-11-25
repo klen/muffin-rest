@@ -1,8 +1,9 @@
 """Support filters for Mongo."""
 
-from typing import Any, Callable, ClassVar
+from typing import ClassVar
 
 from muffin_rest.filters import Filter, Filters
+from muffin_rest.types import TFilterValue
 
 
 class MongoFilter(Filter):
@@ -21,7 +22,7 @@ class MongoFilter(Filter):
         "$ends": lambda _, v: ("$regex", f"{ v }$"),
     }
 
-    async def filter(self, collection, *ops: tuple[Callable, Any], **_):
+    async def filter(self, collection, *ops: TFilterValue):
         """Apply the filter."""
         return collection.find({self.field: dict(op(self.name, v) for op, v in ops)})
 

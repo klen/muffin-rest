@@ -1,16 +1,19 @@
 """Support API filters."""
+
 from __future__ import annotations
 
 import operator
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping, Optional  # py39
 
 import marshmallow as ma
-from asgi_tools._compat import json_loads  # type: ignore[]
+from asgi_tools._compat import json_loads
 
 from .utils import Mutate, Mutator
 
 if TYPE_CHECKING:
     from muffin import Request
+
+    from muffin_rest.types import TFilterOps, TFilterValue
 
     from .types import TVCollection
 
@@ -87,7 +90,7 @@ class Filter(Mutate):
 
         return ops, collection
 
-    async def filter(self, collection, *ops: tuple[Callable, Any], **_) -> Any:
+    async def filter(self, collection, *ops: TFilterValue) -> Any:
         """Apply the filter to collection."""
 
         def validator(obj):
@@ -95,12 +98,22 @@ class Filter(Mutate):
 
         return [item for item in collection if validator(item)]
 
-    def parse(self, data: Mapping):
+    def get_simple_value(self, ops: TFilterOps) -> Any:
+        """Get simple value from filter's data.
+
+        In case of simple filter, return the value.
+        """
+        if not ops:
+            return None
+
+        return ops[0][1]
+
+    def parse(self, data: Mapping) -> TFilterOps:
         """Parse operator and value from filter's data."""
         value = data.get(self.name, ma.missing)
         return tuple(self._parse(value))
 
-    def _parse(self, value):
+    def _parse(self, value) -> Iterable[TFilterValue]:
         deserialize = self.schema_field.deserialize
         if isinstance(value, dict):
             for op, val in value.items():

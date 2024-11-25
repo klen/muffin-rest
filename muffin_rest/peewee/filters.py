@@ -1,15 +1,19 @@
 """Support filters for Peewee ORM."""
+
 from __future__ import annotations
 
 import operator
 from functools import reduce
-from typing import Any, Callable, ClassVar, Union, cast
+from typing import TYPE_CHECKING, ClassVar, Union, cast
 
 from peewee import ColumnBase, Field, ModelSelect
 
 from muffin_rest.filters import Filter, Filters
 
 from .utils import get_model_field_by_name
+
+if TYPE_CHECKING:
+    from muffin_rest.types import TFilterValue
 
 
 class PWFilter(Filter):
@@ -33,9 +37,7 @@ class PWFilter(Filter):
 
     list_ops = (*Filter.list_ops, "$between")
 
-    async def filter(
-        self, collection: ModelSelect, *ops: tuple[Callable, Any], **kwargs
-    ) -> ModelSelect:
+    async def filter(self, collection: ModelSelect, *ops: TFilterValue) -> ModelSelect:
         """Apply the filters to Peewee QuerySet.."""
         column = self.field
         if isinstance(column, ColumnBase):
