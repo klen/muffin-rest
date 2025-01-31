@@ -1,4 +1,5 @@
 """Base class for API REST Handlers."""
+
 import abc
 import inspect
 from typing import (
@@ -97,8 +98,6 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         self.auth = await self.authorize(request)
 
         meta = self.meta
-        if meta.rate_limit:
-            await self.rate_limit(request)
 
         self.collection = await self.prepare_collection(request)
         resource = await self.prepare_resource(request)
@@ -141,11 +140,6 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         if not auth:
             raise APIError.UNAUTHORIZED()
         return auth
-
-    async def rate_limit(self, request: Request):
-        """Default rate limit method. Proxy rate limit to self.api."""
-        if not await self.meta.rate_limiter.check(f"{self.auth}"):
-            raise APIError.TOO_MANY_REQUESTS()
 
     # Prepare data
     # ------------
@@ -240,12 +234,10 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     @overload
     async def dump(  # type: ignore[misc]
         self, request, data: TVData, *, many: Literal[True]
-    ) -> list[TSchemaRes]:
-        ...
+    ) -> list[TSchemaRes]: ...
 
     @overload
-    async def dump(self, request, data: TVData, *, many: bool = False) -> TSchemaRes:
-        ...
+    async def dump(self, request, data: TVData, *, many: bool = False) -> TSchemaRes: ...
 
     async def dump(
         self,

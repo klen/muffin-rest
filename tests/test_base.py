@@ -1,7 +1,9 @@
 import marshmallow as ma
 import pytest
 
+from muffin_rest.errors import APIError
 from muffin_rest.handler import RESTHandler
+from muffin_rest.limits import MemoryRateLimiter
 
 
 class FakeSchema(ma.Schema):
@@ -308,14 +310,17 @@ async def test_handler_with_path(api, client):
 
 
 async def test_rate_limit(api, client, aiolib):
+
+    rate_limiter = MemoryRateLimiter(10)
+
     @api.route
     class Simple(RESTHandler):
         methods = "get", "patch"
 
-        class Meta:  # type: ignore[]
-            rate_limit = 10
-
         async def authorize(self, request):
+            if not await rate_limiter.check(request.client[0]):
+                raise APIError.TOO_MANY_REQUESTS("Rate limit exceeded")
+
             return aiolib[0]
 
         async def prepare_collection(self, request):

@@ -1,10 +1,8 @@
 """REST Options."""
 
-from typing import Any, ClassVar
+from typing import ClassVar
 
 import marshmallow as ma
-
-from muffin_rest.limits import MemoryRateLimiter, RateLimiter
 
 from .filters import Filters
 from .sorting import Sorting
@@ -53,14 +51,6 @@ class RESTOptions:
     schema_meta: ClassVar[dict] = {}
     schema_unknown: str = ma.EXCLUDE
 
-    # Rate Limiting
-    # -------------
-
-    rate_limit: int = 0
-    rate_limit_period: int = 60
-    rate_limit_cls: type[RateLimiter] = MemoryRateLimiter
-    rate_limit_cls_opts: ClassVar[dict[str, Any]] = {}
-
     def __init__(self, cls):
         """Inherit meta options."""
         for base in reversed(cls.mro()):
@@ -85,11 +75,6 @@ class RESTOptions:
 
         if not self.limit_max:
             self.limit_max = self.limit
-
-        if self.rate_limit:
-            self.rate_limiter = self.rate_limit_cls(
-                self.rate_limit, self.rate_limit_period, **self.rate_limit_cls_opts
-            )
 
     def setup_schema_meta(self, _):
         """Generate meta for schemas."""
