@@ -8,6 +8,7 @@ from typing import (
     Generic,
     Iterable,
     Literal,
+    Mapping,
     Optional,
     Sequence,
     Union,
@@ -222,14 +223,22 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         schema_options.setdefault("exclude", query.get("schema_exclude", ()))
         return self.meta.Schema(**schema_options)
 
+    async def load_data(self, request: Request):
+        """Load data from request and create/update a resource."""
+        try:
+            data = await request.data(raise_errors=True)
+        except (ValueError, TypeError) as err:
+            raise APIError.BAD_REQUEST(str(err)) from err
+
+        return data
+
     async def load(
         self, request: Request, resource: Optional[TVResource] = None, **schema_options
     ) -> TVData[TVResource]:
         """Load data from request and create/update a resource."""
         schema = self.get_schema(request, resource=resource, **schema_options)
-        return cast(
-            TVData[TVResource], await load_data(request, schema, partial=resource is not None)
-        )
+        data = cast(Union[Mapping, list], await self.load_data(request))
+        return cast(TVData[TVResource], await load_data(data, schema, partial=resource is not None))
 
     @overload
     async def dump(  # type: ignore[misc]
