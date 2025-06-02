@@ -21,7 +21,7 @@ def _setup_logging():
     logger.setLevel(logging.DEBUG)
 
 
-@pytest.fixture()
+@pytest.fixture
 async def db(app):
     db = Peewee(app, connection="sqlite:///:memory:", auto_connection=False)
     async with db, db.connection():
@@ -55,7 +55,7 @@ async def init(db):
     return Resource
 
 
-@pytest.fixture()
+@pytest.fixture
 async def endpoint_cls(api):
     from muffin_rest.peewee import PWRESTHandler
 
@@ -77,7 +77,7 @@ async def endpoint_cls(api):
     return ResourceEndpoint
 
 
-@pytest.fixture()
+@pytest.fixture
 async def resource(db):
     return await db.manager.create(Resource, name="test")
 
@@ -182,12 +182,12 @@ async def test_edit(client, resource, endpoint_cls):
 
 
 async def test_delete(client, resource, endpoint_cls, db):
-    res = await client.delete("/api/resource/1")
+    res = await client.delete(f"/api/resource/{resource.id}")
     assert res.status_code == 200
     json = await res.json()
-    assert not json
+    assert json == resource.get_id()
 
-    assert not await db.manager.fetchone(Resource.select().where(Resource.id == 1))
+    assert not await db.manager.fetchone(Resource.select().where(Resource.id == resource.id))
 
 
 async def test_sort(apiclient, endpoint_cls, db):
@@ -302,6 +302,11 @@ async def test_batch_ops(client, endpoint_cls, db):
 
     res = await client.delete("/api/resource", json=["1", "2", "3"])
     assert res.status_code == 200
+    json = await res.json()
+    assert len(json) == 3
+    assert json[0] == 1
+    assert json[1] == 2
+    assert json[2] == 3
 
     assert not await db.manager.count(
         Resource.select().where(Resource.id << ("11", "12", "13")),

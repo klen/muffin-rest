@@ -43,15 +43,13 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     async def prepare_collection(
         self: PWRESTBase[TVAIOModel],
         _: Request,
-    ) -> AIOModelSelect[TVAIOModel]:
-        ...
+    ) -> AIOModelSelect[TVAIOModel]: ...
 
     @overload
     async def prepare_collection(
         self: PWRESTBase[pw.Model],
         _: Request,
-    ) -> pw.ModelSelect:
-        ...
+    ) -> pw.ModelSelect: ...
 
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
     async def prepare_collection(self, _: Request):
@@ -81,14 +79,12 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     @overload
     async def paginate(
         self: PWRESTBase[TVAIOModel], _: Request, *, limit: int = 0, offset: int = 0
-    ) -> tuple[AIOModelSelect[TVAIOModel], int | None]:
-        ...
+    ) -> tuple[AIOModelSelect[TVAIOModel], int | None]: ...
 
     @overload
     async def paginate(
         self: PWRESTBase[pw.Model], _: Request, *, limit: int = 0, offset: int = 0
-    ) -> tuple[pw.ModelSelect, int | None]:
-        ...
+    ) -> tuple[pw.ModelSelect, int | None]: ...
 
     async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):
         """Paginate the collection."""
@@ -136,9 +132,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
                 return
 
             model_pk = cast(pw.Field, meta.model_pk)
-            resources = await meta.manager.fetchall(
-                self.collection.where(model_pk << data),
-            )
+            resources = await meta.manager.fetchall(self.collection.where(model_pk << data))  # type: ignore[]
 
         if not resources:
             raise APIError.NOT_FOUND()
@@ -151,7 +145,9 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
             for res in resources:
                 await meta.manager.delete_instance(res, recursive=meta.delete_recursive)
 
-    async def delete(self, request: Request, resource: Optional[TVModel] = None):
+        return resource.get_id() if resource else [r.get_id() for r in resources]
+
+    async def delete(self, request: Request, resource: Optional[TVModel] = None):  # type: ignore[override]
         return await self.remove(request, resource)
 
     def get_schema(
