@@ -336,6 +336,20 @@ async def test_endpoint_inheritance():
     assert ChildEndpoint.meta.name == "child"
 
 
+async def test_custom_filter():
+    from muffin_rest.peewee.filters import PWFilter
+
+    class CustomFilter(PWFilter):
+        field = Resource.count
+
+    flt = CustomFilter("count")
+    assert flt
+    assert flt.field
+    assert flt.field is Resource.count
+
+    assert CustomFilter.field
+
+
 async def test_aiomodels(client, db, api):
     events = []
 
@@ -356,7 +370,7 @@ async def test_aiomodels(client, db, api):
 
     @api.route
     class Test(PWRESTHandler):
-        class Meta:
+        class Meta(PWRESTHandler.Meta):
             model = TestModel
 
     res = await client.post("/api/testmodel", json={"data": "test"})
@@ -373,15 +387,33 @@ async def test_aiomodels(client, db, api):
     assert "custom-delete" in events
 
 
-async def test_custom_filter():
-    from muffin_rest.peewee.filters import PWFilter
+async def test_custom_pk(db, api, client):
+    class CustomPKModel(db.Model):
+        id = pw.CharField(default="custom-id", primary_key=True)
+        body = pw.TextField()
 
-    class CustomFilter(PWFilter):
-        field = Resource.count
+    await db.manager.create_tables(CustomPKModel)
 
-    flt = CustomFilter("count")
-    assert flt
-    assert flt.field
-    assert flt.field is Resource.count
+    from muffin_rest.peewee import PWRESTHandler
 
-    assert CustomFilter.field
+    @api.route("/custom-pk", "/custom-pk/{id}")
+    class CustomPKTest(PWRESTHandler):
+        class Meta(PWRESTHandler.Meta):
+            model = CustomPKModel
+
+    res = await client.post("/api/custom-pk", json={"id": "test-id", "body": "test body"})
+    assert res.status_code == 200
+    json = await res.json()
+    assert json["id"]
+
+    assert await CustomPKModel.select().count() == 1
+    res = await CustomPKModel.get(CustomPKModel.id == "test-id")
+    assert res.body == "test body"
+
+    res = await client.put("/api/custom-pk/test-id", json={"body": "updated body"})
+    assert res.status_code == 200
+    json = await res.json()
+    assert json["body"] == "updated body"
+
+    res = await CustomPKModel.get(CustomPKModel.id == "test-id")
+    assert res.body == "updated body"

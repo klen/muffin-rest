@@ -52,7 +52,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     ) -> pw.ModelSelect: ...
 
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
-    async def prepare_collection(self, _: Request):
+    async def prepare_collection(self, _: Request):  # type: ignore[override]
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.model.select()
 
@@ -86,7 +86,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         self: PWRESTBase[pw.Model], _: Request, *, limit: int = 0, offset: int = 0
     ) -> tuple[pw.ModelSelect, int | None]: ...
 
-    async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):
+    async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):  # type: ignore[override]
         """Paginate the collection."""
         if self.meta.limit_total:
             cqs = cast(pw.ModelSelect, self.collection.order_by())
@@ -114,9 +114,9 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         meta = self.meta
         manager = meta.manager
         if issubclass(meta.model, AIOModel):
-            await resource.save()
+            await resource.save(force_insert=not update)
         else:
-            await manager.save(resource)
+            await manager.save(resource, force_insert=not update)
 
         return resource
 
