@@ -15,6 +15,8 @@ from .utils import get_model_field_by_name
 if TYPE_CHECKING:
     from muffin_rest.types import TFilterValue
 
+    from . import PWRESTHandler
+
 
 class PWFilter(Filter):
     """Support Peewee."""
@@ -41,7 +43,9 @@ class PWFilter(Filter):
         """Apply the filters to Peewee QuerySet.."""
         column = self.field
         if isinstance(column, ColumnBase):
-            collection = cast(ModelSelect, collection.where(*[op(column, val) for op, val in ops]))
+            collection = cast(
+                "ModelSelect", collection.where(*[op(column, val) for op, val in ops])
+            )
         return collection
 
 
@@ -52,9 +56,8 @@ class PWFilters(Filters):
 
     def convert(self, obj: Union[str, Field, PWFilter], **meta):
         """Convert params to filters."""
-        from . import PWRESTHandler
 
-        handler = cast(PWRESTHandler, self.handler)
+        handler = cast("PWRESTHandler", self.handler)
         if isinstance(obj, PWFilter):
             return obj
 

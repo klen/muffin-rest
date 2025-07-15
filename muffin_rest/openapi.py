@@ -1,4 +1,5 @@
 """Create openapi schema from the given API."""
+
 from __future__ import annotations
 
 import inspect
@@ -88,7 +89,7 @@ def route_to_spec(route: Route, spec: APISpec, tags: dict) -> dict:
         for param in route.params:
             results["parameters"].append({"in": "path", "name": param})
 
-    target = cast(Callable, route.target)
+    target = cast("Callable", route.target)
     if isinstance(target, partial):
         target = target.func
 

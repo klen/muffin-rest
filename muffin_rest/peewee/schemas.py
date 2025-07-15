@@ -13,5 +13,3 @@ def build_field(field, opts, **params):
 
 
 DefaultConverter.register(URLField, ma.fields.Url)
-
-# ruff: noqa: ARG001, ARG002

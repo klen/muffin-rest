@@ -11,6 +11,7 @@ from muffin_rest.sorting import Sort, Sorting
 from .utils import get_model_field_by_name
 
 if TYPE_CHECKING:
+    from . import PWRESTHandler
     from .types import TVCollection
 
 
@@ -36,12 +37,11 @@ class PWSorting(Sorting):
 
     def convert(self, obj: Union[str, Field, PWSort], **meta):
         """Prepare sorters."""
-        from . import PWRESTHandler
 
         if isinstance(obj, PWSort):
             return obj
 
-        handler = cast(PWRESTHandler, self.handler)
+        handler = cast("PWRESTHandler", self.handler)
 
         if isinstance(obj, Field):
             name, field = obj.name, obj

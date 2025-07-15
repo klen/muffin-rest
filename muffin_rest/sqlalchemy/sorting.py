@@ -1,4 +1,5 @@
 """Support sorting for SQLAlchemy ORM."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union, cast
@@ -8,6 +9,7 @@ from sqlalchemy import Column
 from muffin_rest.sorting import Sort, Sorting
 
 if TYPE_CHECKING:
+    from . import SARESTHandler
     from .types import TVCollection
 
 
@@ -15,7 +17,11 @@ class SASort(Sort):
     """Sorter for Peewee."""
 
     async def apply(
-        self, collection: TVCollection, *, desc: bool = False, **_,
+        self,
+        collection: TVCollection,
+        *,
+        desc: bool = False,
+        **_,
     ) -> TVCollection:
         """Sort the collection."""
         field = self.field
@@ -32,19 +38,18 @@ class SASorting(Sorting):
 
     def convert(self, obj: Union[str, Column, SASort], **meta):
         """Prepare sorters."""
-        from . import SARESTHandler
 
         if isinstance(obj, SASort):
             return obj
 
-        handler = cast(SARESTHandler, self.handler)
+        handler = cast("SARESTHandler", self.handler)
 
         if isinstance(obj, Column):
             name, field = obj.name, obj
 
         else:
             name = obj
-            field = meta.get("field", handler.meta.table.c.get(name))
+            field = meta.get("field", handler.meta.table.c.get(name))  # type: ignore[assignment]
 
         if field is not None:
             sort = self.MUTATE_CLASS(name, field=field, **meta)

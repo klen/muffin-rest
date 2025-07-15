@@ -39,7 +39,7 @@ class RESTHandlerMeta(HandlerMeta):
 
     def __new__(mcs, name, bases, params):
         """Prepare options for the handler."""
-        kls = cast(type["RESTBase"], super().__new__(mcs, name, bases, params))
+        kls = cast("type[RESTBase]", super().__new__(mcs, name, bases, params))
         kls.meta = kls.meta_class(kls)
 
         if getattr(kls.meta, kls.meta_class.base_property, None) is not None:
@@ -237,8 +237,10 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     ) -> TVData[TVResource]:
         """Load data from request and create/update a resource."""
         schema = self.get_schema(request, resource=resource, **schema_options)
-        data = cast(Union[Mapping, list], await self.load_data(request))
-        return cast(TVData[TVResource], await load_data(data, schema, partial=resource is not None))
+        data = cast("Union[Mapping, list]", await self.load_data(request))
+        return cast(
+            "TVData[TVResource]", await load_data(data, schema, partial=resource is not None)
+        )
 
     @overload
     async def dump(  # type: ignore[misc]
@@ -269,7 +271,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             if resource
             else self.dump(request, data=self.collection, many=True)
         )
-        return ResponseJSON(res)
+        return ResponseJSON(res)  # type: ignore[type-var]
 
     async def post(
         self, request: Request, *, resource: Optional[TVResource] = None
@@ -283,7 +285,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         if many:
             data = await self.save_many(request, data, update=resource is not None)
         else:
-            data = await self.save(request, cast(TVResource, data), update=resource is not None)
+            data = await self.save(request, cast("TVResource", data), update=resource is not None)
 
         res = await self.dump(request, data, many=many)
         return ResponseJSON(res)

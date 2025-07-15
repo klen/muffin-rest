@@ -1,143 +1,166 @@
-Muffin-REST
-###########
+Muffin‑REST
+===========
 
-.. _description:
+**Muffin‑REST** simplifies building RESTful APIs with Muffin_ by offering:
 
-**Muffin-REST** -- provides enhanced support for writing REST APIs with Muffin_.
-
-
-.. _badges:
+- Declarative `API` class with resource registration
+- Built-in filtering, sorting, pagination, and search
+- Support for:
+  - `Peewee ORM`_ via `PeeweeEndpoint`
+  - `SQLAlchemy Core`_ via `SAEndpoint`
+  - `MongoDB`_ via `MongoEndpoint`
+- Swagger/OpenAPI autodocumentation
+- Works with asyncio, Trio, and Curio
 
 .. image:: https://github.com/klen/muffin-rest/workflows/tests/badge.svg
-    :target: https://github.com/klen/muffin-rest/actions
-    :alt: Tests Status
+   :target: https://github.com/klen/muffin-rest/actions
+   :alt: Tests Status
 
 .. image:: https://img.shields.io/pypi/v/muffin-rest
-    :target: https://pypi.org/project/muffin-rest/
-    :alt: PYPI Version
+   :target: https://pypi.org/project/muffin-rest/
+   :alt: PyPI Version
 
 .. image:: https://img.shields.io/pypi/pyversions/muffin-rest
-    :target: https://pypi.org/project/muffin-rest/
-    :alt: Python Versions
-
-----------
-
-.. _features:
-
-Features
---------
-
-- API class to simplify the creation of REST APIs;
-- Automatic filtering and sorting for resources;
-- Support for `Peewee ORM`_, Mongo_, `SQLAlchemy Core`_;
-- Auto documentation with Swagger_;
-
-.. _contents:
+   :target: https://pypi.org/project/muffin-rest/
+   :alt: Python Versions
 
 .. contents::
 
-.. _requirements:
-
 Requirements
-=============
+============
 
-- python >= 3.9
-
-.. note:: Trio is only supported with Peewee ORM
-
-.. _installation:
+- Python >= 3.10
+- Trio requires Peewee backend
+- Latest release: v11.0.1 (Jun 13, 2025)
 
 Installation
-=============
+============
 
-**Muffin-REST** should be installed using pip: ::
+Install core package:
 
     pip install muffin-rest
 
-With `SQLAlchemy Core`_ support: ::
+Add optional backend support:
 
-    pip install muffin-rest[sqlalchemy]
+- SQLAlchemy Core: ``pip install muffin-rest[sqlalchemy]``
+- Peewee ORM: ``pip install muffin-rest[peewee]``
+- YAML support for Swagger: ``pip install muffin-rest[yaml]``
 
-With `Peewee ORM`_ support: ::
-
-    pip install muffin-rest[peewee]
-
-With YAML support for autodocumentation: ::
-
-    pip install muffin-rest[yaml]
-
-.. _usage:
-
-Usage
-=====
-
-Create an API:
+Quickstart (Peewee example)
+===========================
 
 .. code-block:: python
 
-   from muffin_rest import API
+    from muffin import Application
+    from muffin_rest import API
+    from muffin_rest.peewee import PeeweeEndpoint
+    from models import User  # your Peewee model
 
-   api = API()
+    app = Application("myapp")
+    api = API(title="User Service", version="1.0")
 
-Create endpoints and connect them to the API (example for sqlalchemy):
-
-.. code-block:: python
-
-   from muffin_rest.sqlalchemy import SAEndpoint
-   from project.api import api
-
-   @api.route
-   class MyEndpoint(SAEndpoint):
-
+    @api.route
+    class UsersEndpoint(PeeweeEndpoint):
         class Meta:
-            table = MyTable
-            database = db
+            model = User
+            lookup_field = "id"
+            filters = ["name", "email"]
+            ordering = ["-created_at"]
 
-Connect it to your Muffin_ application:
+    api.setup(app, prefix="/api", swagger=True)
+
+Endpoints available:
+
+- `GET    /api/users/` — list with pagination, search, filtering
+- `POST   /api/users/` — create
+- `GET    /api/users/{id}/` — retrieve
+- `PUT    /api/users/{id}/` — replace
+- `PATCH  /api/users/{id}/` — update
+- `DELETE /api/users/{id}/` — remove
+- Docs: `/api/docs/`, OpenAPI spec: `/api/openapi.json`
+
+Usage with SQLAlchemy
+=====================
 
 .. code-block:: python
 
-   from project.api import api
+    from muffin_rest import API
+    from muffin_rest.sqlalchemy import SAEndpoint
+    from models import my_table, db_engine
 
-   api.setup(app, prefix='/api/v1')
+    api = API()
+    @api.route
+    class MySAEndpoint(SAEndpoint):
+        class Meta:
+            table = my_table
+            database = db_engine
 
+    api.setup(app)
 
-.. _bugtracker:
+Usage with MongoDB
+==================
 
-Bug tracker
+.. code-block:: python
+
+    from muffin_rest import API
+    from muffin_rest.mongo import MongoEndpoint
+    from models import mongo_collection
+
+    api = API()
+    @api.route
+    class MyMongoEndpoint(MongoEndpoint):
+        class Meta:
+            collection = mongo_collection
+
+    api.setup(app)
+
+Advanced Configuration
+======================
+
+Customize Swagger and routes via constructor:
+
+.. code-block:: python
+
+    api = API(
+        title="Service API",
+        version="2.1",
+        swagger_ui=True,
+        openapi_path="/api/openapi.json",
+        docs_path="/api/docs/"
+    )
+
+Contributing & Examples
+=======================
+
+- See `examples/` for live application demos
+- Tests in `tests/` focus on filtering, pagination, status codes
+- Check `CHANGELOG.md` for latest changes
+
+Bug Tracker
 ===========
 
-If you have any suggestions, bug reports or
-annoyances please report them to the issue tracker
-at https://github.com/klen/muffin-rest/issues
-
-.. _contributing:
+Report bugs or request features:
+https://github.com/klen/muffin-rest/issues
 
 Contributing
 ============
 
-Development of Muffin-REST happens at: https://github.com/klen/muffin-rest
-
+Repo: https://github.com/klen/muffin-rest
+Pull requests, example additions, docs improvements welcome!
 
 Contributors
-=============
+============
 
-* klen_ (Kirill Klenov)
-
-.. _license:
+- klen_ (Kirill Klenov)
 
 License
-========
+=======
 
-Licensed under a `MIT license`_.
+Licensed under the `MIT license`_.
 
-.. _links:
-
-.. _klen: https://github.com/klen
 .. _Muffin: https://github.com/klen/muffin
-.. _Swagger: https://swagger.io/tools/swagger-ui/
-.. _Mongo: https://www.mongodb.com/
 .. _Peewee ORM: http://docs.peewee-orm.com/en/latest/
-.. _SqlAlchemy Core: https://docs.sqlalchemy.org/en/14/core/
-
+.. _SQLAlchemy Core: https://docs.sqlalchemy.org/en/14/core/
+.. _MongoDB: https://www.mongodb.com/
+.. _Swagger/OpenAPI: https://swagger.io/
 .. _MIT license: http://opensource.org/licenses/MIT

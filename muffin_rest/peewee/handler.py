@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional, Union, cast, overload
 
 import marshmallow as ma
-import peewee as pw
 from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ForeignKey
 from peewee_aio.model import AIOModel, AIOModelSelect
@@ -19,6 +18,7 @@ from .schemas import EnumField
 from .types import TVModel
 
 if TYPE_CHECKING:
+    import peewee as pw
     from muffin import Request
     from peewee_aio.types import TVAIOModel
 
@@ -89,7 +89,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):  # type: ignore[override]
         """Paginate the collection."""
         if self.meta.limit_total:
-            cqs = cast(pw.ModelSelect, self.collection.order_by())
+            cqs = cast("pw.ModelSelect", self.collection.order_by())
             if cqs._group_by:  # type: ignore[misc]
                 cqs._returning = cqs._group_by  # type: ignore[misc]
                 cqs._having = None  # type: ignore[misc]
@@ -131,7 +131,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
             if not data:
                 return
 
-            model_pk = cast(pw.Field, meta.model_pk)
+            model_pk = cast("pw.Field", meta.model_pk)
             resources = await meta.manager.fetchall(self.collection.where(model_pk << data))  # type: ignore[]
 
         if not resources:

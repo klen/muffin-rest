@@ -11,6 +11,7 @@ from muffin_rest.filters import Filter, Filters
 if TYPE_CHECKING:
     from muffin_rest.types import TFilterValue
 
+    from . import SARESTHandler
     from .types import TVCollection
 
 
@@ -51,9 +52,8 @@ class SAFilters(Filters):
 
     def convert(self, obj: Union[str, Column, SAFilter], **meta):
         """Convert params to filters."""
-        from . import SARESTHandler
 
-        handler = cast(SARESTHandler, self.handler)
+        handler = cast("SARESTHandler", self.handler)
 
         if isinstance(obj, SAFilter):
             if obj.field is None:

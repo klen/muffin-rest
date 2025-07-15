@@ -73,12 +73,12 @@ class MongoChain:
     ) -> Awaitable:
         """Apply filters and return cursor."""
         query = self.__update__(query)
-        query = query and {"$and": query} or {}
+        query = (query and {"$and": query}) or {}
         return self.collection.find_one(query, projection=projection)
 
     def count(self) -> Awaitable[int]:
         """Count documents."""
-        query = self.query and {"$and": self.query} or {}
+        query = (self.query and {"$and": self.query}) or {}
         return self.collection.count_documents(query)
 
     def aggregate(self, pipeline, **kwargs):
@@ -121,7 +121,7 @@ class MongoChain:
 
     def __iter__(self):
         """Iterate by self collection."""
-        query = self.query and {"$and": self.query} or {}
+        query = (self.query and {"$and": self.query}) or {}
         if self.sorting:
             return self.collection.find(query, self.projection).sort(self.sorting)
 
@@ -130,7 +130,7 @@ class MongoChain:
     def __getattr__(self, name):
         """Proxy any attributes except find to self.collection."""
         if name in self.CURSOR_METHODS:
-            query = self.query and {"$and": self.query} or {}
+            query = (self.query and {"$and": self.query}) or {}
             cursor = self.collection.find(query, self.projection)
             if self.sorting:
                 cursor = cursor.sort(self.sorting)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping, Optional  # py39
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads
@@ -59,8 +59,8 @@ class Filter(Mutate):
         name: str,
         *,
         field: Any = None,
-        schema_field: Optional[ma.fields.Field] = None,
-        operator: Optional[str] = None,
+        schema_field: ma.fields.Field | None = None,
+        operator: str | None = None,
         **meta,
     ):
         """Initialize filter.
@@ -75,7 +75,7 @@ class Filter(Mutate):
         self.schema_field = schema_field or self.schema_field
         self.default_operator = operator or self.default_operator
 
-    async def apply(self, collection: Any, data: Optional[Mapping] = None):
+    async def apply(self, collection: Any, data: Mapping | None = None):
         """Filter given collection."""
         if not data:
             return None, collection

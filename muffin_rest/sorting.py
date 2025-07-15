@@ -1,15 +1,16 @@
 """Implement sorting."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Generator, Iterable, Mapping, Sequence, cast
 
-from .types import TVCollection
 from .utils import Mutate, Mutator
 
 if TYPE_CHECKING:
     from muffin import Request
 
     from .handler import RESTBase
+    from .types import TVCollection
 
 SORT_PARAM = "sort"
 
@@ -60,14 +61,14 @@ class Sorting(Mutator):
 
     def convert(self, obj, **meta) -> Sort:
         """Prepare sorters."""
-        sort = cast(Sort, super(Sorting, self).convert(obj, **meta))
+        sort = cast("Sort", super(Sorting, self).convert(obj, **meta))
         if sort.meta.get("default"):
             self.default.append(sort)
         return sort
 
     def sort_default(self, collection: TVCollection) -> TVCollection:
         """Sort by default."""
-        return cast(TVCollection, sorted(collection))
+        return cast("TVCollection", sorted(collection))
 
     @property
     def openapi(self):

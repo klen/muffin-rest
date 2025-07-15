@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 from .types import TVResource
 
-ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore[method-assign]
+ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore[assignment]
 
 
 class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
@@ -152,7 +152,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         resource = await self.meta.database.fetch_one(qs)
         if resource is None:
             raise APIError.NOT_FOUND("Resource not found")
-        return cast(TVResource, dict(resource))
+        return cast("TVResource", dict(resource))
 
     def get_schema(
         self, request: Request, *, resource: Optional[TVResource] = None, **schema_options
@@ -164,7 +164,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         """Save the given resource."""
         meta = self.meta
         insert_query = meta.table.insert()
-        table_pk = cast(sa.Column, meta.table_pk)
+        table_pk = cast("sa.Column", meta.table_pk)
         if update:
             update_query = self.meta.table.update().where(table_pk == resource[table_pk.name])  # type: ignore[call-overload]
             await meta.database.execute(update_query, resource)
@@ -176,12 +176,12 @@ class SARESTHandler(RESTHandler[TVResource]):
 
     async def remove(self, request: Request, resource: Optional[TVResource] = None):
         """Remove the given resource."""
-        table_pk = cast(sa.Column, self.meta.table_pk)
+        table_pk = cast("sa.Column", self.meta.table_pk)
         pks = [resource[table_pk.name]] if resource else await request.data()
         if not pks:
             raise APIError.NOT_FOUND()
 
-        delete = self.meta.table.delete().where(table_pk.in_(cast(list[Any], pks)))
+        delete = self.meta.table.delete().where(table_pk.in_(cast("list[Any]", pks)))
         await self.meta.database.execute(delete)
 
     delete = remove

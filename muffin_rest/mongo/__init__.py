@@ -1,4 +1,5 @@
 """Mongo DB support."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, cast
@@ -68,7 +69,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
             counts = list(self.collection.aggregate(pipeline_num))
             return (
                 self.collection.aggregate(pipeline_all),
-                counts and counts[0]["total"] or 0,  # type: ignore[]
+                (counts and counts[0]["total"]) or 0,  # type: ignore[]
             )
         total = None
         if self.meta.limit_total:
@@ -118,7 +119,9 @@ class MongoRESTHandler(RESTHandler[TVResource]):
     async def delete(self, request: Request, resource: Optional[TVResource] = None):
         """Remove the given resource(s)."""
         meta = self.meta
-        oids = [resource[meta.collection_id]] if resource else cast(list[str], await request.data())
+        oids = (
+            [resource[meta.collection_id]] if resource else cast("list[str]", await request.data())
+        )
         if not oids:
             raise APIError.NOT_FOUND()
 
