@@ -2,7 +2,7 @@
 name = "muffin-rest"
 version = "11.0.2"
 description = "The package provides enhanced support for writing REST APIs with Muffin framework"
-readme = "README.rst"
+readme = "README.md"
 homepage = "https://github.com/klen/muffin-rest"
 repository = "https://github.com/klen/muffin-rest"
 authors = ["Kirill Klenov <horneds@gmail.com>"]
