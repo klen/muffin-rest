@@ -12,7 +12,6 @@ class RESTOptions:
     """Handler Options."""
 
     name: str = ""
-    pk: str = "id"
     base_property: str = "name"
 
     # Pagination

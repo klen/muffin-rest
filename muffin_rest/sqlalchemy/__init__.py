@@ -100,7 +100,7 @@ class SARESTOptions(RESTOptions):
                     "unknown": self.schema_unknown,
                     "table": self.table,
                     "include_fk": True,
-                    "dump_only": (self.pk,),
+                    "dump_only": (self.table_pk.name,),
                 },
                 **self.schema_meta,
             ),
