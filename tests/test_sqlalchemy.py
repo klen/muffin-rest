@@ -8,14 +8,14 @@ def aiolib():
     return "asyncio", {"use_uvloop": False}
 
 
-@pytest.fixture()
+@pytest.fixture
 async def db(app):
     db = DB(app, url="sqlite:///:memory:", params={"force_rollback": True})
     async with db, db.connection():
         yield db
 
 
-@pytest.fixture()
+@pytest.fixture
 async def Resource(db):
     meta = sa.MetaData()
     Category = sa.Table(
@@ -47,12 +47,12 @@ async def Resource(db):
     return Resource
 
 
-@pytest.fixture()
+@pytest.fixture
 async def resource(Resource, db):
     return await db.execute(Resource.insert(), values={"name": "test"})
 
 
-@pytest.fixture()
+@pytest.fixture
 def ResourceEndpoint(api, db, Resource):
     from muffin_rest.sqlalchemy import SARESTHandler
     from muffin_rest.sqlalchemy.filters import SAFilter
@@ -98,7 +98,7 @@ def test_base(ResourceEndpoint, api):
     assert ResourceEndpoint.meta.filters
 
     assert api.router.plain["/resource"]
-    assert api.router.dynamic[0].pattern.pattern == "^/resource/(?P<id>[^/]+)$"
+    assert api.router.dynamic[0].pattern.pattern == "^/resource/(?P<pk>[^/]+)$"
 
 
 async def test_get(client, ResourceEndpoint, resource):

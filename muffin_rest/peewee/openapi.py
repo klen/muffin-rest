@@ -22,7 +22,7 @@ class PeeweeOpenAPIMixin(OpenAPIMixin):
     def openapi(cls, route: Route, spec: APISpec, tags: dict) -> dict:
         """Get openapi specs for the endpoint."""
         operations = super(PeeweeOpenAPIMixin, cls).openapi(route, spec, tags)
-        is_resource_route = getattr(route, "params", {}).get(cls.meta.name_id)
+        is_resource_route = getattr(route, "params", {}).get("pk")
         if not is_resource_route and "delete" in operations:
             operations["delete"].setdefault("parameters", [])
             operations["delete"]["requestBody"] = {

@@ -130,7 +130,7 @@ async def test_handler2(api, apiclient):
             return source
 
         async def prepare_resource(self, request):
-            pk = request["path_params"].get(self.meta.name_id)
+            pk = request["path_params"].get("pk")
             if not pk:
                 return
 

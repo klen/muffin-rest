@@ -101,7 +101,7 @@ class SARESTOptions(RESTOptions):
                     "unknown": self.schema_unknown,
                     "table": self.table,
                     "include_fk": True,
-                    "dump_only": (self.name_id,),
+                    "dump_only": (self.pk,),
                 },
                 **self.schema_meta,
             ),
@@ -144,7 +144,7 @@ class SARESTHandler(RESTHandler[TVResource]):
 
     async def prepare_resource(self, request: Request) -> Optional[TVResource]:
         """Load a resource."""
-        pk = request["path_params"].get(self.meta.name_id)
+        pk = request["path_params"].get("pk")
         if not pk:
             return None
 

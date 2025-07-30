@@ -116,7 +116,7 @@ async def test_base(api, endpoint_cls):
     assert endpoint_cls.meta.sorting.default == [Resource.id.desc()]
 
     assert api.router.plain["/resource"]
-    assert api.router.dynamic[0].pattern.pattern == "^/resource/(?P<id>[^/]+)$"
+    assert api.router.dynamic[0].pattern.pattern == "^/resource/(?P<pk>[^/]+)$"
     assert "group_id" in endpoint_cls.meta.filters.mutations
 
 
@@ -396,7 +396,7 @@ async def test_custom_pk(db, api, client):
 
     from muffin_rest.peewee import PWRESTHandler
 
-    @api.route("/custom-pk", "/custom-pk/{id}")
+    @api.route("/custom-pk", "/custom-pk/{pk}")
     class CustomPKTest(PWRESTHandler):
         class Meta(PWRESTHandler.Meta):
             model = CustomPKModel

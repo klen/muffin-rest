@@ -86,7 +86,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
 
     async def prepare_resource(self, request: Request) -> Optional[TVResource]:
         """Load a resource."""
-        pk = request["path_params"].get(self.meta.name_id)
+        pk = request["path_params"].get("pk")
         if not pk:
             return None
 

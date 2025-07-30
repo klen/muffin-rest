@@ -9,19 +9,19 @@ def aiolib():
     return "asyncio", {"use_uvloop": False}
 
 
-@pytest.fixture()
+@pytest.fixture
 async def mongo(app):
     return Mongo(app)
 
 
-@pytest.fixture()
+@pytest.fixture
 async def resources(mongo):
     collection = mongo.tests.resources
     yield collection
     await collection.drop()
 
 
-@pytest.fixture()
+@pytest.fixture
 def ResourceEndpoint(api, resources):
     from muffin_rest.mongo import MongoRESTHandler
 
@@ -50,7 +50,7 @@ def ResourceEndpoint(api, resources):
     return ResourceHandler
 
 
-@pytest.fixture()
+@pytest.fixture
 async def resource(resources):
     res = await resources.insert_one({"name": "test"})
     return res.inserted_id
@@ -78,7 +78,7 @@ async def test_base(api, ResourceEndpoint):
     assert ResourceEndpoint.meta.Schema
 
     assert api.router.plain["/resources"]
-    assert api.router.dynamic[0].pattern.pattern == "^/resources/(?P<id>[^/]+)$"
+    assert api.router.dynamic[0].pattern.pattern == "^/resources/(?P<pk>[^/]+)$"
 
 
 async def test_get(client, ResourceEndpoint, resource):
