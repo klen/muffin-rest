@@ -9,9 +9,7 @@ from typing import (
     Iterable,
     Literal,
     Mapping,
-    Optional,
     Sequence,
-    Union,
     cast,
     overload,
 )
@@ -58,22 +56,22 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     meta: RESTOptions
     meta_class: type[RESTOptions] = RESTOptions
-    _api: Optional[API] = None
+    _api: API | None = None
 
-    filters: Optional[dict[str, Any]] = None
-    sorting: Optional[dict[str, Any]] = None
+    filters: dict[str, Any] | None = None
+    sorting: dict[str, Any] | None = None
 
     class Meta:
         """Tune the handler."""
 
         # Resource filters
-        filters: Sequence[Union[str, tuple[str, str], Filter]] = ()
+        filters: Sequence[str | tuple[str, str] | Filter] = ()
 
         # Define allowed resource sorting params
-        sorting: Sequence[Union[str, tuple[str, dict], Sort]] = ()
+        sorting: Sequence[str | tuple[str, dict] | Sort] = ()
 
         # Serialize/Deserialize Schema class
-        Schema: Optional[type[ma.Schema]] = None
+        Schema: type[ma.Schema] | None = None
 
     @classmethod
     def __route__(cls, router, *paths, **params):
@@ -92,7 +90,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
         return cls
 
-    async def __call__(self, request: Request, *, method_name: Optional[str] = None, **_) -> Any:
+    async def __call__(self, request: Request, *, method_name: str | None = None, **_) -> Any:
         """Dispatch the given request by HTTP method."""
         self.auth = await self.authorize(request)
 
@@ -188,7 +186,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     @abc.abstractmethod
     async def paginate(
         self, request: Request, *, limit: int = 0, offset: int = 0
-    ) -> tuple[Any, Optional[int]]:
+    ) -> tuple[Any, int | None]:
         """Paginate the results."""
         raise NotImplementedError
 
@@ -213,7 +211,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     # Parse data
     # -----------
     def get_schema(
-        self, request: Request, *, resource: Optional[TVResource] = None, **schema_options
+        self, request: Request, *, resource: TVResource | None = None, **schema_options
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         query = request.url.query
@@ -231,11 +229,11 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         return data
 
     async def load(
-        self, request: Request, resource: Optional[TVResource] = None, **schema_options
+        self, request: Request, resource: TVResource | None = None, **schema_options
     ) -> TVData[TVResource]:
         """Load data from request and create/update a resource."""
         schema = self.get_schema(request, resource=resource, **schema_options)
-        data = cast("Union[Mapping, list]", await self.load_data(request))
+        data = cast("Mapping | list", await self.load_data(request))
         return cast(
             "TVData[TVResource]", await load_data(data, schema, partial=resource is not None)
         )
@@ -251,15 +249,15 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
     async def dump(
         self,
         request: Request,
-        data: Union[TVResource, Iterable[TVResource]],
+        data: TVResource | Iterable[TVResource],
         *,
         many: bool = False,
-    ) -> Union[TSchemaRes, list[TSchemaRes]]:
+    ) -> TSchemaRes | list[TSchemaRes]:
         """Serialize the given response."""
         schema = self.get_schema(request)
         return schema.dump(data, many=many)
 
-    async def get(self, request: Request, *, resource: Optional[TVResource] = None) -> ResponseJSON:
+    async def get(self, request: Request, *, resource: TVResource | None = None) -> ResponseJSON:
         """Get a resource or a collection of resources.
 
         Specify a path param to load a resource.
@@ -271,9 +269,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         )
         return ResponseJSON(res)  # type: ignore[type-var]
 
-    async def post(
-        self, request: Request, *, resource: Optional[TVResource] = None
-    ) -> ResponseJSON:
+    async def post(self, request: Request, *, resource: TVResource | None = None) -> ResponseJSON:
         """Create a resource.
 
         The method accepts a single resource's data or a list of resources to create.
@@ -288,14 +284,14 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         res = await self.dump(request, data, many=many)
         return ResponseJSON(res)
 
-    async def put(self, request: Request, *, resource: Optional[TVResource] = None) -> ResponseJSON:
+    async def put(self, request: Request, *, resource: TVResource | None = None) -> ResponseJSON:
         """Update a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()
 
         return await self.post(request, resource=resource)
 
-    async def delete(self, request: Request, resource: Optional[TVResource] = None):
+    async def delete(self, request: Request, resource: TVResource | None = None):
         """Delete a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()

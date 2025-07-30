@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import bson
 from bson.errors import InvalidId
@@ -29,7 +29,7 @@ class MongoRESTOptions(RESTOptions):
     sorting_cls: type[MongoSorting] = MongoSorting
     schema_base: type[MongoSchema] = MongoSchema
 
-    aggregate: Optional[list] = None  # Support aggregation. Set to pipeline.
+    aggregate: list | None = None  # Support aggregation. Set to pipeline.
     collection_id: str = "_id"
     collection: motor.AsyncIOMotorCollection
 
@@ -58,7 +58,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
 
     async def paginate(
         self, _: Request, *, limit: int = 0, offset: int = 0
-    ) -> tuple[motor.AsyncIOMotorCursor, Optional[int]]:
+    ) -> tuple[motor.AsyncIOMotorCursor, int | None]:
         """Paginate collection."""
         if self.meta.aggregate:
             pipeline_all = [*self.meta.aggregate, {"$skip": offset}, {"$limit": limit}]
@@ -76,7 +76,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
             total = await self.collection.count()
         return self.collection.skip(offset).limit(limit), total
 
-    async def get(self, request, *, resource: Optional[TVResource] = None):
+    async def get(self, request, *, resource: TVResource | None = None):
         """Get resource or collection of resources."""
         if resource:
             return await self.dump(request, resource)
@@ -84,7 +84,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
         docs = await self.collection.to_list(None)
         return await self.dump(request, docs, many=True)
 
-    async def prepare_resource(self, request: Request) -> Optional[TVResource]:
+    async def prepare_resource(self, request: Request) -> TVResource | None:
         """Load a resource."""
         pk = request["path_params"].get("pk")
         if not pk:
@@ -98,7 +98,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
             raise APIError.NOT_FOUND() from exc
 
     def get_schema(
-        self, request: Request, resource: Optional[TVResource] = None, **schema_options
+        self, request: Request, resource: TVResource | None = None, **schema_options
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)
@@ -116,7 +116,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
 
         return resource
 
-    async def delete(self, request: Request, resource: Optional[TVResource] = None):
+    async def delete(self, request: Request, resource: TVResource | None = None):
         """Remove the given resource(s)."""
         meta = self.meta
         oids = (

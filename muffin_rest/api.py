@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses as dc
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, overload
 
 from http_router import Router
 from muffin.utils import TV, to_awaitable
@@ -27,11 +27,11 @@ class API:
 
     def __init__(
         self,
-        app: Optional[muffin.Application] = None,
+        app: muffin.Application | None = None,
         prefix: str = "",
         *,
         openapi: bool = True,
-        servers: Optional[list] = None,
+        servers: list | None = None,
         **openapi_info,
     ):
         """Post initialize the API if we have an application already."""
@@ -66,8 +66,8 @@ class API:
         app: muffin.Application,
         *,
         prefix: str = "",
-        openapi: Optional[bool] = None,
-        servers: Optional[list] = None,
+        openapi: bool | None = None,
+        servers: list | None = None,
         **openapi_info,
     ):
         """Initialize the API."""
@@ -100,16 +100,12 @@ class API:
         self.router.route("/openapi.json")(openapi_json)
 
     @overload
-    def route(self, obj: str, *paths: str, **params) -> Callable[[TV], TV]:
-        ...
+    def route(self, obj: str, *paths: str, **params) -> Callable[[TV], TV]: ...
 
     @overload
-    def route(self, obj: TVHandler, *paths: str, **params) -> TVHandler:
-        ...
+    def route(self, obj: TVHandler, *paths: str, **params) -> TVHandler: ...
 
-    def route(
-        self, obj: Union[str, TVHandler], *paths: str, **params
-    ) -> Union[Callable[[TV], TV], TVHandler]:
+    def route(self, obj: str | TVHandler, *paths: str, **params) -> Callable[[TV], TV] | TVHandler:
         """Route an endpoint by the API."""
         from .handler import RESTBase
 

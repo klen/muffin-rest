@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import marshmallow as ma
 import sqlalchemy as sa
@@ -125,7 +125,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         *,
         limit: int = 0,
         offset: int = 0,
-    ) -> tuple[sa.sql.Select, Optional[int]]:
+    ) -> tuple[sa.sql.Select, int | None]:
         """Paginate the collection."""
         sqs = self.collection.order_by(None).subquery()
         qs = sa.select(sa.func.count()).select_from(sqs)
@@ -134,7 +134,7 @@ class SARESTHandler(RESTHandler[TVResource]):
             total = await self.meta.database.fetch_val(qs)
         return self.collection.offset(offset).limit(limit), total
 
-    async def get(self, request, *, resource: Optional[TVResource] = None) -> Any:
+    async def get(self, request, *, resource: TVResource | None = None) -> Any:
         """Get resource or collection of resources."""
         if resource:
             return await self.dump(request, resource)
@@ -142,7 +142,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         rows = await self.meta.database.fetch_all(self.collection)
         return await self.dump(request, rows, many=True)
 
-    async def prepare_resource(self, request: Request) -> Optional[TVResource]:
+    async def prepare_resource(self, request: Request) -> TVResource | None:
         """Load a resource."""
         pk = request["path_params"].get("pk")
         if not pk:
@@ -155,7 +155,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         return cast("TVResource", dict(resource))
 
     def get_schema(
-        self, request: Request, *, resource: Optional[TVResource] = None, **schema_options
+        self, request: Request, *, resource: TVResource | None = None, **schema_options
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)
@@ -174,7 +174,7 @@ class SARESTHandler(RESTHandler[TVResource]):
 
         return resource
 
-    async def remove(self, request: Request, resource: Optional[TVResource] = None):
+    async def remove(self, request: Request, resource: TVResource | None = None):
         """Remove the given resource."""
         table_pk = cast("sa.Column", self.meta.table_pk)
         pks = [resource[table_pk.name]] if resource else await request.data()

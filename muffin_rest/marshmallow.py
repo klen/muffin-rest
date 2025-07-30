@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from marshmallow import Schema, ValidationError
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 
-async def load_data(data: Union[Mapping, list], schema: Optional[Schema] = None, **params):
+async def load_data(data: Mapping | list, schema: Schema | None = None, **params):
     if schema is None:
         return data
 

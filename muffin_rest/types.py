@@ -4,7 +4,6 @@ from typing import (
     Awaitable,
     Callable,
     TypeVar,
-    Union,
 )
 
 if TYPE_CHECKING:
@@ -14,7 +13,7 @@ from muffin import Request
 
 TVCollection = TypeVar("TVCollection", bound=Any)
 TVResource = TypeVar("TVResource", bound=Any)
-TVData = Union[TVResource, list[TVResource]]
+TVData = TVResource | list[TVResource]
 TAuth = Callable[[Request], Awaitable]
 TVAuth = TypeVar("TVAuth", bound=TAuth)
 TVHandler = TypeVar("TVHandler", bound=type["RESTBase"])

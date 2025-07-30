@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Awaitable, Union
+from typing import TYPE_CHECKING, Awaitable
 
 if TYPE_CHECKING:
     from motor import motor_asyncio as motor
@@ -58,7 +58,7 @@ class MongoChain:
 
     def find(
         self,
-        query: Union[list, dict, None] = None,
+        query: list | dict | None = None,
         projection=None,
     ) -> MongoChain:
         """Store filters in self."""
@@ -68,7 +68,7 @@ class MongoChain:
 
     def find_one(
         self,
-        query: Union[list, dict, None] = None,
+        query: list | dict | None = None,
         projection=None,
     ) -> Awaitable:
         """Apply filters and return cursor."""

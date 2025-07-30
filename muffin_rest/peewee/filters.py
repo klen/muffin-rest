@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import operator
 from functools import reduce
-from typing import TYPE_CHECKING, ClassVar, Union, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from peewee import ColumnBase, Field, ModelSelect
 
@@ -54,7 +54,7 @@ class PWFilters(Filters):
 
     MUTATE_CLASS: type[PWFilter] = PWFilter
 
-    def convert(self, obj: Union[str, Field, PWFilter], **meta):
+    def convert(self, obj: str | Field | PWFilter, **meta):
         """Convert params to filters."""
 
         handler = cast("PWRESTHandler", self.handler)

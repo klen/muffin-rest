@@ -1,5 +1,5 @@
 from json import dumps
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import muffin
 import pytest
@@ -21,7 +21,7 @@ def aiolib(request):
     return request.param
 
 
-@pytest.fixture()
+@pytest.fixture
 def app():
     app = muffin.Application(debug=True)
 
@@ -32,14 +32,14 @@ def app():
     return app
 
 
-@pytest.fixture()
+@pytest.fixture
 async def api(app):
     from muffin_rest import API
 
     return API(app, "/api")
 
 
-@pytest.fixture()
+@pytest.fixture
 def apiclient(app):
     return APITestClient(app)
 
@@ -52,10 +52,10 @@ class APITestClient(ASGITestClient):
         path: str,
         method: str = "GET",
         *,
-        filters: Optional[Dict[str, Any]] = None,
-        sort: Union[Tuple[str, ...], str, None] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        filters: Dict[str, Any] | None = None,
+        sort: Tuple[str, ...] | str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
         **kwargs,
     ):
         kwargs.setdefault("query", {})

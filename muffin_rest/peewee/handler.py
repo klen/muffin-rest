@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union, cast, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 import marshmallow as ma
 from apispec.ext.marshmallow import MarshmallowPlugin
@@ -34,7 +34,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     if TYPE_CHECKING:
         resource: TVModel
-        collection: Union[AIOModelSelect, pw.ModelSelect]
+        collection: AIOModelSelect | pw.ModelSelect
 
     meta: PWRESTOptions
     meta_class: type[PWRESTOptions] = PWRESTOptions
@@ -56,7 +56,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.model.select()
 
-    async def prepare_resource(self, request: Request) -> Optional[TVModel]:
+    async def prepare_resource(self, request: Request) -> TVModel | None:
         """Load a resource."""
         pk = request["path_params"].get("pk")
         if not pk:
@@ -101,7 +101,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
         return self.collection.offset(offset).limit(limit), count
 
-    async def get(self, request, *, resource: Optional[TVModel] = None) -> Any:
+    async def get(self, request, *, resource: TVModel | None = None) -> Any:
         """Get resource or collection of resources."""
         if resource:
             return await self.dump(request, resource)
@@ -120,7 +120,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
         return resource
 
-    async def remove(self, request: Request, resource: Optional[TVModel] = None):
+    async def remove(self, request: Request, resource: TVModel | None = None):
         """Remove the given resource."""
         meta = self.meta
         if resource:
@@ -147,11 +147,11 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
         return resource.get_id() if resource else [r.get_id() for r in resources]
 
-    async def delete(self, request: Request, resource: Optional[TVModel] = None):  # type: ignore[override]
+    async def delete(self, request: Request, resource: TVModel | None = None):  # type: ignore[override]
         return await self.remove(request, resource)
 
     def get_schema(
-        self, request: Request, *, resource: Optional[TVModel] = None, **schema_options
+        self, request: Request, *, resource: TVModel | None = None, **schema_options
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from sqlalchemy import Column
 
@@ -50,7 +50,7 @@ class SAFilters(Filters):
 
     MUTATE_CLASS = SAFilter
 
-    def convert(self, obj: Union[str, Column, SAFilter], **meta):
+    def convert(self, obj: str | Column | SAFilter, **meta):
         """Convert params to filters."""
 
         handler = cast("SARESTHandler", self.handler)

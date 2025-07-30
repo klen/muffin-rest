@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, cast
 
 from sqlalchemy import Column
 
@@ -36,7 +36,7 @@ class SASorting(Sorting):
 
     MUTATE_CLASS = SASort
 
-    def convert(self, obj: Union[str, Column, SASort], **meta):
+    def convert(self, obj: str | Column | SASort, **meta):
         """Prepare sorters."""
 
         if isinstance(obj, SASort):

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, cast
 
 from peewee import Field
 
@@ -35,7 +35,7 @@ class PWSorting(Sorting):
         """Prepare collection for sorting."""
         return collection.order_by()
 
-    def convert(self, obj: Union[str, Field, PWSort], **meta):
+    def convert(self, obj: str | Field | PWSort, **meta):
         """Prepare sorters."""
 
         if isinstance(obj, PWSort):

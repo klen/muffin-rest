@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from warnings import warn
 
 if TYPE_CHECKING:
     from peewee import Field
 
 
-def get_model_field_by_name(handler, name: str, *, stacklevel=5) -> Optional[Field]:
+def get_model_field_by_name(handler, name: str, *, stacklevel=5) -> Field | None:
     """Get model field by name."""
     fields = handler.meta.model._meta.fields
     candidate = fields.get(name)
