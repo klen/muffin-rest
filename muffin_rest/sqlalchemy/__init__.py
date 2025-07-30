@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from muffin import Request
     from muffin_databases import Plugin as Database
 
-    from muffin_rest.types import TVData
 
 from .types import TVResource
 
@@ -160,7 +159,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)
 
-    async def save(self, _: Request, resource: TVData[TVResource], *, update=False):
+    async def save(self, request: Request, resource: TVResource, *, update=False):
         """Save the given resource."""
         meta = self.meta
         insert_query = meta.table.insert()

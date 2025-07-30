@@ -29,7 +29,7 @@ from muffin_rest.types import TSchemaRes
 
 from .errors import HandlerNotBindedError
 from .options import RESTOptions
-from .types import TVCollection, TVData, TVResource
+from .types import TVCollection, TVResource
 
 
 class RESTHandlerMeta(HandlerMeta):
@@ -228,23 +228,24 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
         return data
 
-    async def load(
-        self, request: Request, resource: TVResource | None = None, **schema_options
-    ) -> TVData[TVResource]:
+    async def load(self, request: Request, resource: TVResource | None = None, **schema_options):
         """Load data from request and create/update a resource."""
         schema = self.get_schema(request, resource=resource, **schema_options)
         data = cast("Mapping | list", await self.load_data(request))
         return cast(
-            "TVData[TVResource]", await load_data(data, schema, partial=resource is not None)
+            "TVResource | list[TVResource]",
+            await load_data(data, schema, partial=resource is not None),
         )
 
     @overload
     async def dump(  # type: ignore[misc]
-        self, request, data: TVData, *, many: Literal[True]
+        self, request, data: TVResource | Iterable[TVResource], *, many: Literal[True]
     ) -> list[TSchemaRes]: ...
 
     @overload
-    async def dump(self, request, data: TVData, *, many: bool = False) -> TSchemaRes: ...
+    async def dump(
+        self, request, data: TVResource | Iterable[TVResource], *, many: bool = False
+    ) -> TSchemaRes: ...
 
     async def dump(
         self,
