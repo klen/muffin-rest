@@ -130,12 +130,12 @@ async def test_handler2(api, apiclient):
             return source
 
         async def prepare_resource(self, request):
-            pk = request["path_params"].get("pk")
-            if not pk:
+            key = request["path_params"].get("id")
+            if not key:
                 return
 
             try:
-                return source[int(pk)]
+                return source[int(key)]
             except IndexError:
                 raise APIError.NOT_FOUND("Resource not found")
 

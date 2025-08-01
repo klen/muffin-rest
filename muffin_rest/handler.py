@@ -82,7 +82,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
         else:
             router.bind(cls, f"/{ cls.meta.name }", methods=methods, **params)
-            router.bind(cls, f"/{ cls.meta.name }/{{pk}}", methods=methods, **params)
+            router.bind(cls, f"/{ cls.meta.name }/{{id}}", methods=methods, **params)
 
         for _, method in inspect.getmembers(cls, lambda m: hasattr(m, "__route__")):
             paths, methods = method.__route__
@@ -147,7 +147,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
 
     async def prepare_resource(self, request: Request) -> Any:
         """Load a resource."""
-        return request["path_params"].get("pk")
+        return request["path_params"].get("id")
 
     async def filter(self, request: Request, collection: TVCollection) -> tuple[TVCollection, Any]:
         """Filter the collection."""

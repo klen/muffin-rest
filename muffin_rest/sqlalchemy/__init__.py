@@ -143,11 +143,11 @@ class SARESTHandler(RESTHandler[TVResource]):
 
     async def prepare_resource(self, request: Request) -> TVResource | None:
         """Load a resource."""
-        pk = request["path_params"].get("pk")
-        if not pk:
+        key = request["path_params"].get("id")
+        if not key:
             return None
 
-        qs = self.collection.where(self.meta.table_pk == pk)
+        qs = self.collection.where(self.meta.table_pk == key)
         resource = await self.meta.database.fetch_one(qs)
         if resource is None:
             raise APIError.NOT_FOUND("Resource not found")
@@ -176,11 +176,11 @@ class SARESTHandler(RESTHandler[TVResource]):
     async def remove(self, request: Request, resource: TVResource | None = None):
         """Remove the given resource."""
         table_pk = cast("sa.Column", self.meta.table_pk)
-        pks = [resource[table_pk.name]] if resource else await request.data()
-        if not pks:
+        keys = [resource[table_pk.name]] if resource else await request.data()
+        if not keys:
             raise APIError.NOT_FOUND()
 
-        delete = self.meta.table.delete().where(table_pk.in_(cast("list[Any]", pks)))
+        delete = self.meta.table.delete().where(table_pk.in_(cast("list[Any]", keys)))
         await self.meta.database.execute(delete)
 
     delete = remove

@@ -396,7 +396,7 @@ async def test_custom_pk(db, api, client):
 
     from muffin_rest.peewee import PWRESTHandler
 
-    @api.route("/custom-pk", "/custom-pk/{pk}")
+    @api.route("/custom-pk", "/custom-pk/{id}")
     class CustomPKTest(PWRESTHandler):
         class Meta(PWRESTHandler.Meta):
             model = CustomPKModel

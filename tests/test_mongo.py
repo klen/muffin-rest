@@ -78,7 +78,7 @@ async def test_base(api, ResourceEndpoint):
     assert ResourceEndpoint.meta.Schema
 
     assert api.router.plain["/resources"]
-    assert api.router.dynamic[0].pattern.pattern == "^/resources/(?P<pk>[^/]+)$"
+    assert api.router.dynamic[0].pattern.pattern == "^/resources/(?P<id>[^/]+)$"
 
 
 async def test_get(client, ResourceEndpoint, resource):

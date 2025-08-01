@@ -66,7 +66,7 @@ async def token(request) -> ResponseText:
 class Pets(SARESTHandler):
     """Everything about your Pets."""
 
-    class Meta:
+    class Meta(SARESTHandler.Meta):
         """Tune the ednpoint."""
 
         # ORM table
@@ -82,7 +82,7 @@ class Pets(SARESTHandler):
         # Available filters
         filters = "status", "category"
 
-    @SARESTHandler.route("/pet/{pk}/uploadImage", methods="post")
+    @SARESTHandler.route("/pet/{id}/uploadImage", methods="post")
     async def upload_image(self, request, resource=None):
         """Uploads an image.
 

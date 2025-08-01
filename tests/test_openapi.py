@@ -30,7 +30,7 @@ def _setup(api):
         """Get user token."""
         return "TOKEN"
 
-    @api.route("/pets", "/pets/{pk}")
+    @api.route("/pets", "/pets/{id}")
     class Pet(RESTHandler):
         methods = "get", "post"
 
@@ -41,7 +41,7 @@ def _setup(api):
             class Schema(ma.Schema):
                 name = ma.fields.String(required=True)
 
-    @api.route("/cats", "/cats/{pk}")
+    @api.route("/cats", "/cats/{id}")
     class Cat(RESTHandler):
         methods = "get", "post"
 

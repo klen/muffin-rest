@@ -86,13 +86,13 @@ class MongoRESTHandler(RESTHandler[TVResource]):
 
     async def prepare_resource(self, request: Request) -> TVResource | None:
         """Load a resource."""
-        pk = request["path_params"].get("pk")
-        if not pk:
+        key = request["path_params"].get("id")
+        if not key:
             return None
 
         try:
             return await self.collection.find_one(
-                {self.meta.collection_id: bson.ObjectId(pk)},
+                {self.meta.collection_id: bson.ObjectId(key)},
             )
         except InvalidId as exc:
             raise APIError.NOT_FOUND() from exc

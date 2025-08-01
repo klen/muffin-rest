@@ -58,15 +58,15 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     async def prepare_resource(self, request: Request) -> TVModel | None:
         """Load a resource."""
-        pk = request["path_params"].get("pk")
-        if not pk:
+        key = request["path_params"].get("id")
+        if not key:
             return None
 
         meta = self.meta
 
         try:
             resource = await meta.manager.fetchone(
-                self.collection.where(meta.model_pk == pk),
+                self.collection.where(meta.model_pk == key),
             )
         except Exception:  # noqa: BLE001
             resource = None

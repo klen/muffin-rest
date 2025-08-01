@@ -84,7 +84,7 @@ class Pets(PWRESTHandler):
         # Available filters
         filters = "status", "category"
 
-    @PWRESTHandler.route("/pet/{pk}/uploadImage", methods="post")
+    @PWRESTHandler.route("/pet/{id}/uploadImage", methods="post")
     async def upload_image(self, request, *, resource: Pet):
         """Uploads an image.
 

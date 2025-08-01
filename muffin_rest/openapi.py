@@ -199,7 +199,7 @@ class OpenAPIMixin:
         schema_ref = {"$ref": f"#/components/schemas/{ meta.Schema.__name__ }"}
         for method in route_to_methods(route):
             operations[method] = {"tags": [tags[cls]]}
-            is_resource_route = isinstance(route, DynamicRoute) and route.params.get("pk")
+            is_resource_route = isinstance(route, DynamicRoute) and route.params.get("id")
 
             if method == "get" and not is_resource_route:
                 operations[method]["parameters"] = []
