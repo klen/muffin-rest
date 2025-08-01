@@ -82,7 +82,7 @@ class Pets(SARESTHandler):
         # Available filters
         filters = "status", "category"
 
-    @SARESTHandler.route("/pet/{id}/uploadImage", methods="post")
+    @SARESTHandler.route("/pet/{pk}/uploadImage", methods="post")
     async def upload_image(self, request, resource=None):
         """Uploads an image.
 

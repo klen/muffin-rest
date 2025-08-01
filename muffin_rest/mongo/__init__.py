@@ -52,12 +52,12 @@ class MongoRESTHandler(RESTHandler[TVResource]):
     meta: MongoRESTOptions
     meta_class: type[MongoRESTOptions] = MongoRESTOptions
 
-    async def prepare_collection(self, _: Request) -> MongoChain:
+    async def prepare_collection(self, request: Request) -> MongoChain:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return MongoChain(self.meta.collection)
 
     async def paginate(
-        self, _: Request, *, limit: int = 0, offset: int = 0
+        self, request: Request, *, limit: int = 0, offset: int = 0
     ) -> tuple[motor.AsyncIOMotorCursor, int | None]:
         """Paginate collection."""
         if self.meta.aggregate:
@@ -103,7 +103,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)
 
-    async def save(self, _: Request, resource: TVResource, *, update=False) -> TVResource:
+    async def save(self, request: Request, resource: TVResource, *, update=False) -> TVResource:
         """Save the given resource."""
         meta = self.meta
         collection_id = meta.collection_id

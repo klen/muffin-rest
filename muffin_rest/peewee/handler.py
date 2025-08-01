@@ -42,17 +42,17 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     @overload
     async def prepare_collection(
         self: PWRESTBase[TVAIOModel],
-        _: Request,
+        request: Request,
     ) -> AIOModelSelect[TVAIOModel]: ...
 
     @overload
     async def prepare_collection(
         self: PWRESTBase[pw.Model],
-        _: Request,
+        request: Request,
     ) -> pw.ModelSelect: ...
 
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
-    async def prepare_collection(self, _: Request):  # type: ignore[override]
+    async def prepare_collection(self, request: Request):
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.model.select()
 
@@ -78,15 +78,15 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     @overload
     async def paginate(
-        self: PWRESTBase[TVAIOModel], _: Request, *, limit: int = 0, offset: int = 0
+        self: PWRESTBase[TVAIOModel], request: Request, *, limit: int = 0, offset: int = 0
     ) -> tuple[AIOModelSelect[TVAIOModel], int | None]: ...
 
     @overload
     async def paginate(
-        self: PWRESTBase[pw.Model], _: Request, *, limit: int = 0, offset: int = 0
+        self: PWRESTBase[pw.Model], request: Request, *, limit: int = 0, offset: int = 0
     ) -> tuple[pw.ModelSelect, int | None]: ...
 
-    async def paginate(self, _: Request, *, limit: int = 0, offset: int = 0):  # type: ignore[override]
+    async def paginate(self, request: Request, *, limit: int = 0, offset: int = 0):
         """Paginate the collection."""
         if self.meta.limit_total:
             cqs = cast("pw.ModelSelect", self.collection.order_by())

@@ -114,13 +114,13 @@ class SARESTHandler(RESTHandler[TVResource]):
     meta_class: type[SARESTOptions] = SARESTOptions
     collection: sa.sql.Select
 
-    async def prepare_collection(self, _: Request) -> sa.sql.Select:
+    async def prepare_collection(self, request: Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.table.select()
 
     async def paginate(
         self,
-        _: Request,
+        request: Request,
         *,
         limit: int = 0,
         offset: int = 0,
