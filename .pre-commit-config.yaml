@@ -72,9 +72,25 @@ repos:
         files: \.py$
         stages: ["pre-push"]
 
+      - id: mongo start
+        name: mongo start
+        entry: docker start mongo
+        language: system
+        pass_filenames: false
+        files: \.py$
+        stages: ["pre-push"]
+
       - id: pytest
         name: pytest
         entry: poetry run pytest
+        language: system
+        pass_filenames: false
+        files: \.py$
+        stages: ["pre-push"]
+
+      - id: mongo stop
+        name: mongo stop
+        entry: docker stop mongo
         language: system
         pass_filenames: false
         files: \.py$
