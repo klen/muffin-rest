@@ -116,7 +116,7 @@ async def test_base(api, endpoint_cls):
     assert endpoint_cls.meta.sorting.default == [Resource.id.desc()]
 
     assert api.router.plain["/resource"]
-    assert api.router.dynamic[0].pattern.pattern == "^/resource/(?P<pk>[^/]+)$"
+    assert api.router.dynamic[0].pattern.pattern == "^/resource/(?P<id>[^/]+)$"
     assert "group_id" in endpoint_cls.meta.filters.mutations
 
 
