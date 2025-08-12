@@ -1,4 +1,5 @@
 import abc
+from asyncio import Lock
 from time import time
 from typing import Any
 
@@ -13,13 +14,19 @@ class RateLimiter(abc.ABC):
             limit (int): The limit of requests.
             period (int): The period of time in seconds.
         """
+        self.lock = Lock()
         self.limit = limit
         self.period = period
 
-    @abc.abstractmethod
     async def check(self, key: str) -> bool:
         """Check the request."""
-        raise NotImplementedError
+        async with self.lock:
+            return await self._check(key)
+
+    @abc.abstractmethod
+    async def _check(self, key: str) -> bool:
+        """Check the request."""
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 class MemoryRateLimiter(RateLimiter):
@@ -29,7 +36,7 @@ class MemoryRateLimiter(RateLimiter):
         super().__init__(limit, **opts)
         self.storage: dict[Any, tuple[float, int]] = {}
 
-    async def check(self, key: str) -> bool:
+    async def _check(self, key: str) -> bool:
         """Check the request."""
         now = time()
         storage = self.storage
@@ -53,8 +60,6 @@ class MemoryRateLimiter(RateLimiter):
 class RedisRateLimiter(RateLimiter):
     """Redis rate limiter."""
 
-    # TODO: Asyncio lock
-
     def __init__(self, limit: int, *, redis, **opts):
         """Initialize the rate limiter.
 
@@ -66,7 +71,7 @@ class RedisRateLimiter(RateLimiter):
         super().__init__(limit, **opts)
         self.redis = redis
 
-    async def check(self, key: str) -> bool:
+    async def _check(self, key: str) -> bool:
         """Check the request."""
         value = await self.redis.get(key)
         if value is None:
