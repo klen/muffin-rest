@@ -73,10 +73,8 @@ class RedisRateLimiter(RateLimiter):
 
     async def _check(self, key: str) -> bool:
         """Check the request."""
-        value = await self.redis.get(key)
-        if value is None:
-            await self.redis.setex(key, self.period, 1)
-            return True
+        current = await self.redis.incr(key)
+        if current == 1:
+            await self.redis.expire(key, self.period)
 
-        await self.redis.incr(key)
-        return int(value) < self.limit
+        return current <= self.limit

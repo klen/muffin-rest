@@ -119,19 +119,6 @@ class FakeRedis:
         self._store = {}
         self._time = time_fn
 
-    async def get(self, key):
-        v = self._store.get(key)
-        if v is None:
-            return None
-        value, expires_at = v
-        if expires_at is not None and self._time() >= expires_at:
-            self._store.pop(key, None)
-            return None
-        return str(value)
-
-    async def setex(self, key, seconds, value):
-        self._store[key] = (value, self._time() + float(seconds))
-
     async def incr(self, key):
         v = self._store.get(key)
         now = self._time()
@@ -145,6 +132,15 @@ class FakeRedis:
         new_val = int(value) + 1
         self._store[key] = (new_val, expires_at)
         return new_val
+
+    async def expire(self, key, seconds):
+        v = self._store.get(key)
+        if v is None:
+            return False
+        value, _ = v
+        expires_at = self._time() + seconds
+        self._store[key] = (value, expires_at)
+        return True
 
 
 async def test_limit_redis_basic(monkeypatch):
