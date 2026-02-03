@@ -65,11 +65,11 @@ example-sqlalchemy: $(VIRTUAL_ENV)
 VPART?=minor
 # target: release - Bump version
 release: $(VIRTUAL_ENV)
-	@git checkout develop
-	@git pull
-	@git merge master
-	@uvx bump-my-version bump $(VERSION)
-	@uv lock
+	git checkout develop
+	git pull
+	git merge master
+	uvx bump-my-version bump $(VPART)
+	uv lock
 	@{ \
 	  printf 'build(release): %s\n\n' "$$(uv version --short)"; \
 	  printf 'Changes:\n\n'; \
