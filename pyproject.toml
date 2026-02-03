@@ -113,3 +113,13 @@ ignore = [
   "N",
   "UP",
 ]
+
+[tool.bumpversion]
+current_version = "13.0.3"
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
