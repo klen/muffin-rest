@@ -6,7 +6,7 @@ import operator
 from functools import reduce
 from typing import TYPE_CHECKING, ClassVar, cast
 
-from peewee import ColumnBase, Field, ModelSelect
+from peewee import ColumnBase, Field
 
 from muffin_rest.filters import Filter, Filters
 
@@ -39,11 +39,13 @@ class PWFilter(Filter):
 
     list_ops = (*Filter.list_ops, "$between")
 
-    async def filter(self, collection: ModelSelect, *ops: TFilterValue) -> ModelSelect:
+    async def filter(self, collection, *ops: TFilterValue):
         """Apply the filters to Peewee QuerySet.."""
         column = self.field
+
         if isinstance(column, ColumnBase):
             collection = collection.where(*[op(column, val) for op, val in ops])
+
         return collection
 
 

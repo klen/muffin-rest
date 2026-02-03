@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping, cast
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads
@@ -90,13 +90,13 @@ class Filter(Mutate):
 
         return ops, collection
 
-    async def filter(self, collection, *ops: TFilterValue) -> Any:
+    async def filter(self, collection: TVCollection, *ops: TFilterValue) -> TVCollection:
         """Apply the filter to collection."""
 
         def validator(obj):
             return all(op(get_value(obj, self.name), val) for op, val in ops)
 
-        return [item for item in collection if validator(item)]
+        return cast("TVCollection", [item for item in collection if validator(item)])
 
     def get_simple_value(self, ops: TFilterOps) -> Any:
         """Get simple value from filter's data.
