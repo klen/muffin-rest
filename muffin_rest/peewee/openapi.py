@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class PeeweeOpenAPIMixin(OpenAPIMixin):
     """Render openapi."""
 
-    meta: PWRESTOptions
+    meta: PWRESTOptions  # type: ignore[override]
 
     @classmethod
     def openapi(cls, route: Route, spec: APISpec, tags: dict) -> dict:

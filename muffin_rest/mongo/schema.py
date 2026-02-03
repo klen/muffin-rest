@@ -5,23 +5,21 @@ import marshmallow as ma
 
 
 class ObjectId(ma.fields.Field):
-
     """ObjectID Marshmallow Field."""
 
-    def _deserialize(self, value, _, __):
+    def _deserialize(self, value, attr, data, **kwargs):
         try:
             return bson.ObjectId(value)
         except ValueError as exc:
             raise ma.ValidationError("invalid ObjectId `%s`" % value) from exc
 
-    def _serialize(self, value, _, __):
+    def _serialize(self, value, attr, obj, **kwargs):
         if value is None:
             return ma.missing
         return str(value)
 
 
 class MongoSchema(ma.Schema):
-
     """Serialize/deserialize results from mongo."""
 
     _id = ObjectId()

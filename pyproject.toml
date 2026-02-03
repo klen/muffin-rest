@@ -1,11 +1,10 @@
-[tool.poetry]
+[project]
 name = "muffin-rest"
 version = "13.0.3"
 description = "The package provides enhanced support for writing REST APIs with Muffin framework"
+authors = [{ name = "Kirill Klenov", email = "horneds@gmail.com" }]
+requires-python = ">=3.10,<4"
 readme = "README.md"
-homepage = "https://github.com/klen/muffin-rest"
-repository = "https://github.com/klen/muffin-rest"
-authors = ["Kirill Klenov <horneds@gmail.com>"]
 license = "MIT"
 keywords = ["rest", "api", "muffin", "asgi", "asyncio", "trio"]
 classifiers = [
@@ -18,66 +17,62 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Internet :: WWW/HTTP",
   "Framework :: AsyncIO",
   "Framework :: Trio",
 ]
+dependencies = ["apispec>=6,<7", "marshmallow>=3,<4", "muffin"]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-apispec = "^6"
-marshmallow = "^3"
-muffin = "*"
-
-# Optional dependencies
-pyyaml = { version = "*", optional = true }
-muffin-peewee-aio = { version = "*", optional = true }
-marshmallow-peewee = { version = "*", optional = true }
-muffin-databases = { version = "*", optional = true }
-marshmallow-sqlalchemy = { version = "*", optional = true }
-sqlalchemy = { version = "*", optional = true }
-
-[tool.poetry.extras]
+[project.optional-dependencies]
 yaml = ["pyyaml"]
 peewee = ["muffin-peewee-aio", "marshmallow-peewee"]
 sqlalchemy = ["muffin-databases", "marshmallow-sqlalchemy", "sqlalchemy"]
 
-[tool.poetry.group.tests.dependencies]
-aiosqlite = "*"
-marshmallow-peewee = "*"
-marshmallow-sqlalchemy = "*"
-muffin-databases = "*"
-muffin-mongo = "*"
-muffin-peewee-aio = "*"
-pytest = "*"
-pytest-aio = { version = "*", extras = ["curio", "trio"] }
-pyyaml = "*"
-types-PyYAML = "*"
-types-ujson = "*"
-ruff = "*"
-mypy = "*"
+[project.urls]
+Homepage = "https://github.com/klen/muffin-rest"
+Repository = "https://github.com/klen/muffin-rest"
 
-[tool.poetry.group.dev.dependencies]
-pre-commit = "*"
+[dependency-groups]
+dev = [
+  "aiosqlite",
+  "marshmallow-peewee",
+  "marshmallow-sqlalchemy",
+  "muffin-databases",
+  "muffin-mongo",
+  "muffin-peewee-aio",
+  "pytest",
+  "pytest-aio[curio, trio]",
+  "pyyaml",
+  "ruff",
+  "pyrefly",
+  "pre-commit",
+  "tox",
+]
+example = ["uvicorn", "muffin-peewee-aio", "marshmallow-peewee"]
 
-[tool.poetry.group.example.dependencies]
-uvicorn = "*"
-muffin-peewee-aio = "*"
-marshmallow-peewee = "*"
+[tool.uv]
+default-groups = ["dev", "example"]
 
+[build-system]
+requires = ["uv_build>=0.9.7,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "muffin_rest"
+module-root = ""
 
 [tool.pytest.ini_options]
 addopts = "-xsv tests"
 log_cli = true
 
-[tool.mypy]
-packages = ["muffin_rest"]
-ignore_missing_imports = true
+[tool.pyrefly]
+project-includes = ["muffin_rest"]
 
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py310,py311,py312,py313,pypy310
+envlist = py310,py311,py312,py313,py314,pypy311
 
 [testenv]
 deps = -e .[tests]
@@ -114,12 +109,3 @@ ignore = [
   "TRY003",
   "UP",
 ]
-
-[tool.black]
-line-length = 100
-target-version = ["py310", "py311", "py312", "py313"]
-preview = true
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"

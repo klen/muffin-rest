@@ -35,7 +35,8 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
         """
         cols_to_fields = {f.attribute or f.name: f for f in self.declared_fields.values()}
         if not partial:
-            for column in self.opts.table.columns:
+            table = self.opts.table  # type: ignore[]
+            for column in table.columns:
                 field = cols_to_fields.get(column.name)
                 if not field:
                     continue
@@ -67,12 +68,11 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
 class SARESTOptions(RESTOptions):
     """Support SQLAlchemy Core."""
 
-    filters_cls: type[SAFilters] = SAFilters
-    sorting_cls: type[SASorting] = SASorting
+    filters_cls = SAFilters
+    sorting_cls = SASorting
 
     # Schema auto generation params
-    Schema: type[SQLAlchemyAutoSchema]
-    schema_base: type[SQLAlchemyAutoSchema] = SQLAlchemyAutoSchema
+    schema_base = SQLAlchemyAutoSchema
 
     table: sa.Table
     table_pk: sa.Column
@@ -110,8 +110,8 @@ class SARESTOptions(RESTOptions):
 class SARESTHandler(RESTHandler[TVResource]):
     """Support SQLAlchemy Core."""
 
-    meta: SARESTOptions
-    meta_class: type[SARESTOptions] = SARESTOptions
+    meta: SARESTOptions  # type: ignore[bad-override]
+    meta_class = SARESTOptions
     collection: sa.sql.Select
 
     async def prepare_collection(self, request: Request) -> sa.sql.Select:
@@ -163,7 +163,7 @@ class SARESTHandler(RESTHandler[TVResource]):
         """Save the given resource."""
         meta = self.meta
         insert_query = meta.table.insert()
-        table_pk = cast("sa.Column", meta.table_pk)
+        table_pk = meta.table_pk
         if update:
             update_query = self.meta.table.update().where(table_pk == resource[table_pk.name])  # type: ignore[call-overload]
             await meta.database.execute(update_query, resource)
@@ -175,7 +175,7 @@ class SARESTHandler(RESTHandler[TVResource]):
 
     async def remove(self, request: Request, resource: TVResource | None = None):
         """Remove the given resource."""
-        table_pk = cast("sa.Column", self.meta.table_pk)
+        table_pk = self.meta.table_pk
         keys = [resource[table_pk.name]] if resource else await request.data()
         if not keys:
             raise APIError.NOT_FOUND()

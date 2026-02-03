@@ -79,7 +79,7 @@ class MongoChain:
     def count(self) -> Awaitable[int]:
         """Count documents."""
         query = (self.query and {"$and": self.query}) or {}
-        return self.collection.count_documents(query)
+        return self.collection.count_documents(query)  # type: ignore[]
 
     def aggregate(self, pipeline, **kwargs):
         """Aggregate collection."""

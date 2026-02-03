@@ -134,7 +134,7 @@ class Filter(Mutate):
             yield (self.operators[self.default_operator], deserialize(value))
 
 
-class Filters(Mutator):
+class Filters(Mutator[Filter]):
     """Build filters for handlers."""
 
     MUTATE_CLASS = Filter

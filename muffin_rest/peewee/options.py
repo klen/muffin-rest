@@ -12,15 +12,15 @@ class PWRESTOptions(RESTOptions):
     """Support Peewee."""
 
     # Base filters class
-    filters_cls: type[PWFilters] = PWFilters
+    filters_cls = PWFilters
 
     # Base sorting class
-    sorting_cls: type[PWSorting] = PWSorting
+    sorting_cls = PWSorting
 
-    Schema: type[ModelSchema]
+    Schema: type[ModelSchema]  # type: ignore[override]
 
     # Schema auto generation params
-    schema_base: type[ModelSchema] = ModelSchema
+    schema_base = ModelSchema
 
     base_property: str = "model"
 

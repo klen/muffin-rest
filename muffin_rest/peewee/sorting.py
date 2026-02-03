@@ -29,7 +29,7 @@ class PWSort(Sort):
 class PWSorting(Sorting):
     """Sort Peewee ORM Queries."""
 
-    MUTATE_CLASS: type[PWSort] = PWSort
+    MUTATE_CLASS = PWSort
 
     def prepare(self, collection: TVCollection) -> TVCollection:
         """Prepare collection for sorting."""

@@ -25,9 +25,9 @@ if TYPE_CHECKING:
 class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
 
-    filters_cls: type[MongoFilters] = MongoFilters
-    sorting_cls: type[MongoSorting] = MongoSorting
-    schema_base: type[MongoSchema] = MongoSchema
+    filters_cls = MongoFilters
+    sorting_cls = MongoSorting
+    schema_base = MongoSchema
 
     aggregate: list | None = None  # Support aggregation. Set to pipeline.
     collection_id: str = "_id"
@@ -35,7 +35,7 @@ class MongoRESTOptions(RESTOptions):
 
     base_property: str = "collection"
 
-    Schema: type[MongoSchema]
+    Schema: type[MongoSchema]  # type: ignore[override]
 
     def setup(self, cls):
         """Prepare meta options."""
@@ -49,16 +49,14 @@ class MongoRESTOptions(RESTOptions):
 class MongoRESTHandler(RESTHandler[TVResource]):
     """Support Mongo DB."""
 
-    meta: MongoRESTOptions
-    meta_class: type[MongoRESTOptions] = MongoRESTOptions
+    meta: MongoRESTOptions  # type: ignore[bad-override]
+    meta_class = MongoRESTOptions
 
     async def prepare_collection(self, request: Request) -> MongoChain:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return MongoChain(self.meta.collection)
 
-    async def paginate(
-        self, request: Request, *, limit: int = 0, offset: int = 0
-    ) -> tuple[motor.AsyncIOMotorCursor, int | None]:
+    async def paginate(self, request: Request, *, limit: int = 0, offset: int = 0):  # type: ignore[override]
         """Paginate collection."""
         if self.meta.aggregate:
             pipeline_all = [*self.meta.aggregate, {"$skip": offset}, {"$limit": limit}]

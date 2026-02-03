@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generator, Iterable, Mapping, Sequence, cast
+from typing import TYPE_CHECKING, Any, Generator, Iterable, Sequence, cast
 
 from .utils import Mutate, Mutator
 
@@ -23,11 +23,10 @@ class Sort(Mutate):
         return sorted(collection, key=lambda obj: getattr(obj, self.name), reverse=desc)
 
 
-class Sorting(Mutator):
+class Sorting(Mutator[Sort]):
     """Build sorters for handlers."""
 
     MUTATE_CLASS = Sort
-    mutations: Mapping[str, Sort]
 
     def __init__(self, handler: type[RESTBase], params: Iterable):
         """Initialize the sorting."""
@@ -59,11 +58,13 @@ class Sorting(Mutator):
         """Prepare the collection."""
         return collection
 
-    def convert(self, obj, **meta) -> Sort:
+    def convert(self, obj, **meta):
         """Prepare sorters."""
-        sort = cast("Sort", super(Sorting, self).convert(obj, **meta))
-        if sort.meta.get("default"):
+        sort = super(Sorting, self).convert(obj, **meta)
+
+        if sort and sort.meta.get("default"):
             self.default.append(sort)
+
         return sort
 
     def sort_default(self, collection: TVCollection) -> TVCollection:

@@ -1,8 +1,9 @@
 """REST Utils."""
+
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Generic, Iterable, Mapping, TypeVar
 
 if TYPE_CHECKING:
     from muffin import Request
@@ -28,16 +29,19 @@ class Mutate(abc.ABC):
         return f"<{self.__class__.__name__} '{self.name}'>"
 
     @abc.abstractmethod
-    async def apply(self, collection: TVCollection) -> TVCollection:
+    async def apply(self, collection: TVCollection) -> tuple[Any, TVCollection]:
         """Apply the mutation."""
-        raise NotImplementedError
+        ...
 
 
-class Mutator(abc.ABC):
+M = TypeVar("M", bound=Mutate)
+
+
+class Mutator(abc.ABC, Generic[M]):
     """Mutate collections."""
 
-    MUTATE_CLASS: type[Mutate]
-    mutations: Mapping[str, Mutate]
+    MUTATE_CLASS: type[M]
+    mutations: Mapping[str, M]
 
     def __init__(self, handler, params: Iterable):
         """Initialize the mutations."""
@@ -63,16 +67,17 @@ class Mutator(abc.ABC):
     def __bool__(self):
         return bool(self.mutations)
 
-    def convert(self, obj, **meta) -> Mutate:
+    def convert(self, obj, **meta) -> M | None:
         """Convert params to mutations."""
-        if isinstance(obj, self.MUTATE_CLASS):
-            return obj
+        factory = self.MUTATE_CLASS
+        if not isinstance(obj, factory):
+            obj = factory(obj, **meta)
 
-        return self.MUTATE_CLASS(obj, **meta)
+        return obj
 
     @abc.abstractmethod
     async def apply(
         self, request: Request, collection: TVCollection
     ) -> tuple[TVCollection, dict[str, Any]]:
         """Mutate a collection."""
-        raise NotImplementedError
+        ...

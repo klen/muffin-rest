@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import inspect
-import re
 from contextlib import suppress
 from functools import partial
 from http import HTTPStatus
@@ -40,7 +39,6 @@ HTTP_METHODS = [
     "TRACE",
     "CONNECT",
 ]
-RE_URL = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")  # TODO: Not used
 SKIP_PATH = {"/openapi.json", "/swagger", "/redoc"}
 
 
@@ -50,14 +48,14 @@ def render_openapi(api, request=None):
     options = dict(api.openapi_options)
     if request:
         options.setdefault(
-            "servers",
-            [{"url": str(request.url.with_query("").with_path(api.prefix))}],
+            "servers", [{"url": str(request.url.with_query("").with_path(api.prefix))}]
         )
 
+    info = cast("dict", options["info"])
     spec = APISpec(
-        options["info"].pop("title", f"{ api.app.cfg.name.title() } API"),
-        options["info"].pop("version", "1.0.0"),
-        options.pop("openapi_version", "3.0.3"),
+        info.pop("title", f"{api.app.cfg.name.title()} API"),
+        info.pop("version", "1.0.0"),
+        options.pop("openapi_version", "3.0.3"),  # type: ignore[]
         **options,
         plugins=[MarshmallowPlugin()],
     )
@@ -188,7 +186,7 @@ class OpenAPIMixin:
             return {}
 
         operations: dict = {}
-        summary, desc, schema = parse_docs(cls)
+        summary, _, schema = parse_docs(cls)
         if cls not in tags:
             tags[cls] = meta.name
             spec.tag({"name": meta.name, "description": summary})
@@ -196,7 +194,7 @@ class OpenAPIMixin:
             if schema_cls.__name__ not in spec.components.schemas:
                 spec.components.schema(meta.Schema.__name__, schema=meta.Schema)
 
-        schema_ref = {"$ref": f"#/components/schemas/{ meta.Schema.__name__ }"}
+        schema_ref = {"$ref": f"#/components/schemas/{meta.Schema.__name__}"}
         for method in route_to_methods(route):
             operations[method] = {"tags": [tags[cls]]}
             is_resource_route = isinstance(route, DynamicRoute) and route.params.get("id")

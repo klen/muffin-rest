@@ -36,8 +36,8 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
         resource: TVModel
         collection: AIOModelSelect | pw.ModelSelect
 
-    meta: PWRESTOptions
-    meta_class: type[PWRESTOptions] = PWRESTOptions
+    meta: PWRESTOptions  # type: ignore[override]
+    meta_class = PWRESTOptions
 
     @overload
     async def prepare_collection(
@@ -131,8 +131,7 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
             if not data:
                 return
 
-            model_pk = cast("pw.Field", meta.model_pk)
-            resources = await meta.manager.fetchall(self.collection.where(model_pk << data))  # type: ignore[]
+            resources = await meta.manager.fetchall(self.collection.where(meta.model_pk << data))  # type: ignore[]
 
         if not resources:
             raise APIError.NOT_FOUND()

@@ -43,16 +43,14 @@ class PWFilter(Filter):
         """Apply the filters to Peewee QuerySet.."""
         column = self.field
         if isinstance(column, ColumnBase):
-            collection = cast(
-                "ModelSelect", collection.where(*[op(column, val) for op, val in ops])
-            )
+            collection = collection.where(*[op(column, val) for op, val in ops])
         return collection
 
 
 class PWFilters(Filters):
     """Bind Peewee filter class."""
 
-    MUTATE_CLASS: type[PWFilter] = PWFilter
+    MUTATE_CLASS = PWFilter
 
     def convert(self, obj: str | Field | PWFilter, **meta):
         """Convert params to filters."""

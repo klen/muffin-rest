@@ -47,7 +47,7 @@ class RESTHandlerMeta(HandlerMeta):
         return kls
 
 
-class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
+class RESTBase(Handler, Generic[TVResource], metaclass=RESTHandlerMeta):
     """Load/save resources."""
 
     auth: Any
@@ -81,8 +81,8 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             router.bind(cls, *paths, methods=methods, **params)
 
         else:
-            router.bind(cls, f"/{ cls.meta.name }", methods=methods, **params)
-            router.bind(cls, f"/{ cls.meta.name }/{{id}}", methods=methods, **params)
+            router.bind(cls, f"/{cls.meta.name}", methods=methods, **params)
+            router.bind(cls, f"/{cls.meta.name}/{{id}}", methods=methods, **params)
 
         for _, method in inspect.getmembers(cls, lambda m: hasattr(m, "__route__")):
             paths, methods = method.__route__
@@ -204,9 +204,9 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         return [await self.save(request, item, update=update) for item in data]
 
     @abc.abstractmethod
-    async def remove(self, request: Request, resource):
+    async def remove(self, request: Request, resource: TVResource | None = None) -> Any:
         """Remove the given resource."""
-        raise NotImplementedError
+        ...
 
     # Parse data
     # -----------
@@ -258,7 +258,7 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         schema = self.get_schema(request)
         return schema.dump(data, many=many)
 
-    async def get(self, request: Request, *, resource: TVResource | None = None) -> ResponseJSON:
+    async def get(self, request: Request, *, resource: TVResource | None = None) -> Any:
         """Get a resource or a collection of resources.
 
         Specify a path param to load a resource.
@@ -268,9 +268,9 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
             if resource
             else self.dump(request, data=self.collection, many=True)
         )
-        return ResponseJSON(res)  # type: ignore[type-var]
+        return ResponseJSON(res)
 
-    async def post(self, request: Request, *, resource: TVResource | None = None) -> ResponseJSON:
+    async def post(self, request: Request, *, resource: TVResource | None = None) -> Any:
         """Create a resource.
 
         The method accepts a single resource's data or a list of resources to create.
@@ -285,14 +285,14 @@ class RESTBase(Generic[TVResource], Handler, metaclass=RESTHandlerMeta):
         res = await self.dump(request, data, many=many)
         return ResponseJSON(res)
 
-    async def put(self, request: Request, *, resource: TVResource | None = None) -> ResponseJSON:
+    async def put(self, request: Request, *, resource: TVResource | None = None) -> Any:
         """Update a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()
 
         return await self.post(request, resource=resource)
 
-    async def delete(self, request: Request, resource: TVResource | None = None):
+    async def delete(self, request: Request, resource: TVResource | None = None) -> Any:
         """Delete a resource."""
         if resource is None:
             raise APIError.NOT_FOUND()
