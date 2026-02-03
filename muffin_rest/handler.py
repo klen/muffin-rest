@@ -64,11 +64,11 @@ class RESTBase(Handler, Generic[TVResource], metaclass=RESTHandlerMeta):
     class Meta:
         """Tune the handler."""
 
-        # Resource filters
-        filters: Sequence[str | tuple[str, str] | Filter] = ()
-
         # Define allowed resource sorting params
         sorting: Sequence[str | tuple[str, dict] | Sort] = ()
+
+        # Resource filters
+        filters: Sequence[str | tuple[str, dict] | Filter] = ()
 
         # Serialize/Deserialize Schema class
         Schema: type[ma.Schema] | None = None
