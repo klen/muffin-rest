@@ -5,7 +5,7 @@ from muffin_databases import Plugin as DB
 
 @pytest.fixture(scope="module")
 def aiolib():
-    return "asyncio", {"use_uvloop": False}
+    return "asyncio", {"loop_factory": None}
 
 
 @pytest.fixture

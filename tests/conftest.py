@@ -11,7 +11,7 @@ from muffin_rest.sorting import SORT_PARAM
 
 @pytest.fixture(
     params=[
-        pytest.param(("asyncio", {"use_uvloop": False}), id="asyncio"),
+        pytest.param(("asyncio", {"loop_factory": None}), id="asyncio"),
         pytest.param("trio"),
         pytest.param("curio"),
     ],

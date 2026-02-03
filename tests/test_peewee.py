@@ -10,7 +10,7 @@ from muffin_peewee.fields import StrEnumField
 
 @pytest.fixture(scope="module")
 def aiolib():
-    return "asyncio", {"use_uvloop": False}
+    return "asyncio", {"loop_factory": None}
 
 
 @pytest.fixture(scope="session", autouse=True)

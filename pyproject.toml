@@ -68,6 +68,7 @@ log_cli = true
 
 [tool.pyrefly]
 project-includes = ["muffin_rest"]
+project-excludes = ["tests", "examples", "docs", "setup.py", "pyproject.toml"]
 
 [tool.tox]
 legacy_tox_ini = """
@@ -75,8 +76,9 @@ legacy_tox_ini = """
 envlist = py310,py311,py312,py313,py314,pypy311
 
 [testenv]
-deps = -e .[tests]
+allowlist_externals = uv,pytest
 commands =
+  uv pip install --system -e .[dev]
 	pytest tests
 """
 
@@ -107,5 +109,7 @@ ignore = [
   "SLF",
   "TD",
   "TRY003",
+  "RUF012",
+  "N",
   "UP",
 ]

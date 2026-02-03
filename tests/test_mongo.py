@@ -6,7 +6,7 @@ from muffin_mongo import Plugin as Mongo
 
 @pytest.fixture(scope="module")
 def aiolib():
-    return "asyncio", {"use_uvloop": False}
+    return "asyncio", {"loop_factory": None}
 
 
 @pytest.fixture
@@ -89,7 +89,7 @@ async def test_get(client, ResourceEndpoint, resource):
     assert not json[0]["active"]
     assert json[0]["name"] == "test"
 
-    res = await client.get(f"/api/resources/{ resource }")
+    res = await client.get(f"/api/resources/{resource}")
     assert res.status_code == 200
     json = await res.json()
     assert json
@@ -130,7 +130,7 @@ async def test_edit(client, resource, ResourceEndpoint):
 
 
 async def test_delete(client, resource, ResourceEndpoint, resources):
-    res = await client.delete(f"/api/resources/{ resource }")
+    res = await client.delete(f"/api/resources/{resource}")
     assert res.status_code == 200
     json = await res.json()
     assert not json
