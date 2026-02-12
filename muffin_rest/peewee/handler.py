@@ -15,7 +15,7 @@ from muffin_rest.peewee.openapi import PeeweeOpenAPIMixin
 
 from .options import PWRESTOptions
 from .schemas import EnumField
-from .types import TVCollection, TVModel
+from .types import TVCollection, TVResource
 
 if TYPE_CHECKING:
     from muffin import Request
@@ -27,21 +27,21 @@ MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 assert issubclass(EnumField, ma.fields.Field)  # just register EnumField
 
 
-class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel, TVCollection]):
+class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
     """Support Peeweee."""
 
     if TYPE_CHECKING:
-        resource: TVModel
-        meta: PWRESTOptions[TVModel]  # type: ignore[override]
+        resource: TVResource
+        meta: PWRESTOptions[TVResource]  # type: ignore[override]
 
-    meta_class = PWRESTOptions[TVModel]
+    meta_class = PWRESTOptions[TVResource]
 
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
     async def prepare_collection(self, request: Request) -> TVCollection:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.model.select()
 
-    async def prepare_resource(self, request: Request) -> TVModel | None:
+    async def prepare_resource(self, request: Request) -> TVResource | None:
         """Load a resource."""
         key = request["path_params"].get("id")
         if not key:
@@ -76,7 +76,7 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel, TVCollection]):
 
         return self.collection.offset(offset).limit(limit), count
 
-    async def get(self, request, *, resource: TVModel | None = None) -> Any:
+    async def get(self, request, *, resource: TVResource | None = None) -> Any:
         """Get resource or collection of resources."""
         if resource:
             return await self.dump(request, resource)
@@ -84,7 +84,7 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel, TVCollection]):
         resources = await self.meta.manager.fetchall(self.collection)
         return await self.dump(request, resources, many=True)
 
-    async def save(self, request: Request, resource: TVModel, *, update=False):
+    async def save(self, request: Request, resource: TVResource, *, update=False):
         """Save the given resource."""
         meta = self.meta
         manager = meta.manager
@@ -95,7 +95,7 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel, TVCollection]):
 
         return resource
 
-    async def remove(self, request: Request, resource: TVModel | None = None):
+    async def remove(self, request: Request, resource: TVResource | None = None):
         """Remove the given resource."""
         meta = self.meta
         if resource:
@@ -121,11 +121,11 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel, TVCollection]):
 
         return resource.get_id() if resource else [r.get_id() for r in resources]
 
-    async def delete(self, request: Request, resource: TVModel | None = None):  # type: ignore[override]
+    async def delete(self, request: Request, resource: TVResource | None = None):  # type: ignore[override]
         return await self.remove(request, resource)
 
     def get_schema(
-        self, request: Request, *, resource: TVModel | None = None, **schema_options
+        self, request: Request, *, resource: TVResource | None = None, **schema_options
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)

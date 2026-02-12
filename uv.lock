@@ -495,6 +495,7 @@ dependencies = [
     { name = "apispec" },
     { name = "marshmallow" },
     { name = "muffin" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 
 [package.optional-dependencies]
@@ -544,6 +545,7 @@ requires-dist = [
     { name = "muffin-peewee-aio", marker = "extra == 'peewee'" },
     { name = "pyyaml", marker = "extra == 'yaml'" },
     { name = "sqlalchemy", marker = "extra == 'sqlalchemy'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 provides-extras = ["yaml", "peewee", "sqlalchemy"]
 

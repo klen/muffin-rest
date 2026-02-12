@@ -22,7 +22,12 @@ classifiers = [
   "Framework :: AsyncIO",
   "Framework :: Trio",
 ]
-dependencies = ["apispec>=6,<7", "marshmallow>=3,<4", "muffin"]
+dependencies = [
+  "apispec>=6,<7",
+  "marshmallow>=3,<4",
+  "muffin",
+  "typing-extensions ; python_full_version < '3.13'",
+]
 
 [project.optional-dependencies]
 yaml = ["pyyaml"]

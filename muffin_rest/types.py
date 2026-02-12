@@ -1,18 +1,15 @@
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Awaitable,
-    Callable,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Any, Awaitable, Callable
+
+from typing_extensions import TypeVar  # py310,py311,py312
 
 if TYPE_CHECKING:
     from .handler import RESTBase
 
 from muffin import Request
 
-TVCollection = TypeVar("TVCollection", bound=Any)
-TVResource = TypeVar("TVResource", bound=Any)
+TVResource = TypeVar("TVResource", bound=Any, default=Any)
+TVCollection = TypeVar("TVCollection", bound=Any, default=Any)
+
 TAuth = Callable[[Request], Awaitable]
 TVAuth = TypeVar("TVAuth", bound=TAuth)
 TVHandler = TypeVar("TVHandler", bound=type["RESTBase"])
