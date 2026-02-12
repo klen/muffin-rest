@@ -51,8 +51,7 @@ class RESTBase(Handler, Generic[TVResource], metaclass=RESTHandlerMeta):
     """Load/save resources."""
 
     auth: Any
-    collection: Any
-    resource: Any
+    resource: TVResource
 
     meta: RESTOptions
     meta_class: type[RESTOptions] = RESTOptions

@@ -84,14 +84,12 @@ async def resource(db):
 
 def test_imports():
     from muffin_rest import PWFilter, PWFilters, PWRESTHandler, PWSort, PWSorting
-    from muffin_rest.peewee import PWRESTBase
 
     assert PWRESTHandler is not None
     assert PWFilter is not None
     assert PWFilters is not None
     assert PWSort is not None
     assert PWSorting is not None
-    assert PWRESTBase is not None
 
 
 async def test_base(api, endpoint_cls):
@@ -369,7 +367,7 @@ async def test_aiomodels(client, db, api):
     from muffin_rest.peewee import PWRESTHandler
 
     @api.route
-    class Test(PWRESTHandler):
+    class Test(PWRESTHandler[TestModel]):
         class Meta(PWRESTHandler.Meta):
             model = TestModel
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import marshmallow as ma
 from apispec.ext.marshmallow import MarshmallowPlugin
@@ -29,26 +29,23 @@ MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 assert issubclass(EnumField, ma.fields.Field)  # just register EnumField
 
 
-class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
+class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel]):
     """Support Peeweee."""
 
     if TYPE_CHECKING:
         resource: TVModel
-        collection: AIOModelSelect | pw.ModelSelect
+        meta: PWRESTOptions[TVModel]  # type: ignore[override]
 
-    meta: PWRESTOptions  # type: ignore[override]
-    meta_class = PWRESTOptions
+    meta_class = PWRESTOptions[TVModel]
 
     @overload
     async def prepare_collection(
-        self: PWRESTBase[TVAIOModel],
-        request: Request,
+        self: PWRESTHandler[TVAIOModel], request: Request
     ) -> AIOModelSelect[TVAIOModel]: ...
 
     @overload
     async def prepare_collection(
-        self: PWRESTBase[pw.Model],
-        request: Request,
+        self: PWRESTHandler[TVModel], request: Request
     ) -> pw.ModelSelect: ...
 
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
@@ -78,18 +75,18 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
 
     @overload
     async def paginate(
-        self: PWRESTBase[TVAIOModel], request: Request, *, limit: int = 0, offset: int = 0
+        self: PWRESTHandler[TVAIOModel], request: Request, *, limit: int = 0, offset: int = 0
     ) -> tuple[AIOModelSelect[TVAIOModel], int | None]: ...
 
     @overload
     async def paginate(
-        self: PWRESTBase[pw.Model], request: Request, *, limit: int = 0, offset: int = 0
+        self: PWRESTHandler[TVModel], request: Request, *, limit: int = 0, offset: int = 0
     ) -> tuple[pw.ModelSelect, int | None]: ...
 
     async def paginate(self, request: Request, *, limit: int = 0, offset: int = 0):
         """Paginate the collection."""
         if self.meta.limit_total:
-            cqs = cast("pw.ModelSelect", self.collection.order_by())
+            cqs = self.collection.order_by()
             if cqs._group_by:  # type: ignore[misc]
                 cqs._returning = cqs._group_by  # type: ignore[misc]
                 cqs._having = None  # type: ignore[misc]
@@ -154,7 +151,3 @@ class PWRESTBase(RESTBase[TVModel], PeeweeOpenAPIMixin):
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)
-
-
-class PWRESTHandler(PWRESTBase[TVModel], PeeweeOpenAPIMixin):
-    meta: PWRESTOptions

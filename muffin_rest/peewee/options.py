@@ -1,5 +1,8 @@
+from typing import Generic
+
 import peewee as pw
 from marshmallow_peewee import ModelSchema
+from marshmallow_peewee.types import TVModel
 from peewee_aio import Manager
 
 from muffin_rest.options import RESTOptions
@@ -8,7 +11,7 @@ from .filters import PWFilters
 from .sorting import PWSorting
 
 
-class PWRESTOptions(RESTOptions):
+class PWRESTOptions(RESTOptions, Generic[TVModel]):
     """Support Peewee."""
 
     # Base filters class
@@ -24,7 +27,7 @@ class PWRESTOptions(RESTOptions):
 
     base_property: str = "model"
 
-    model: type[pw.Model]
+    model: type[TVModel]
     model_pk: pw.Field
 
     manager: Manager
