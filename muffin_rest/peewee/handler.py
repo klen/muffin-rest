@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any
 
 import marshmallow as ma
 from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ForeignKey
-from peewee_aio.model import AIOModel, AIOModelSelect
+from peewee_aio.model import AIOModel
 
 from muffin_rest.errors import APIError
 from muffin_rest.handler import RESTBase
@@ -15,12 +15,10 @@ from muffin_rest.peewee.openapi import PeeweeOpenAPIMixin
 
 from .options import PWRESTOptions
 from .schemas import EnumField
-from .types import TVModel
+from .types import TVCollection, TVModel
 
 if TYPE_CHECKING:
-    import peewee as pw
     from muffin import Request
-    from peewee_aio.types import TVAIOModel
 
 
 # TODO: Patch apispec.MarshmallowPlugin to support ForeignKeyField
@@ -29,7 +27,7 @@ MarshmallowPlugin.Converter.field_mapping[ForeignKey] = ("integer", None)
 assert issubclass(EnumField, ma.fields.Field)  # just register EnumField
 
 
-class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel]):
+class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel, TVCollection]):
     """Support Peeweee."""
 
     if TYPE_CHECKING:
@@ -38,18 +36,8 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel]):
 
     meta_class = PWRESTOptions[TVModel]
 
-    @overload
-    async def prepare_collection(
-        self: PWRESTHandler[TVAIOModel], request: Request
-    ) -> AIOModelSelect[TVAIOModel]: ...
-
-    @overload
-    async def prepare_collection(
-        self: PWRESTHandler[TVModel], request: Request
-    ) -> pw.ModelSelect: ...
-
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
-    async def prepare_collection(self, request: Request):
+    async def prepare_collection(self, request: Request) -> TVCollection:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return self.meta.model.select()
 
@@ -72,16 +60,6 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVModel]):
             raise APIError.NOT_FOUND("Resource not found")
 
         return resource
-
-    @overload
-    async def paginate(
-        self: PWRESTHandler[TVAIOModel], request: Request, *, limit: int = 0, offset: int = 0
-    ) -> tuple[AIOModelSelect[TVAIOModel], int | None]: ...
-
-    @overload
-    async def paginate(
-        self: PWRESTHandler[TVModel], request: Request, *, limit: int = 0, offset: int = 0
-    ) -> tuple[pw.ModelSelect, int | None]: ...
 
     async def paginate(self, request: Request, *, limit: int = 0, offset: int = 0):
         """Paginate the collection."""

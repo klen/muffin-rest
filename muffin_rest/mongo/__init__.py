@@ -14,7 +14,7 @@ from muffin_rest.mongo.schema import MongoSchema
 from muffin_rest.mongo.sorting import MongoSorting
 from muffin_rest.mongo.utils import MongoChain
 
-from .types import TVResource
+from .types import TVCollection, TVResource
 
 if TYPE_CHECKING:
     import marshmallow as ma
@@ -46,7 +46,7 @@ class MongoRESTOptions(RESTOptions):
         super().setup(cls)
 
 
-class MongoRESTHandler(RESTHandler[TVResource]):
+class MongoRESTHandler(RESTHandler[TVResource, TVCollection]):
     """Support Mongo DB."""
 
     meta: MongoRESTOptions  # type: ignore[bad-override]
@@ -64,7 +64,7 @@ class MongoRESTHandler(RESTHandler[TVResource]):
                 *self.meta.aggregate,
                 {"$group": {self.meta.collection_id: None, "total": {"$sum": 1}}},
             ]
-            counts = list(self.collection.aggregate(pipeline_num))
+            counts = list(self.collection.aggregate(pipeline_num))  # type: ignore[]
             return (
                 self.collection.aggregate(pipeline_all),
                 (counts and counts[0]["total"]) or 0,  # type: ignore[]

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from muffin_databases import Plugin as Database
 
 
-from .types import TVResource
+from .types import TVCollection, TVResource
 
 ModelConverter._get_field_name = lambda _, prop_or_column: str(prop_or_column.key)  # type: ignore[assignment]
 
@@ -107,12 +107,11 @@ class SARESTOptions(RESTOptions):
         )
 
 
-class SARESTHandler(RESTHandler[TVResource]):
+class SARESTHandler(RESTHandler[TVResource, TVCollection]):
     """Support SQLAlchemy Core."""
 
     meta: SARESTOptions  # type: ignore[bad-override]
     meta_class = SARESTOptions
-    collection: sa.sql.Select
 
     async def prepare_collection(self, request: Request) -> sa.sql.Select:
         """Initialize Peeewee QuerySet for a binded to the resource model."""

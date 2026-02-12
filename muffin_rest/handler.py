@@ -47,11 +47,12 @@ class RESTHandlerMeta(HandlerMeta):
         return kls
 
 
-class RESTBase(Handler, Generic[TVResource], metaclass=RESTHandlerMeta):
+class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandlerMeta):
     """Load/save resources."""
 
     auth: Any
     resource: TVResource
+    collection: TVCollection
 
     meta: RESTOptions
     meta_class: type[RESTOptions] = RESTOptions
@@ -300,7 +301,7 @@ class RESTBase(Handler, Generic[TVResource], metaclass=RESTHandlerMeta):
         return ResponseJSON(res)
 
 
-class RESTHandler(RESTBase[TVResource], openapi.OpenAPIMixin):
+class RESTHandler(RESTBase[TVResource, TVCollection], openapi.OpenAPIMixin):
     """Basic Handler Class."""
 
 
