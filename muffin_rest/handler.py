@@ -2,17 +2,7 @@
 
 import abc
 import inspect
-from typing import (
-    Any,
-    Generator,
-    Generic,
-    Iterable,
-    Literal,
-    Mapping,
-    Sequence,
-    cast,
-    overload,
-)
+from typing import Any, Generator, Generic, Iterable, Literal, Mapping, Sequence, cast, overload
 
 import marshmallow as ma
 from asgi_tools.response import ResponseJSON, parse_response

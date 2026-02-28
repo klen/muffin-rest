@@ -1,5 +1,6 @@
 import marshmallow as ma
 import pytest
+from asgi_tools.request import Request
 
 
 @pytest.fixture(autouse=True)
@@ -7,7 +8,7 @@ def _setup(api):
     from muffin_rest import RESTHandler
 
     @api.authorization
-    async def authorization(request):
+    async def authorization(request: Request):
         """Setup authorization for whole API.
 
         Can be redefined for an endpoint.
@@ -26,7 +27,7 @@ def _setup(api):
         return request.headers.get("authorization", "")
 
     @api.route("/token", methods="get")
-    async def token(request) -> str:
+    async def token(request: Request) -> str:
         """Get user token."""
         return "TOKEN"
 
@@ -40,6 +41,10 @@ def _setup(api):
 
             class Schema(ma.Schema):
                 name = ma.fields.String(required=True)
+
+        async def get(self, request: Request, *, resource=None):
+            """Get pets list or pet by id."""
+            return await super().get(request, resource=resource)
 
     @api.route("/cats", "/cats/{id}")
     class Cat(RESTHandler):

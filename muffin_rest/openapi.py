@@ -153,7 +153,8 @@ def route_to_methods(route: Route) -> list[str]:
 def return_type_to_response(fn: Callable) -> dict:
     """Generate reponses specs based on the given function's return type."""
     responses: dict[int, dict] = {}
-    return_type = fn.__annotations__.get("return")
+    ann = inspect.get_annotations(fn, eval_str=False)
+    return_type = ann.get("return")
     if return_type is None:
         return responses
 
@@ -244,7 +245,8 @@ class OpenAPIMixin:
                 (operations[method]["summary"], operations[method]["description"], mschema) = (
                     parse_docs(meth)
                 )
-                return_type = meth.__annotations__.get("return")
+                ann = inspect.get_annotations(meth, eval_str=False)
+                return_type = ann.get("return")
                 if return_type in ("JSONType", TJSON):
                     responses = {
                         200: {
