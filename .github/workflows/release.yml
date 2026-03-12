@@ -15,7 +15,6 @@ jobs:
       - uses: astral-sh/setup-uv@main
         with:
           enable-cache: true
-          python-version: "3.13"
 
       - name: Build Package
         run: |
