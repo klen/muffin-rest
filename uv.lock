@@ -476,7 +476,7 @@ wheels = [
 
 [[package]]
 name = "muffin-rest"
-version = "13.3.3"
+version = "13.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "apispec" },
