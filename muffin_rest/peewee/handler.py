@@ -68,6 +68,9 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
         except PeeweeException:
             resource = None
 
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise APIError.BAD_REQUEST("Invalid resource ID") from exc
+
         if resource is None:
             raise APIError.NOT_FOUND("Resource not found")
 
