@@ -246,7 +246,7 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
     ) -> TSchemaRes | list[TSchemaRes]:
         """Serialize the given response."""
         schema = self.get_schema(request)
-        return schema.dump(data, many=many)
+        return cast("TSchemaRes | list[TSchemaRes]", schema.dump(data, many=many))
 
     async def get(self, request: Request, *, resource: TVResource | None = None) -> Any:
         """Get a resource or a collection of resources.

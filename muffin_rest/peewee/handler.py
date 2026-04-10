@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import marshmallow as ma
 from apispec.ext.marshmallow import MarshmallowPlugin
 from marshmallow_peewee import ForeignKey
+from peewee import CompositeKey, PeeweeException
 from peewee_aio.model import AIOModel
 
 from muffin_rest.errors import APIError
 from muffin_rest.handler import RESTBase
 from muffin_rest.peewee.openapi import PeeweeOpenAPIMixin
+from muffin_rest.peewee.utils import id_to_composite_keys
 
 from .options import PWRESTOptions
 from .schemas import EnumField
@@ -39,7 +41,7 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
     async def prepare_collection(self, request: Request) -> TVCollection:
         """Initialize Peeewee QuerySet for a binded to the resource model."""
-        return self.meta.model.select()
+        return cast("TVCollection", self.meta.model.select())
 
     async def prepare_resource(self, request: Request) -> TVResource | None:
         """Load a resource."""
@@ -48,12 +50,22 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
             return None
 
         meta = self.meta
+        model_pk = meta.model_pk
 
         try:
-            resource = await meta.manager.fetchone(
-                self.collection.where(meta.model_pk == key),
-            )
-        except Exception:  # noqa: BLE001
+            if isinstance(model_pk, CompositeKey):
+                keys = id_to_composite_keys(model_pk, key)
+                where = []
+                for name, value in keys.items():
+                    field = getattr(meta.model, name)
+                    where.append(field == field.python_value(value))
+                query = self.collection.where(*where)
+            else:
+                query = self.collection.where(model_pk == model_pk.python_value(key))
+
+            resource = await meta.manager.fetchone(query)
+
+        except PeeweeException:
             resource = None
 
         if resource is None:

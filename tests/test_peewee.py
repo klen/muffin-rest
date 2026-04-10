@@ -1,6 +1,7 @@
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
+import marshmallow as ma
 import peewee as pw
 import pytest
 from muffin_peewee import JSONLikeField
@@ -415,3 +416,70 @@ async def test_custom_pk(db, api, client):
 
     res = await CustomPKModel.get(CustomPKModel.id == "test-id")
     assert res.body == "updated body"
+
+
+async def test_composite_pk(db, api, client):
+    class CompositePKModel(db.Model):
+        tenant = pw.CharField()
+        seq = pw.IntegerField()
+        body = pw.TextField()
+
+        class Meta:
+            primary_key = pw.CompositeKey("tenant", "seq")
+
+    await db.manager.create_tables(CompositePKModel)
+
+    from muffin_rest.peewee import PWRESTHandler
+    from muffin_rest.peewee.utils import SEPARATOR
+
+    @api.route("/composite-pk", "/composite-pk/{id}")
+    class CompositePKTest(PWRESTHandler):
+        class Meta(PWRESTHandler.Meta):
+            model = CompositePKModel
+
+    payload = {"tenant": "acme", "seq": 7, "body": "test body"}
+    res = await client.post("/api/composite-pk", json=payload)
+    assert res.status_code == 200
+
+    resource_id = f"acme{SEPARATOR}7"
+
+    res = await client.get(f"/api/composite-pk/{resource_id}")
+    assert res.status_code == 200
+    json = await res.json()
+    assert json["tenant"] == "acme"
+    assert json["seq"] == 7
+    assert json["body"] == "test body"
+
+    res = await client.put(f"/api/composite-pk/{resource_id}", json={"body": "updated body"})
+    assert res.status_code == 200
+    json = await res.json()
+    assert json["body"] == "updated body"
+
+    res = await CompositePKModel.get(
+        (CompositePKModel.tenant == "acme") & (CompositePKModel.seq == 7),
+    )
+    assert res.body == "updated body"
+
+    res = await client.get(f"/api/composite-pk/missing{SEPARATOR}7")
+    assert res.status_code == 404
+
+    assert await CompositePKModel.select().count() == 1
+
+
+def test_composite_pk_field():
+    class CompositePKSchemaModel(pw.Model):
+        tenant = pw.CharField()
+        seq = pw.IntegerField()
+
+        class Meta:
+            primary_key = pw.CompositeKey("tenant", "seq")
+
+    import muffin_rest.peewee.schemas as peewee_schemas
+    from muffin_rest.peewee.utils import SEPARATOR
+
+    class CompositeSchema(ma.Schema):
+        id = peewee_schemas.CompositePKField(CompositePKSchemaModel)
+
+    schema = CompositeSchema()
+    dumped = cast("dict[str, str]", schema.dump(CompositePKSchemaModel(tenant="acme", seq=7)))
+    assert dumped["id"] == f"acme{SEPARATOR}7"
