@@ -1,6 +1,4 @@
-from typing import TYPE_CHECKING, Any, Awaitable, Callable
-
-from typing_extensions import TypeVar  # py310,py311,py312
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, TypeVar
 
 if TYPE_CHECKING:
     from .handler import RESTBase
