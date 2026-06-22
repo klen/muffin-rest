@@ -2,7 +2,7 @@ import sys
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, TypeVar
 
 if sys.version_info < (3, 13):
-    from typing_extensions import TypeVar  # py310,py311,py312
+    from typing_extensions import TypeVar  # py311,py312
 else:
     from typing import TypeVar
 

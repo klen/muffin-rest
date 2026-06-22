@@ -1,7 +1,7 @@
 from typing import Any
 
 from sqlalchemy import sql
-from typing_extensions import TypeVar  # py310,py311,py312
+from typing_extensions import TypeVar  # py311,py312
 
 TVCollection = TypeVar("TVCollection", bound=sql.Select, default=sql.Select)
 
