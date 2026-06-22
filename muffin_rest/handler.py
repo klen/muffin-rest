@@ -258,7 +258,7 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
             if resource
             else self.dump(request, data=self.collection, many=True)
         )
-        return ResponseJSON(res)
+        return ResponseJSON(cast("Any", res))
 
     async def post(self, request: Request, *, resource: TVResource | None = None) -> Any:
         """Create a resource.
@@ -273,7 +273,7 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
             data = await self.save(request, cast("TVResource", data), update=resource is not None)
 
         res = await self.dump(request, data, many=many)
-        return ResponseJSON(res)
+        return ResponseJSON(cast("Any", res))
 
     async def put(self, request: Request, *, resource: TVResource | None = None) -> Any:
         """Update a resource."""
@@ -288,7 +288,7 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
             raise APIError.NOT_FOUND()
 
         res = await self.remove(request, resource)
-        return ResponseJSON(res)
+        return ResponseJSON(cast("Any", res))
 
 
 class RESTHandler(RESTBase[TVResource, TVCollection], openapi.OpenAPIMixin):
