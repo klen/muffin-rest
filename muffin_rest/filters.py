@@ -75,7 +75,7 @@ class Filter(Mutate):
         self.schema_field = schema_field or self.schema_field
         self.default_operator = operator or self.default_operator
 
-    async def apply(self, collection: Any, data: Mapping | None = None):
+    async def apply(self, collection: Any, data: Mapping | None = None, **ctx):
         """Filter given collection."""
         if not data:
             return None, collection
@@ -86,11 +86,11 @@ class Filter(Mutate):
             return None, collection
 
         if ops:
-            collection = await self.filter(collection, *ops)
+            collection = await self.filter(collection, *ops, **ctx)
 
         return ops, collection
 
-    async def filter(self, collection: TVCollection, *ops: TFilterValue) -> TVCollection:
+    async def filter(self, collection: TVCollection, *ops: TFilterValue, **ctx) -> TVCollection:
         """Apply the filter to collection."""
 
         def validator(obj):
@@ -141,7 +141,7 @@ class Filters(Mutator[Filter]):
     mutations: Mapping[str, Filter]
 
     async def apply(
-        self, request: Request, collection: TVCollection
+        self, request: Request, collection: TVCollection, **ctx
     ) -> tuple[TVCollection, dict[str, Any]]:
         """Filter the given collection."""
         raw_data = request.url.query.get(FILTERS_PARAM)
@@ -150,10 +150,12 @@ class Filters(Mutator[Filter]):
             try:
                 data = json_loads(raw_data)
                 assert isinstance(data, dict)
+
                 mutations = self.mutations
                 for name in mutations:
                     if name in data:
-                        ops, collection = await mutations[name].apply(collection, data)
+                        f = mutations[name]
+                        ops, collection = await f.apply(collection, data=data, **ctx)
                         filters[name] = ops
 
             except (ValueError, TypeError, AssertionError):

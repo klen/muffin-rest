@@ -21,7 +21,7 @@ class SASort(Sort):
         collection: TVCollection,
         *,
         desc: bool = False,
-        **_,
+        **ctx,
     ) -> TVCollection:
         """Sort the collection."""
         field = self.field

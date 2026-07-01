@@ -18,7 +18,7 @@ SORT_PARAM = "sort"
 class Sort(Mutate):
     """Sort a collection."""
 
-    async def apply(self, collection, *, desc: bool = False) -> Any:
+    async def apply(self, collection, *, desc: bool = False, **ctx) -> Any:
         """Sort the collection."""
         return sorted(collection, key=lambda obj: getattr(obj, self.name), reverse=desc)
 
@@ -34,7 +34,7 @@ class Sorting(Mutator[Sort]):
         super(Sorting, self).__init__(handler, params)
 
     async def apply(
-        self, request: Request, collection: TVCollection
+        self, request: Request, collection: TVCollection, **ctx
     ) -> tuple[TVCollection, dict[str, Any]]:
         """Sort the given collection."""
         data = request.url.query.get(SORT_PARAM)

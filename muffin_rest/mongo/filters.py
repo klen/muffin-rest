@@ -18,11 +18,11 @@ class MongoFilter(Filter):
         "$lt": lambda _, v: ("$lt", v),
         "$ne": lambda _, v: ("$ne", v),
         "$nin": lambda _, v: ("$nin", v),
-        "$starts": lambda _, v: ("$regex", f"^{ v }"),
-        "$ends": lambda _, v: ("$regex", f"{ v }$"),
+        "$starts": lambda _, v: ("$regex", f"^{v}"),
+        "$ends": lambda _, v: ("$regex", f"{v}$"),
     }
 
-    async def filter(self, collection, *ops: TFilterValue):
+    async def filter(self, collection, *ops: TFilterValue, **ctx):
         """Apply the filter."""
         return collection.find({self.field: dict(op(self.name, v) for op, v in ops)})
 

@@ -29,7 +29,7 @@ class Mutate(abc.ABC):
         return f"<{self.__class__.__name__} '{self.name}'>"
 
     @abc.abstractmethod
-    async def apply(self, collection: TVCollection) -> tuple[Any, TVCollection]:
+    async def apply(self, collection: TVCollection, **ctx) -> tuple[Any, TVCollection]:
         """Apply the mutation."""
         ...
 

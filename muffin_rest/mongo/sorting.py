@@ -1,4 +1,5 @@
 """Support sorting for Mongo ORM."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 class MongoSort(Sort):
     """Sorter for Peewee."""
 
-    async def apply(self, collection, *, desc: bool = False, **_):
+    async def apply(self, collection, *, desc: bool = False, **ctx):
         """Sort the collection."""
         collection.sorting.append((self.field, -1 if desc else 1))
         return collection
@@ -26,9 +27,6 @@ class MongoSorting(Sorting):
     def sort_default(self, collection: TVCollection) -> TVCollection:
         """Sort collection by default."""
         res = collection.sort(
-            [
-                (sort.name, -1 if sort.meta["default"] == "desc" else 1)
-                for sort in self.default
-            ],
+            [(sort.name, -1 if sort.meta["default"] == "desc" else 1) for sort in self.default],
         )
         return res

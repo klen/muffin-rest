@@ -39,7 +39,7 @@ class PWFilter(Filter):
 
     list_ops = (*Filter.list_ops, "$between")
 
-    async def filter(self, collection, *ops: TFilterValue):
+    async def filter(self, collection, *ops: TFilterValue, **ctx):
         """Apply the filters to Peewee QuerySet.."""
         column = self.field
 
