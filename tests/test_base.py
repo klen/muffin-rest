@@ -113,6 +113,42 @@ async def test_handler(api, client):
     }
 
 
+async def test_sorting_ctx_forwarding():
+    """Verify that **ctx is forwarded from Sorting.apply to each Sort.apply call."""
+    from muffin_rest.sorting import Sort, Sorting
+
+    ctx_received: list[dict] = []
+
+    class CaptureSort(Sort):
+        async def apply(self, collection, *, desc=False, **ctx):
+            ctx_received.append(ctx)
+            return collection
+
+    # Build a Sorting with CaptureSort mutations.
+    # Sorting.convert expects (str, ...) tuples; we supply names directly.
+    class FakeHandler:
+        pass
+
+    sorting = Sorting(FakeHandler, ("name", "count"))
+    sorting.mutations["name"] = CaptureSort("name")
+    sorting.mutations["count"] = CaptureSort("count")
+
+    # Mock a request with sort=name,-count
+    class FakeURL:
+        query = {"sort": "name,-count"}
+
+    class FakeRequest:
+        url = FakeURL()
+
+    extra_ctx = {"db_session": "test", "user_id": 42}
+    _, _ = await sorting.apply(FakeRequest(), [1, 2, 3], **extra_ctx)
+
+    # Both sorts should have received the ctx
+    assert len(ctx_received) == 2
+    for ctx in ctx_received:
+        assert ctx == extra_ctx
+
+
 async def test_handler2(api, apiclient):
     from muffin_rest import APIError, RESTHandler
 

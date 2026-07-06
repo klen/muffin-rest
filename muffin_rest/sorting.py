@@ -46,7 +46,7 @@ class Sorting(Mutator[Sort]):
                 sort = self.mutations[name]
                 if name in sorting:
                     desc = sorting[name]
-                    collection = await sort.apply(collection, desc=desc)
+                    collection = await sort.apply(collection, desc=desc, **ctx)
                     sorting[sort.name] = desc
 
         elif self.default:
