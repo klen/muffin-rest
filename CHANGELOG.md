@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Python 3.15 support.
+
+### Fixed
+
+- Compatibility with Muffin 3 and http-router 10: `RESTBase.__route__` accepts `methods`/`hosts` and 3-tuple method routes.
+- Explicit `SAFilter`/`PWFilter` instances with string fields are resolved to table columns.
+
+### Changed
+
+- SQLAlchemy delete and batch operation tests are enabled again.
+
 ## [13.5.0] - 2026-04-10
 
 ### Added
