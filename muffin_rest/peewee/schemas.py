@@ -24,7 +24,7 @@ class CompositePKField(ma.fields.Field):
 
     def __init__(self, model: type[Model], **kwargs):
         pk = model._meta.primary_key  # type: ignore[]
-        fields = [getattr(model, name) for name in pk.field_names]
+        fields = [getattr(model, name) for name in pk.field_names]  # pyrefly: ignore[missing-attribute]
         self.callable = partial(composite_key_to_id, fields)
         kwargs["dump_only"] = True
         super().__init__(**kwargs)

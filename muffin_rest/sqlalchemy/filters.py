@@ -56,8 +56,8 @@ class SAFilters(Filters):
         handler = cast("SARESTHandler", self.handler)
 
         if isinstance(obj, SAFilter):
-            if obj.field is None:
-                obj.field = handler.meta.table.c.get(obj.name)
+            if not isinstance(obj.field, Column):
+                obj.field = handler.meta.table.c.get(obj.field or obj.name)
             return obj
 
         if isinstance(obj, Column):

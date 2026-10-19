@@ -36,7 +36,7 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
         resource: TVResource
         meta: PWRESTOptions[TVResource]  # type: ignore[override]
 
-    meta_class = PWRESTOptions[TVResource]
+    meta_class = PWRESTOptions[TVResource]  # pyrefly: ignore[invalid-type-var]
 
     # NOTE: there is not a default sorting for peewee (conflict with muffin-admin)
     async def prepare_collection(self, request: Request) -> TVCollection:
@@ -104,7 +104,7 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
         meta = self.meta
         manager = meta.manager
         if issubclass(meta.model, AIOModel):
-            await resource.save(force_insert=not update)
+            await resource.save(force_insert=not update)  # pyrefly: ignore[not-async]
         else:
             await manager.save(resource, force_insert=not update)
 
@@ -129,7 +129,7 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
         is_aiomodel = issubclass(meta.model, AIOModel)
         if is_aiomodel:
             for res in resources:
-                await res.delete_instance(recursive=meta.delete_recursive)
+                await res.delete_instance(recursive=meta.delete_recursive)  # pyrefly: ignore[not-async]
         else:
             for res in resources:
                 await meta.manager.delete_instance(res, recursive=meta.delete_recursive)

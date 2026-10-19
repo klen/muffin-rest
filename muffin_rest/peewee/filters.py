@@ -59,6 +59,8 @@ class PWFilters(Filters):
 
         handler = cast("PWRESTHandler", self.handler)
         if isinstance(obj, PWFilter):
+            if not isinstance(obj.field, Field):
+                obj.field = get_model_field_by_name(handler, obj.field or obj.name)
             return obj
 
         if isinstance(obj, Field):

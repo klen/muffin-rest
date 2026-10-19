@@ -86,7 +86,7 @@ class SARESTOptions(RESTOptions):
             raise ValueError("'SARESTHandler.Meta.database' is required")
 
         self.name = self.name or self.table.name
-        self.table_pk = getattr(self, "table_pk", None) or self.table.c.id
+        self.table_pk = getattr(self, "table_pk", None) or self.table.c.id  # pyrefly: ignore[read-only]
 
         super().setup(cls)
 

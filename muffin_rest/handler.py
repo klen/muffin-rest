@@ -64,19 +64,26 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
         Schema: type[ma.Schema] | None = None
 
     @classmethod
-    def __route__(cls, router, *paths, **params):
+    def __route__(
+        cls,
+        router,
+        *paths,
+        methods=None,
+        hosts=None,
+        **params,
+    ):
         """Bind the class to the given router."""
-        methods = params.pop("methods") or cls.methods
+        methods = methods or cls.methods
         if paths:
-            router.bind(cls, *paths, methods=methods, **params)
+            router.bind(cls, *paths, methods=methods, hosts=hosts, **params)
 
         else:
-            router.bind(cls, f"/{cls.meta.name}", methods=methods, **params)
-            router.bind(cls, f"/{cls.meta.name}/{{id}}", methods=methods, **params)
+            router.bind(cls, f"/{cls.meta.name}", methods=methods, hosts=hosts, **params)
+            router.bind(cls, f"/{cls.meta.name}/{{id}}", methods=methods, hosts=hosts, **params)
 
         for _, method in inspect.getmembers(cls, lambda m: hasattr(m, "__route__")):
-            paths, methods = method.__route__
-            router.bind(cls, *paths, methods=methods, method_name=method.__name__)
+            paths, methods, hosts = method.__route__
+            router.bind(cls, *paths, methods=methods, hosts=hosts, method_name=method.__name__)
 
         return cls
 

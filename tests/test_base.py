@@ -149,7 +149,7 @@ async def test_sorting_ctx_forwarding():
         assert ctx == extra_ctx
 
 
-async def test_handler2(api, apiclient):
+async def test_handler2(api, apiclient):  # noqa: C901
     from muffin_rest import APIError, RESTHandler
 
     source = [1, 2, 3]
@@ -172,8 +172,8 @@ async def test_handler2(api, apiclient):
 
             try:
                 return source[int(key)]
-            except IndexError:
-                raise APIError.NOT_FOUND("Resource not found")
+            except (IndexError, ValueError) as exc:
+                raise APIError.NOT_FOUND("Resource not found") from exc
 
         async def paginate(self, request, limit, offset):
             return self.collection[offset : offset + limit], len(source)
@@ -257,8 +257,9 @@ async def test_handler2(api, apiclient):
     assert res.status_code == 200
     assert await res.text() == "source: custom"
 
+    # Unknown ids fall through to the detail route, which returns 404
     res = await apiclient.post("/api/source/custom")
-    assert res.status_code == 405
+    assert res.status_code == 404
 
 
 async def test_bad_request(api, client):
