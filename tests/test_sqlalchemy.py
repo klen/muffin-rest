@@ -90,12 +90,21 @@ def test_imports():
 
 
 def test_base(ResourceEndpoint, api):
+    from muffin_rest.sqlalchemy.filters import SAFilter
+
     assert ResourceEndpoint
     assert ResourceEndpoint.meta.name == "resource"
     assert ResourceEndpoint.meta.Schema
     assert ResourceEndpoint.meta.Schema.opts.dump_only == ("id",)
     assert ResourceEndpoint.meta.sorting
     assert ResourceEndpoint.meta.filters
+
+    name_column = ResourceEndpoint.meta.table.c.name
+    assert ResourceEndpoint.meta.filters.mutations["name"].field is name_column
+
+    expr = sa.func.lower(name_column)
+    flt = SAFilter("lower", field=expr)
+    assert ResourceEndpoint.meta.filters.convert(flt).field is expr
 
     assert api.router.plain["/resource"]
     assert api.router.dynamic[0].pattern.pattern == "^/resource/(?P<id>[^/]+)$"

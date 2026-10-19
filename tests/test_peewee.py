@@ -335,8 +335,10 @@ async def test_endpoint_inheritance():
     assert ChildEndpoint.meta.name == "child"
 
 
-async def test_custom_filter():
-    from muffin_rest.peewee.filters import PWFilter
+async def test_custom_filter(endpoint_cls):
+    from playhouse.sqlite_ext import JSONField
+
+    from muffin_rest.peewee.filters import PWFilter, PWFilters
 
     class CustomFilter(PWFilter):
         field = Resource.count
@@ -347,6 +349,13 @@ async def test_custom_filter():
     assert flt.field is Resource.count
 
     assert CustomFilter.field
+
+    class JsonModel(pw.Model):
+        data = JSONField(default={})
+
+    expr = JsonModel.data["is_organizer"]
+    json_flt = PWFilter("is_organizer", field=expr)
+    assert PWFilters(endpoint_cls, []).convert(json_flt).field is expr
 
 
 async def test_aiomodels(client, db, api):

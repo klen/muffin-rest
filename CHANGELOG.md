@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Compatibility with Muffin 3 and http-router 10: `RESTBase.__route__` accepts `methods`/`hosts` and 3-tuple method routes.
-- Explicit `SAFilter`/`PWFilter` instances with string fields are resolved to table columns.
+- Explicit `SAFilter`/`PWFilter` instances with string fields are resolved to table columns; expression fields (e.g. `JSONPath`) are left as-is.
 
 ### Changed
 
