@@ -149,6 +149,33 @@ async def test_sorting_ctx_forwarding():
         assert ctx == extra_ctx
 
 
+async def test_sorting_applies_request_order():
+    from muffin_rest.sorting import Sort, Sorting
+
+    applied = []
+
+    class CaptureSort(Sort):
+        async def apply(self, collection, *, desc=False, **ctx):
+            applied.append((self.name, desc))
+            return collection
+
+    class FakeHandler:
+        pass
+
+    sorting = Sorting(FakeHandler, ("a", "b"))
+    sorting.mutations["a"] = CaptureSort("a")
+    sorting.mutations["b"] = CaptureSort("b")
+
+    class FakeURL:
+        query = {"sort": "b,-a"}
+
+    class FakeRequest:
+        url = FakeURL()
+
+    await sorting.apply(FakeRequest(), [])
+    assert applied == [("b", False), ("a", True)]
+
+
 async def test_handler2(api, apiclient):  # noqa: C901
     from muffin_rest import APIError, RESTHandler
 
@@ -318,6 +345,32 @@ async def test_handlers_with_schema(api, client):
     assert json == {"name": "muffin"}
 
     res = await client.get("/api/pets")
+    assert res.status_code == 200
+    json = await res.json()
+    assert json == [{"name": "muffin"}]
+
+
+async def test_schema_only_exclude(api, client):
+    from muffin_rest import RESTHandler
+
+    @api.route
+    class Pet(RESTHandler):
+        class Meta:
+            name = "pet"
+
+            class Schema(ma.Schema):
+                name = ma.fields.String()
+                age = ma.fields.Integer()
+
+        async def prepare_collection(self, request):
+            return [{"name": "muffin", "age": 3}]
+
+    res = await client.get("/api/pet?schema_only=name")
+    assert res.status_code == 200
+    json = await res.json()
+    assert json == [{"name": "muffin"}]
+
+    res = await client.get("/api/pet?schema_exclude=age")
     assert res.status_code == 200
     json = await res.json()
     assert json == [{"name": "muffin"}]

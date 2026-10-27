@@ -2,7 +2,7 @@
 
 import abc
 import inspect
-from typing import Any, Generator, Generic, Iterable, Literal, Mapping, Sequence, cast, overload
+from typing import Any, Generic, Iterable, Literal, Mapping, Sequence, cast, overload
 
 import marshmallow as ma
 from asgi_tools.response import ResponseJSON, parse_response
@@ -214,8 +214,13 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         query = request.url.query
-        schema_options.setdefault("only", query.get("schema_only"))
-        schema_options.setdefault("exclude", query.get("schema_exclude", ()))
+        for option in ("only", "exclude"):
+            value = query.get(f"schema_{option}")
+            if value:
+                schema_options.setdefault(
+                    option,
+                    [item.strip() for item in value.split(",") if item.strip()],
+                )
         return self.meta.Schema(**schema_options)
 
     async def load_data(self, request: Request):
@@ -302,11 +307,3 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
 
 class RESTHandler(RESTBase[TVResource, TVCollection], openapi.OpenAPIMixin):
     """Basic Handler Class."""
-
-
-def to_sort(sort_params: Sequence[str]) -> Generator[tuple[str, bool], None, None]:
-    """Generate sort params."""
-    for name in sort_params:
-        n, desc = name.strip("-"), name.startswith("-")
-        if n:
-            yield n, desc

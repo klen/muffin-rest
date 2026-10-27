@@ -41,11 +41,9 @@ class Sorting(Mutator[Sort]):
         sorting = {}
         if data:
             collection = self.prepare(collection)
-            sorting = dict(to_sort(data.split(",")))
-            for name in self.mutations:
-                sort = self.mutations[name]
-                if name in sorting:
-                    desc = sorting[name]
+            for name, desc in to_sort(data.split(",")):
+                sort = self.mutations.get(name)
+                if sort:
                     collection = await sort.apply(collection, desc=desc, **ctx)
                     sorting[sort.name] = desc
 
