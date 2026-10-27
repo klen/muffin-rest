@@ -215,7 +215,7 @@ class OpenAPIMixin:
                             "in": "query",
                             "schema": {
                                 "type": "integer",
-                                "minimum": 1,
+                                "minimum": meta.limit_min,
                                 "maximum": meta.limit,
                             },
                             "description": "The number of items to return",

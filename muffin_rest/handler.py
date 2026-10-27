@@ -178,9 +178,11 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
         query = request.url.query
         limit = query.get(LIMIT_PARAM) or meta.limit
         try:
-            return min(abs(int(limit)), meta.limit_max), int(query.get(OFFSET_PARAM, 0))
+            limit = min(max(abs(int(limit)), meta.limit_min), meta.limit_max)
+            offset = max(0, int(query.get(OFFSET_PARAM, 0)))
         except ValueError as exc:
             raise APIError.BAD_REQUEST("Pagination params are invalid") from exc
+        return limit, offset
 
     @abc.abstractmethod
     async def paginate(

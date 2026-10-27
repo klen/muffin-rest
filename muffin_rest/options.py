@@ -23,6 +23,9 @@ class RESTOptions:
     # limit_max: Max limit for pagination
     limit_max: int = 0
 
+    # limit_min: Min limit for pagination. Set to 0 to allow returning all rows.
+    limit_min: int = 1
+
     # limit_total: Return total count of results
     limit_total: bool = True
 

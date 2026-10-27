@@ -289,6 +289,57 @@ async def test_handler2(api, apiclient):  # noqa: C901
     assert res.status_code == 404
 
 
+async def test_pagination_clamps(api, apiclient):
+    from muffin_rest import RESTHandler
+
+    source = list(range(100))
+
+    @api.route
+    class Source(RESTHandler):
+        class Meta:
+            name = "source"
+            limit = 10
+            Schema = FakeSchema
+
+        async def prepare_collection(self, request):
+            return source
+
+        async def paginate(self, request, *, limit=0, offset=0):
+            return source[offset : offset + limit], len(source)
+
+    # limit=0 clamps up to limit_min (default 1)
+    res = await apiclient.get("/api/source", limit=0)
+    assert res.status_code == 200
+    json = await res.json()
+    assert json == [0]
+
+    # negative offset clamps to 0
+    res = await apiclient.get("/api/source", offset=-5)
+    assert res.status_code == 200
+    json = await res.json()
+    assert json == list(range(10))
+
+    @api.route
+    class AllSource(RESTHandler):
+        class Meta:
+            name = "allsource"
+            limit = 10
+            limit_min = 0
+            Schema = FakeSchema
+
+        async def prepare_collection(self, request):
+            return source
+
+        async def paginate(self, request, *, limit=0, offset=0):
+            return source[offset : offset + limit], len(source)
+
+    # limit_min=0 allows limit=0 to return everything
+    res = await apiclient.get("/api/allsource", limit=0)
+    assert res.status_code == 200
+    json = await res.json()
+    assert json == source
+
+
 async def test_bad_request(api, client):
     from muffin_rest import RESTHandler
 
