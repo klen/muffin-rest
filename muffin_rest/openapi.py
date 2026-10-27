@@ -32,7 +32,7 @@ HTTP_METHODS = [
     "GET",
     "POST",
     "PUT",
-    "PATH",
+    "PATCH",
     "DELETE",
     "HEAD",
     "OPTIONS",

@@ -17,7 +17,7 @@ class RESTOptions:
     # Pagination
     # ----------
 
-    # limit: Paginate results (set to None for disable pagination)
+    # limit: Paginate results (set to zero for disable pagination)
     limit: int = 0
 
     # limit_max: Max limit for pagination

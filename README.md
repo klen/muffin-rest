@@ -62,7 +62,6 @@ Endpoints available:
 - `POST   /api/users/` — create
 - `GET    /api/users/{id}/` — retrieve
 - `PUT    /api/users/{id}/` — replace
-- `PATCH  /api/users/{id}/` — update
 - `DELETE /api/users/{id}/` — remove
 - Docs: `/api/docs/`, OpenAPI spec: `/api/openapi.json`
 

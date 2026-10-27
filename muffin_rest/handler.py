@@ -40,6 +40,8 @@ class RESTHandlerMeta(HandlerMeta):
 class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandlerMeta):
     """Load/save resources."""
 
+    methods = ("get", "post", "put", "delete")
+
     auth: Any
     resource: TVResource
     collection: TVCollection

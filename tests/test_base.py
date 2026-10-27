@@ -346,6 +346,25 @@ async def test_handler_with_path(api, client):
     assert res.status_code == 200
 
 
+async def test_handler_default_methods(api, client):
+    from muffin_rest import RESTHandler
+
+    @api.route
+    class Simple(RESTHandler):
+        class Meta:
+            name = "simple"
+
+        async def prepare_collection(self, request):
+            return [1]
+
+    res = await client.get("/api/simple")
+    assert res.status_code == 200
+
+    for method in ("patch", "head", "options"):
+        res = await getattr(client, method)("/api/simple")
+        assert res.status_code == 405
+
+
 async def test_rate_limit(api, client, aiolib):
 
     rate_limiter = MemoryRateLimiter(10)
