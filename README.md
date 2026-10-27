@@ -99,6 +99,18 @@ class MyMongoEndpoint(MongoEndpoint):
 api.setup(app)
 ```
 
+## Filtering
+
+Pass filters in the `where` query parameter as JSON:
+
+```
+GET /api/users/?where={"name": "muffin", "age": {"$gt": 18}}
+```
+
+Invalid filter data is ignored, not rejected. If `where` is not valid JSON or
+not an object, no filters are applied. If a single filter value fails its field
+validation, only that filter is skipped and the others still apply.
+
 ## Advanced Configuration
 
 Customize Swagger and routes via constructor:

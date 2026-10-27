@@ -119,20 +119,24 @@ class MongoChain:
 
         return self.query
 
+    def _cursor(self):
+        """Build a motor cursor from the stored query and sorting."""
+        query = (self.query and {"$and": self.query}) or {}
+        cursor = self.collection.find(query, self.projection)
+        if self.sorting:
+            cursor = cursor.sort(self.sorting)
+        return cursor
+
     def __iter__(self):
         """Iterate by self collection."""
-        query = (self.query and {"$and": self.query}) or {}
-        if self.sorting:
-            return self.collection.find(query, self.projection).sort(self.sorting)
+        return self._cursor()
 
-        return self.collection.find(query, self.projection)
+    async def to_list(self, length=None):
+        """Fetch documents as a list."""
+        return await self._cursor().to_list(length)
 
     def __getattr__(self, name):
         """Proxy any attributes except find to self.collection."""
         if name in self.CURSOR_METHODS:
-            query = (self.query and {"$and": self.query}) or {}
-            cursor = self.collection.find(query, self.projection)
-            if self.sorting:
-                cursor = cursor.sort(self.sorting)
-            return getattr(cursor, name)
+            return getattr(self._cursor(), name)
         return getattr(self.collection, name)

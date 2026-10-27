@@ -106,6 +106,23 @@ async def test_get(client, ResourceEndpoint, resource):
     assert json
 
 
+async def test_get_without_limit_or_sort(api, client, resources):
+    from muffin_rest.mongo import MongoRESTHandler
+
+    await resources.insert_one({"name": "nolimit"})
+
+    @api.route("/nolimit")
+    class NoLimitHandler(MongoRESTHandler):
+        class Meta:
+            collection = resources
+
+    res = await client.get("/api/nolimit")
+    assert res.status_code == 200
+    json = await res.json()
+    assert len(json) == 1
+    assert json[0]["_id"]
+
+
 async def test_create(client, ResourceEndpoint):
     res = await client.post("/api/resources", json={"active": True})
     assert res.status_code == 400
@@ -221,6 +238,31 @@ async def test_paginate(apiclient, ResourceEndpoint, resources):
     assert res.headers["x-offset"] == "9"
     json = await res.json()
     assert len(json) == 3
+
+
+async def test_paginate_with_aggregate(api, apiclient, resources):
+    from muffin_rest.mongo import MongoRESTHandler
+
+    await resources.insert_many([{"name": f"test{n}", "count": n} for n in range(12)])
+
+    @api.route("/aggregated")
+    class AggregatedHandler(MongoRESTHandler):
+        class Meta:
+            collection = resources
+            limit = 10
+            filters = ("count",)
+            aggregate = [{"$match": {"count": {"$gte": 2}}}]
+
+    res = await apiclient.get("/api/aggregated")
+    assert res.status_code == 200
+    json = await res.json()
+    assert len(json) == 10
+    assert res.headers["x-total"] == "10"
+
+    # A filtered request must not mutate the shared pipeline.
+    res = await apiclient.get("/api/aggregated", filters={"count": {"$gte": 5}})
+    assert res.status_code == 200
+    assert AggregatedHandler.meta.aggregate == [{"$match": {"count": {"$gte": 2}}}]
 
 
 async def test_batch_ops(client, ResourceEndpoint, resources):
