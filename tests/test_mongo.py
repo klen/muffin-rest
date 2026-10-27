@@ -72,6 +72,18 @@ def test_imports():
     assert MongoSorting is not None
 
 
+def test_starts_ends_escape_regex():
+    from muffin_rest.mongo.filters import MongoFilter
+
+    flt = MongoFilter("name", field="name")
+
+    starts = tuple(flt.parse({"name": {"$starts": "a.b"}}))
+    assert starts[0][0]("name", "a.b") == ("$regex", r"^a\.b")
+
+    ends = tuple(flt.parse({"name": {"$ends": "a.b"}}))
+    assert ends[0][0]("name", "a.b") == ("$regex", r"a\.b$")
+
+
 async def test_base(api, ResourceEndpoint):
     assert ResourceEndpoint
     assert ResourceEndpoint.meta.name == "resources"

@@ -1,5 +1,6 @@
 """Support filters for Mongo."""
 
+import re
 from typing import ClassVar
 
 from muffin_rest.filters import Filter, Filters
@@ -18,8 +19,8 @@ class MongoFilter(Filter):
         "$lt": lambda _, v: ("$lt", v),
         "$ne": lambda _, v: ("$ne", v),
         "$nin": lambda _, v: ("$nin", v),
-        "$starts": lambda _, v: ("$regex", f"^{v}"),
-        "$ends": lambda _, v: ("$regex", f"{v}$"),
+        "$starts": lambda _, v: ("$regex", "^" + re.escape(v)),
+        "$ends": lambda _, v: ("$regex", re.escape(v) + "$"),
     }
 
     async def filter(self, collection, *ops: TFilterValue, **ctx):

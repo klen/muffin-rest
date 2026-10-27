@@ -80,6 +80,20 @@ async def test_limit_memory_first_hit_initializes(monkeypatch):
     assert await limiter.check("new") is False
 
 
+async def test_limit_memory_prunes_expired_keys(monkeypatch):
+
+    ft = FakeTime(start=100.0)
+    monkeypatch.setattr(limits, "time", ft.time)
+
+    limiter = limits.MemoryRateLimiter(limit=1, period=10)
+    assert await limiter.check("old") is True
+    assert "old" in limiter.storage
+
+    ft.advance(11.0)
+    assert await limiter.check("new") is True
+    assert "old" not in limiter.storage
+
+
 @pytest.mark.parametrize("aiolib", ["asyncio"])
 async def test_memory_limiter_concurrent_requests_respect_limit(monkeypatch):
     ft = FakeTime(start=123.0)

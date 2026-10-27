@@ -35,10 +35,23 @@ class MemoryRateLimiter(RateLimiter):
     def __init__(self, limit: int, **opts):
         super().__init__(limit, **opts)
         self.storage: dict[Any, tuple[float, int]] = {}
+        self._sweep_at = 0.0
+
+    def _sweep(self, now: float) -> None:
+        """Drop keys whose window has expired."""
+        self.storage = {
+            key: (last, count)
+            for key, (last, count) in self.storage.items()
+            if now - last <= self.period
+        }
+        self._sweep_at = now
 
     async def _check(self, key: str) -> bool:
         """Check the request."""
         now = time()
+        if now - self._sweep_at > self.period:
+            self._sweep(now)
+
         storage = self.storage
 
         if key not in storage:
