@@ -72,7 +72,7 @@ class Sorting(Mutator[Sort]):
     @property
     def openapi(self):
         """Prepare OpenAPI params."""
-        sorting = list(self.mutations)
+        sorting = [s for name in self.mutations for s in (name, f"-{name}")]
         return {
             "name": SORT_PARAM,
             "in": "query",

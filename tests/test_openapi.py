@@ -88,3 +88,118 @@ async def test_apispec(api, client):
         assert spec["paths"]["/token"]["get"]["responses"]
         assert spec["paths"]["/pets"]["get"]["parameters"]
         assert spec["paths"]["/pets"]["get"]["parameters"][0]["name"] == "sort"
+
+
+def _handler_api():
+    from muffin_rest import API
+
+    return API(title="Demo", version="1.0")
+
+
+def test_schema_components_are_unique():
+    from muffin_rest import RESTHandler
+    from muffin_rest.openapi import render_openapi
+
+    api = _handler_api()
+
+    @api.route
+    class Pets(RESTHandler):
+        class Meta:
+            name = "pet"
+
+            class Schema(ma.Schema):
+                name = ma.fields.String()
+
+        async def prepare_collection(self, request):
+            return []
+
+    @api.route
+    class Cats(RESTHandler):
+        class Meta:
+            name = "cat"
+
+            class Schema(ma.Schema):
+                name = ma.fields.String()
+
+        async def prepare_collection(self, request):
+            return []
+
+    spec = render_openapi(api)
+    assert "PetSchema" in spec["components"]["schemas"]
+    assert "CatSchema" in spec["components"]["schemas"]
+
+    pet = spec["paths"]["/pet"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    cat = spec["paths"]["/cat"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert pet["items"] == {"$ref": "#/components/schemas/PetSchema"}
+    assert cat["items"] == {"$ref": "#/components/schemas/CatSchema"}
+
+
+def test_responses_and_request_bodies():
+    from muffin_rest import RESTHandler
+    from muffin_rest.openapi import render_openapi
+
+    api = _handler_api()
+
+    @api.route
+    class Pets(RESTHandler):
+        class Meta:
+            name = "pet"
+            limit = 10
+            sorting = ("name",)
+
+            class Schema(ma.Schema):
+                name = ma.fields.String()
+
+        async def prepare_collection(self, request):
+            return []
+
+    spec = render_openapi(api)
+    paths = spec["paths"]
+
+    get_schema = paths["/pet"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert get_schema == {"type": "array", "items": {"$ref": "#/components/schemas/PetSchema"}}
+
+    assert paths["/pet"]["get"]["parameters"][0]["schema"]["items"]["enum"] == ["name", "-name"]
+
+    post_schema = paths["/pet"]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert post_schema["oneOf"][0] == {"$ref": "#/components/schemas/PetSchema"}
+    assert post_schema["oneOf"][1] == {
+        "type": "array",
+        "items": {"$ref": "#/components/schemas/PetSchema"},
+    }
+
+    delete_body = paths["/pet"]["delete"]["requestBody"]["content"]["application/json"]["schema"]
+    assert delete_body == {"type": "array", "items": {"type": "string"}}
+
+    assert paths["/pet/{id}"]["parameters"] == [
+        {"in": "path", "name": "id", "required": True, "schema": {"type": "string"}},
+    ]
+
+
+def test_render_does_not_mutate_options():
+    from muffin_rest.openapi import render_openapi
+
+    api = _handler_api()
+    render_openapi(api)
+    render_openapi(api)
+    assert api.openapi_options["info"] == {"title": "Demo", "version": "1.0"}
+
+
+def test_function_methods_from_docstring():
+    from muffin_rest.openapi import render_openapi
+
+    api = _handler_api()
+
+    @api.route("/upload")
+    async def upload(request):
+        """Upload a file.
+
+        ---
+        post:
+            security: []
+        """
+        return {"ok": True}
+
+    spec = render_openapi(api)
+    assert "post" in spec["paths"]["/upload"]
+    assert "get" not in spec["paths"]["/upload"]
