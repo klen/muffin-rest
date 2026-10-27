@@ -10,11 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Python 3.15 support.
+- `limit_min` pagination option (default `1`). Set it to `0` to allow `limit=0` to return all rows.
 
 ### Fixed
 
 - Compatibility with Muffin 3 and http-router 10: `RESTBase.__route__` accepts `methods`/`hosts` and 3-tuple method routes.
 - Explicit `SAFilter`/`PWFilter` instances with string fields are resolved to table columns; expression fields (e.g. `JSONPath`) are left as-is.
+- Mongo list endpoints work without pagination or sorting (`MongoChain.to_list`).
+- Mongo aggregate pagination no longer calls `list()` on an async cursor and no longer mutates the shared `Meta.aggregate` pipeline.
+- Default REST endpoints now accept only `get/post/put/delete`, so PATCH, HEAD and OPTIONS return 405 instead of 500.
+- Mongo `$starts` and `$ends` escape user values before building the regex.
+- `MemoryRateLimiter` drops expired keys instead of growing without bound.
+- Sorting applies fields in the order given in the `sort` parameter.
+- `schema_only` and `schema_exclude` accept comma-separated field names.
+- Filter `$in` and `$or/$and/$not/$nor` operators are corrected; SQLAlchemy and Peewee gained SQL logic operators.
+- Pagination clamps a negative `offset` to `0` and the `limit` to `[limit_min, limit_max]`.
 
 ### Changed
 

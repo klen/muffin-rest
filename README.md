@@ -110,6 +110,19 @@ Invalid filter data is ignored, not rejected. If `where` is not valid JSON or
 not an object, no filters are applied. If a single filter value fails its field
 validation, only that filter is skipped and the others still apply.
 
+## Pagination and sorting
+
+Enable pagination with `limit` in `Meta`; clients then pass `limit` and
+`offset` query parameters. The `limit` is clamped between `limit_min` (default
+`1`) and `limit_max`; set `limit_min = 0` to allow `limit=0` to return all
+rows. A negative `offset` becomes `0`.
+
+Sort with the `sort` parameter: `?sort=name,-count`. Fields are applied in the
+requested order.
+
+`schema_only` and `schema_exclude` accept comma-separated field names to pick
+which fields are serialized.
+
 ## Advanced Configuration
 
 Customize Swagger and routes via constructor:
