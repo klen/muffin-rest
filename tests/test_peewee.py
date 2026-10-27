@@ -255,6 +255,22 @@ async def test_filters(apiclient, endpoint_cls, db):
     for data in json:
         assert data["count"] in [1, 2, 4, 5]
 
+    res = await apiclient.get(
+        "/api/resource",
+        filters={"name": {"$not": [{"$starts": "test"}]}},
+    )
+    assert res.status_code == 200
+    json = await res.json()
+    assert {data["name"] for data in json} == {"name5", "name6"}
+
+    res = await apiclient.get(
+        "/api/resource",
+        filters={"name": {"$nor": [{"$starts": "test"}, {"$eq": "name5"}]}},
+    )
+    assert res.status_code == 200
+    json = await res.json()
+    assert {data["name"] for data in json} == {"name6"}
+
 
 async def test_paginate(apiclient, endpoint_cls, db):
     for n in range(12):

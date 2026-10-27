@@ -36,6 +36,12 @@ class PWFilter(Filter):
     operators["$and"] = lambda col, value: reduce(
         operator.and_, [op(col, val) for op, val in value]
     )
+    operators["$not"] = lambda col, value: (
+        ~reduce(operator.and_, [op(col, val) for op, val in value])
+    )
+    operators["$nor"] = lambda col, value: (
+        ~reduce(operator.or_, [op(col, val) for op, val in value])
+    )
 
     list_ops = (*Filter.list_ops, "$between")
 

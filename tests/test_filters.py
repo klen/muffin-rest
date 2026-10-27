@@ -4,7 +4,7 @@ import pytest
 from muffin_rest.filters import Filter
 
 
-@pytest.fixture()
+@pytest.fixture
 def flt():
     return Filter("test")
 
@@ -57,3 +57,22 @@ def test_parse_or2():
             ],
         ),
     )
+
+
+async def test_apply_list_ops(flt):
+    collection = [{"test": "a"}, {"test": "b"}, {"test": "c"}]
+
+    _, out = await flt.apply(collection, data={"test": {"$in": ["a", "c"]}})
+    assert out == [{"test": "a"}, {"test": "c"}]
+
+    _, out = await flt.apply(collection, data={"test": {"$or": ["a", "c"]}})
+    assert out == [{"test": "a"}, {"test": "c"}]
+
+    _, out = await flt.apply(collection, data={"test": {"$and": [{"$eq": "a"}]}})
+    assert out == [{"test": "a"}]
+
+    _, out = await flt.apply(collection, data={"test": {"$not": [{"$eq": "a"}]}})
+    assert out == [{"test": "b"}, {"test": "c"}]
+
+    _, out = await flt.apply(collection, data={"test": {"$nor": [{"$eq": "a"}, {"$eq": "c"}]}})
+    assert out == [{"test": "b"}]

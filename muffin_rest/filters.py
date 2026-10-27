@@ -32,13 +32,13 @@ class Filter(Mutate):
         "$ne": operator.ne,
         "$like": lambda v, c: c in v,
         # List ops
-        "$in": operator.contains,
+        "$in": lambda v, c: v in c,
         "$nin": lambda v, c: v not in c,
         # Logic ops
-        "$or": lambda v, c: any(f(v, c) for f in v),
-        "$and": lambda v, c: all(f(v, c) for f in v),
-        "$not": lambda v, c: not v(c),
-        "$nor": lambda v, c: not any(f(v, c) for f in v),
+        "$or": lambda v, c: any(f(v, x) for f, x in c),
+        "$and": lambda v, c: all(f(v, x) for f, x in c),
+        "$not": lambda v, c: not all(f(v, x) for f, x in c),
+        "$nor": lambda v, c: not any(f(v, x) for f, x in c),
     }
     operators["<"] = operators["$lt"]
     operators["<="] = operators["$lte"] = operators["$le"]

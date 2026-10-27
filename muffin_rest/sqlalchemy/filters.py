@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
+import sqlalchemy as sa
 from sqlalchemy import Column
 
 from muffin_rest.filters import Filter, Filters
@@ -29,6 +30,10 @@ class SAFilter(Filter):
     operators["$notilike"] = lambda c, v: c.notilike(v)
     operators["$notlike"] = lambda c, v: c.notlike(v)
     operators["$starts"] = lambda c, v: c.startswith(v)
+    operators["$and"] = lambda col, value: sa.and_(*[op(col, val) for op, val in value])
+    operators["$or"] = lambda col, value: sa.or_(*[op(col, val) for op, val in value])
+    operators["$not"] = lambda col, value: sa.not_(sa.and_(*[op(col, val) for op, val in value]))
+    operators["$nor"] = lambda col, value: sa.not_(sa.or_(*[op(col, val) for op, val in value]))
 
     list_ops = (*Filter.list_ops, "$between")
 
