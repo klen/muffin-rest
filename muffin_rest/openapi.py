@@ -270,8 +270,12 @@ class OpenAPIMixin:
 
             # Update from the method
             meth = getattr(cls, method, None)
-            if isinstance(route.target, partial) and "__meth__" in route.target.keywords:
-                meth = getattr(cls, route.target.keywords["__meth__"], None)
+            if isinstance(route.target, partial):
+                method_name = route.target.keywords.get("method_name") or route.target.keywords.get(
+                    "__meth__"
+                )
+                if method_name:
+                    meth = getattr(cls, method_name, None)
 
             elif method == "delete" and not is_resource_route:
                 operations[method]["requestBody"] = {

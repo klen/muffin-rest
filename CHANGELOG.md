@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Custom handler routes use the decorated method's docstring and YAML in the OpenAPI spec.
 - Compatibility with Muffin 3 and http-router 10: `RESTBase.__route__` accepts `methods`/`hosts` and 3-tuple method routes.
 - Explicit `SAFilter`/`PWFilter` instances with string fields are resolved to table columns; expression fields (e.g. `JSONPath`) are left as-is.
 - Mongo list endpoints work without pagination or sorting (`MongoChain.to_list`).

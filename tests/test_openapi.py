@@ -203,3 +203,35 @@ def test_function_methods_from_docstring():
     spec = render_openapi(api)
     assert "post" in spec["paths"]["/upload"]
     assert "get" not in spec["paths"]["/upload"]
+
+
+def test_custom_route_uses_method_docs():
+    from muffin_rest import RESTHandler
+    from muffin_rest.openapi import render_openapi
+
+    api = _handler_api()
+
+    @api.route
+    class Pets(RESTHandler):
+        class Meta:
+            name = "pet"
+
+        async def prepare_collection(self, request):
+            return []
+
+        @RESTHandler.route("/pet/{id}/adopt", methods="post")
+        async def adopt(self, request, *, resource=None):
+            """Adopt a pet.
+
+            ---
+            requestBody:
+                content:
+                    application/json:
+                        schema: {type: object}
+            """
+            return {}
+
+    spec = render_openapi(api)
+    operation = spec["paths"]["/pet/{id}/adopt"]["post"]
+    assert operation["summary"] == "Adopt a pet."
+    assert operation["requestBody"]["content"]["application/json"]["schema"] == {"type": "object"}
