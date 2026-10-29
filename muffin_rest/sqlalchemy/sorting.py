@@ -16,6 +16,11 @@ if TYPE_CHECKING:
 class SASort(Sort):
     """Sorter for Peewee."""
 
+    def __init__(self, name: str, *, field: Column | str | None = None, **meta):
+        """Initialize the sorter."""
+        super().__init__(name, **meta)
+        self.field = field if field is not None else (getattr(self, "field", None) or name)
+
     async def apply(
         self,
         collection: TVCollection,

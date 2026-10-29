@@ -45,6 +45,11 @@ class PWFilter(Filter):
 
     list_ops = (*Filter.list_ops, "$between")
 
+    def __init__(self, name: str, *, field: Field | str | None = None, **meta):
+        """Initialize the filter."""
+        super().__init__(name, **meta)
+        self.field = field if field is not None else (getattr(self, "field", None) or name)
+
     async def filter(self, collection, *ops: TFilterValue, **ctx):
         """Apply the filters to Peewee QuerySet.."""
         column = self.field

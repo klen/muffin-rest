@@ -13,6 +13,10 @@ if TYPE_CHECKING:
 class MongoSort(Sort):
     """Sorter for Peewee."""
 
+    def __init__(self, name: str, *, field: str | None = None, **meta):
+        super().__init__(name, **meta)
+        self.field = field if field is not None else (getattr(self, "field", None) or name)
+
     async def apply(self, collection, *, desc: bool = False, **ctx):
         """Sort the collection."""
         collection.sorting.append((self.field, -1 if desc else 1))

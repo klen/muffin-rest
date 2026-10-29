@@ -58,7 +58,6 @@ class Filter(Mutate):
         self,
         name: str,
         *,
-        field: Any = None,
         schema_field: ma.fields.Field | None = None,
         operator: str | None = None,
         **meta,
@@ -71,7 +70,6 @@ class Filter(Mutate):
 
         """
         super(Filter, self).__init__(name, **meta)
-        self.field = field if field is not None else self.field
         self.schema_field = schema_field or self.schema_field
         self.default_operator = operator or self.default_operator
 

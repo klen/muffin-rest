@@ -14,12 +14,11 @@ if TYPE_CHECKING:
 class Mutate(abc.ABC):
     """Mutate collections."""
 
-    field: Any = None
+    field: Any
 
-    def __init__(self, name: str, *, field=None, **meta):
+    def __init__(self, name: str, **meta):
         """Initialize a name."""
         self.name = name
-        self.field = field if field is not None else self.field or name
         self.meta = meta
 
     def __str__(self):

@@ -23,6 +23,10 @@ class MongoFilter(Filter):
         "$ends": lambda _, v: ("$regex", re.escape(v) + "$"),
     }
 
+    def __init__(self, name: str, *, field: str | None = None, **kwargs):
+        super().__init__(name, **kwargs)
+        self.field = field if field is not None else (getattr(self, "field", None) or name)
+
     async def filter(self, collection, *ops: TFilterValue, **ctx):
         """Apply the filter."""
         return collection.find({self.field: dict(op(self.name, v) for op, v in ops)})

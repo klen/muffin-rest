@@ -37,6 +37,11 @@ class SAFilter(Filter):
 
     list_ops = (*Filter.list_ops, "$between")
 
+    def __init__(self, name: str, *, field: Column | str | None = None, **meta):
+        """Initialize the filter."""
+        super().__init__(name, **meta)
+        self.field = field if field is not None else (getattr(self, "field", None) or name)
+
     async def filter(self, collection: TVCollection, *ops: TFilterValue, **ctx) -> TVCollection:
         """Apply the filters to SQLAlchemy Select."""
         column = self.field

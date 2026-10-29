@@ -18,6 +18,11 @@ if TYPE_CHECKING:
 class PWSort(Sort):
     """Sorter for Peewee."""
 
+    def __init__(self, name: str, *, field: Field | str | None = None, **meta):
+        """Initialize the sorter."""
+        super().__init__(name, **meta)
+        self.field = field if field is not None else (getattr(self, "field", None) or name)
+
     async def apply(self, collection: TVCollection, *, desc: bool = False, **ctx) -> TVCollection:
         """Sort the collection."""
         params = {"nulls": "LAST"} if isinstance(self.field, Field) and self.field.null else {}
