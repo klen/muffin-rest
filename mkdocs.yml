@@ -3,7 +3,7 @@ site_description: REST resources for the Muffin framework
 site_url: https://klen.github.io/muffin-rest/
 repo_url: https://github.com/klen/muffin-rest
 repo_name: klen/muffin-rest
-edit_uri: edit/main/docs/
+edit_uri: edit/develop/docs/
 
 docs_dir: docs
 

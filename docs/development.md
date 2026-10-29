@@ -99,8 +99,8 @@ point and links to the guides. When you add a page, add it to the `nav` in
 `mkdocs.yml`, and link it from `docs/index.md` and the README table.
 
 `.github/workflows/docs.yml` builds the site and publishes it to GitHub Pages
-on pushes to `main`. The repository must have Pages enabled with the source set
-to GitHub Actions.
+on pushes to `develop` (the default branch). The repository must have Pages
+enabled with the source set to GitHub Actions.
 
 ## Release
 
