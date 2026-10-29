@@ -6,6 +6,10 @@ filtering, sorting, pagination, and an OpenAPI spec generated from the code.
 Peewee, SQLAlchemy Core, and MongoDB backends share the same handler API, so
 changing storage does not change your routes.
 
+[Read the documentation](https://klen.github.io/muffin-rest/) for the tutorial,
+handler lifecycle, backends, querying, schemas, and OpenAPI.
+
+[![Documentation](https://img.shields.io/badge/docs-read%20online-blue)](https://klen.github.io/muffin-rest/)
 [![Tests Status](https://github.com/klen/muffin-rest/workflows/tests/badge.svg)](https://github.com/klen/muffin-rest/actions)
 [![PyPI Version](https://img.shields.io/pypi/v/muffin-rest)](https://pypi.org/project/muffin-rest/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/muffin-rest)](https://pypi.org/project/muffin-rest/)
@@ -92,8 +96,6 @@ The Peewee handler needs a `peewee_aio` model with a manager, or an explicit
 columns with `::`. The Mongo handler needs `muffin-mongo`.
 
 ## Documentation
-
-Published documentation: https://klen.github.io/muffin-rest/
 
 The README covers the shape of the library. The guides explain the parts that
 need more than a snippet:
