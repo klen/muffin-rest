@@ -404,7 +404,7 @@ wheels = [
 
 [[package]]
 name = "muffin-rest"
-version = "15.0.0"
+version = "15.0.1"
 source = { editable = "." }
 default-groups = ["dev", "example"]
 dependencies = [
