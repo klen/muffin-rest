@@ -32,6 +32,7 @@ nav:
   - Tutorial: tutorial.md
   - Handlers: handlers.md
   - Backends: backends.md
+  - Custom backend: custom-backend.md
   - Querying: querying.md
   - Schemas: schemas.md
   - OpenAPI: openapi.md

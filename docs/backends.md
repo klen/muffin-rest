@@ -222,3 +222,6 @@ need an aggregation pipeline before pagination.
 
 The handler API is the same, so the choice mostly affects schema generation and
 the query objects you see in hooks.
+
+If your storage is not listed here, [Writing a backend](custom-backend.md) walks
+through the five methods a new backend has to implement.

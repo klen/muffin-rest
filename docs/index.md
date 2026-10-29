@@ -13,6 +13,8 @@ The docs are split by the question you are trying to answer.
   plug in your own code.
 - [Backends](backends.md): pick Peewee, SQLAlchemy Core, or MongoDB and see the
   differences.
+- [Writing a backend](custom-backend.md): add support for another storage
+  system.
 
 ## Reference
 

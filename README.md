@@ -105,6 +105,7 @@ need more than a snippet:
 | [Tutorial](https://klen.github.io/muffin-rest/tutorial/) | Build and run a small API from scratch |
 | [Handlers and lifecycle](https://klen.github.io/muffin-rest/handlers/) | What runs on each request, and which hook to override |
 | [Backends](https://klen.github.io/muffin-rest/backends/) | Peewee, SQLAlchemy, and Mongo options and differences |
+| [Writing a backend](https://klen.github.io/muffin-rest/custom-backend/) | Add support for another storage system |
 | [Querying](https://klen.github.io/muffin-rest/querying/) | `where`, `sort`, pagination, field selection |
 | [Schemas](https://klen.github.io/muffin-rest/schemas/) | Generated schemas, validation, custom fields |
 | [OpenAPI](https://klen.github.io/muffin-rest/openapi/) | Spec generation, docstrings, auth, response types |
