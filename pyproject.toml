@@ -36,9 +36,11 @@ sqlalchemy = ["muffin-databases", "marshmallow-sqlalchemy", "sqlalchemy"]
 
 [project.urls]
 Homepage = "https://github.com/klen/muffin-rest"
+Documentation = "https://klen.github.io/muffin-rest/"
 Repository = "https://github.com/klen/muffin-rest"
 
 [dependency-groups]
+docs = ["mkdocs-material>=9,<10"]
 dev = [
   "aiosqlite",
   "marshmallow-peewee",

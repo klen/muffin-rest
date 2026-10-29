@@ -11,7 +11,7 @@ help:
 .PHONY: clean
 # target: clean - Display callable targets
 clean:
-	rm -rf build/ dist/ docs/_build *.egg-info
+	rm -rf build/ dist/ site/ docs/_build *.egg-info
 	find $(CURDIR) -name "*.py[co]" -delete
 	find $(CURDIR) -name "*.orig" -delete
 	find $(CURDIR)/$(MODULE) -name "__pycache__" | xargs rm -rf
@@ -48,6 +48,16 @@ lint: $(VIRTUAL_ENV)
 outdated:
 	@echo "Checking for outdated dependencies..."
 	@uv tree --depth 1 --outdated | grep 'latest' || echo "All dependencies are up to date."
+
+.PHONY: docs docs-serve
+# target: docs - Build documentation
+docs: $(VIRTUAL_ENV)
+	@uv run --group docs mkdocs build --strict
+
+.PHONY: docs-serve
+# target: docs-serve - Serve documentation locally
+docs-serve: $(VIRTUAL_ENV)
+	@uv run --group docs mkdocs serve
 
 .PHONY: example-peewee example-pw example
 # target: example-peewee - Run example

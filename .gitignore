@@ -38,8 +38,9 @@ nosetests.xml
 output/*.html
 output/*/index.html
 
-# Sphinx
+# Documentation
 docs/_build
+site
 
 /todo.txt
 /.ropeproject

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Python 3.15 support.
 - `limit_min` pagination option (default `1`). Set it to `0` to allow `limit=0` to return all rows.
+- Documentation guides in `docs/`: tutorial, handler lifecycle, backends, querying, schemas, OpenAPI, errors, cookbook, API reference, and development.
+- MkDocs Material build (`make docs`, `make docs-serve`) and a GitHub Pages workflow.
 
 ### Fixed
 

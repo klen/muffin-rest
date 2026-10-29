@@ -1,0 +1,52 @@
+site_name: Muffin-REST
+site_description: REST resources for the Muffin framework
+site_url: https://klen.github.io/muffin-rest/
+repo_url: https://github.com/klen/muffin-rest
+repo_name: klen/muffin-rest
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Tutorial: tutorial.md
+  - Handlers: handlers.md
+  - Backends: backends.md
+  - Querying: querying.md
+  - Schemas: schemas.md
+  - OpenAPI: openapi.md
+  - Errors: errors.md
+  - Cookbook: cookbook.md
+  - API reference: reference.md
+  - Development: development.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
