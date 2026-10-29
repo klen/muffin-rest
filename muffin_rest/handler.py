@@ -6,6 +6,7 @@ from typing import Any, Generic, Iterable, Literal, Mapping, Sequence, cast, ove
 
 import marshmallow as ma
 from asgi_tools.response import ResponseJSON, parse_response
+from http_router.types import TMethodsArg
 from muffin import Request
 from muffin.handler import Handler, HandlerMeta
 
@@ -40,7 +41,7 @@ class RESTHandlerMeta(HandlerMeta):
 class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandlerMeta):
     """Load/save resources."""
 
-    methods = ("get", "post", "put", "delete")
+    methods: TMethodsArg | None = ("get", "post", "put", "delete")
 
     auth: Any
     resource: TVResource
