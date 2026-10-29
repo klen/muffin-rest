@@ -102,18 +102,18 @@ need more than a snippet:
 
 | Guide | What it answers |
 | ----- | --------------- |
-| [Tutorial](https://github.com/klen/muffin-rest/blob/develop/docs/tutorial.md) | Build and run a small API from scratch |
-| [Handlers and lifecycle](https://github.com/klen/muffin-rest/blob/develop/docs/handlers.md) | What runs on each request, and which hook to override |
-| [Backends](https://github.com/klen/muffin-rest/blob/develop/docs/backends.md) | Peewee, SQLAlchemy, and Mongo options and differences |
-| [Querying](https://github.com/klen/muffin-rest/blob/develop/docs/querying.md) | `where`, `sort`, pagination, field selection |
-| [Schemas](https://github.com/klen/muffin-rest/blob/develop/docs/schemas.md) | Generated schemas, validation, custom fields |
-| [OpenAPI](https://github.com/klen/muffin-rest/blob/develop/docs/openapi.md) | Spec generation, docstrings, auth, response types |
-| [Errors](https://github.com/klen/muffin-rest/blob/develop/docs/errors.md) | `APIError`, validation errors, status codes |
-| [Cookbook](https://github.com/klen/muffin-rest/blob/develop/docs/cookbook.md) | Auth, scoping, soft delete, custom filters and routes |
-| [API reference](https://github.com/klen/muffin-rest/blob/develop/docs/reference.md) | Public classes, options, and hook signatures |
-| [Development](https://github.com/klen/muffin-rest/blob/develop/docs/development.md) | Tests, linting, examples, release |
+| [Tutorial](https://klen.github.io/muffin-rest/tutorial/) | Build and run a small API from scratch |
+| [Handlers and lifecycle](https://klen.github.io/muffin-rest/handlers/) | What runs on each request, and which hook to override |
+| [Backends](https://klen.github.io/muffin-rest/backends/) | Peewee, SQLAlchemy, and Mongo options and differences |
+| [Querying](https://klen.github.io/muffin-rest/querying/) | `where`, `sort`, pagination, field selection |
+| [Schemas](https://klen.github.io/muffin-rest/schemas/) | Generated schemas, validation, custom fields |
+| [OpenAPI](https://klen.github.io/muffin-rest/openapi/) | Spec generation, docstrings, auth, response types |
+| [Errors](https://klen.github.io/muffin-rest/errors/) | `APIError`, validation errors, status codes |
+| [Cookbook](https://klen.github.io/muffin-rest/cookbook/) | Auth, scoping, soft delete, custom filters and routes |
+| [API reference](https://klen.github.io/muffin-rest/reference/) | Public classes, options, and hook signatures |
+| [Development](https://klen.github.io/muffin-rest/development/) | Tests, linting, examples, release |
 
-Start with the [documentation index](https://github.com/klen/muffin-rest/blob/develop/docs/index.md)
+Start with the [documentation home](https://klen.github.io/muffin-rest/)
 if you are browsing the repository.
 
 ## Development
@@ -134,7 +134,7 @@ uv run uvicorn examples.peewee_orm:app --reload --port=5000
 uv run uvicorn examples.sqlalchemy_core:app --reload --port=5000
 ```
 
-See [Development](https://github.com/klen/muffin-rest/blob/develop/docs/development.md)
+See [Development](https://klen.github.io/muffin-rest/development/)
 for the full workflow.
 
 ## Bug tracker and contributing
