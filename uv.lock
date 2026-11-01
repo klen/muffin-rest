@@ -630,27 +630,24 @@ wheels = [
 
 [[package]]
 name = "marshmallow"
-version = "3.26.2"
+version = "4.3.1"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/55/79/de6c16cc902f4fc372236926b0ce2ab7845268dcc30fb2fbb7f71b418631/marshmallow-3.26.2.tar.gz", hash = "sha256:bbe2adb5a03e6e3571b573f42527c6fe926e17467833660bebd11593ab8dfd57", size = 222095, upload-time = "2025-12-22T06:53:53.309Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/d7/611e68d57e6a903c29cb33b5afec0f93b4baecacc6c6c62e33cde9eb9dcb/marshmallow-4.3.1.tar.gz", hash = "sha256:fb6b8048af08d4ab061610d5b7d3696a7e4c95337dbda880edb9f95812cabc20", size = 218308, upload-time = "2026-08-08T14:27:29.517Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/be/2f/5108cb3ee4ba6501748c4908b908e55f42a5b66245b4cfe0c99326e1ef6e/marshmallow-3.26.2-py3-none-any.whl", hash = "sha256:013fa8a3c4c276c24d26d84ce934dc964e2aa794345a0f8c7e5a7191482c8a73", size = 50964, upload-time = "2025-12-22T06:53:51.801Z" },
+    { url = "https://files.pythonhosted.org/packages/43/57/4526ca0e214a3d158690e3393f6d547a2f8070f88d6388ab21d5b0aac8a1/marshmallow-4.3.1-py3-none-any.whl", hash = "sha256:e65accfbe277546df92ed7996a678c90e063e9a7c2a2f5e03f7d0b90e3768c42", size = 49219, upload-time = "2026-08-08T14:27:28.078Z" },
 ]
 
 [[package]]
 name = "marshmallow-peewee"
-version = "5.1.0"
+version = "3.4.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "marshmallow" },
     { name = "peewee" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/92/b1/954927f47b28d6566eaf231b45ba95bf373f9cf7e909f87e1bc9a5480f89/marshmallow_peewee-5.1.0.tar.gz", hash = "sha256:c349aec724f7f0acfa6741ff6d003b28c6b7c5b6a3db1df2e3d2e3d1a40adf76", size = 6342, upload-time = "2026-03-12T14:10:53.608Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/96/5c/fe177d0444deece6b5db590f90b2094ed773926ad99737ccf8cb66b1249a/Marshmallow-Peewee-3.4.3.tar.gz", hash = "sha256:161cfb9c9115926494eeefc0b2ad9a8f8493b40a45d056a72d9fc78d87fe6e33", size = 7361, upload-time = "2022-11-09T15:30:42.116Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b3/48/6d9f6b0c5093a241d9eccdb2d57510a34dec1826c0cf24c972e5ada3d878/marshmallow_peewee-5.1.0-py3-none-any.whl", hash = "sha256:98ed498362afd240ec758c691072e1a3e8bc49d364ba694ab9ed3998d3c64bca", size = 8496, upload-time = "2026-03-12T14:10:54.583Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/51/38c0432dbac08909447ba83ceed1d7fec4d088b9bfd12de9a74833f023e8/Marshmallow_Peewee-3.4.3-py2.py3-none-any.whl", hash = "sha256:b0be4b804940d06595113bf69a4be42a6987c44f42a01f0482e8b5db09348e14", size = 7963, upload-time = "2022-11-09T15:30:40.243Z" },
 ]
 
 [[package]]
@@ -874,7 +871,7 @@ example = [
 [package.metadata]
 requires-dist = [
     { name = "apispec", specifier = ">=6,<7" },
-    { name = "marshmallow", specifier = ">=3,<4" },
+    { name = "marshmallow", specifier = ">=3,<5" },
     { name = "marshmallow-peewee", marker = "extra == 'peewee'" },
     { name = "marshmallow-sqlalchemy", marker = "extra == 'sqlalchemy'" },
     { name = "muffin" },

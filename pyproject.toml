@@ -24,7 +24,7 @@ classifiers = [
 ]
 dependencies = [
   "apispec>=6,<7",
-  "marshmallow>=3,<4",
+  "marshmallow>=3,<5",
   "muffin",
   "typing-extensions ; python_full_version < '3.13'",
 ]
