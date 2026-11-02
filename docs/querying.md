@@ -90,6 +90,12 @@ list of conditions:
 {"age": {"$or": [{"$lt": 18}, {"$gt": 65}]}}
 ```
 
+Use top-level `$or` to match any field (Peewee and SQLAlchemy):
+
+```json
+{"active": true, "$or": {"category": {"$in": ["music"]}, "tags": {"$in": ["featured"]}}}
+```
+
 Mongo does not support these operators.
 
 ### Forgiving by design

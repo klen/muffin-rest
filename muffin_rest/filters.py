@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import operator
+from functools import reduce
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping, cast
 
 import marshmallow as ma
@@ -143,7 +144,7 @@ class Filters(Mutator[Filter]):
     ) -> tuple[TVCollection, dict[str, Any]]:
         """Filter the given collection."""
         raw_data = request.url.query.get(FILTERS_PARAM)
-        filters = {}
+        filters: dict[str, Any] = {}
         if raw_data is not None:
             try:
                 data = json_loads(raw_data)
@@ -156,7 +157,20 @@ class Filters(Mutator[Filter]):
                         ops, collection = await f.apply(collection, data=data, **ctx)
                         filters[name] = ops
 
-            except (ValueError, TypeError, AssertionError):
+                values = data.get("$or")
+                if values and "$or" in self.MUTATE_CLASS.operators and hasattr(collection, "where"):
+                    assert isinstance(values, dict)
+                    conditions = []
+                    for name, flt in mutations.items():
+                        if name in values:
+                            ops = flt.parse(values)
+                            if ops:
+                                conditions.append(flt.operators["$and"](flt.field, ops))
+                    if conditions:
+                        collection = collection.where(reduce(operator.or_, conditions))
+                        filters["$or"] = values
+
+            except (ValueError, TypeError, AssertionError, ma.ValidationError):
                 api = self.handler._api
                 api.logger.warning("Invalid filters data: %s", request.url)
 

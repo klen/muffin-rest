@@ -268,6 +268,10 @@ async def test_handler2(api, apiclient):  # noqa: C901
     assert res.status_code == 200
     assert await res.json() == [2, 3]
 
+    res = await apiclient.get("/api/source", filters={"$or": {"val": 1}})
+    assert res.status_code == 200
+    assert await res.json() == [1, 2, 3]
+
     # Paginate results
     res = await apiclient.get("/api/source", limit=2)
     assert res.status_code == 200

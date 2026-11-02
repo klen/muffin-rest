@@ -271,6 +271,34 @@ async def test_filters(apiclient, endpoint_cls, db):
     json = await res.json()
     assert {data["name"] for data in json} == {"name6"}
 
+    res = await apiclient.get(
+        "/api/resource",
+        filters={
+            "count": {"$gt": "1"},
+            "$or": {
+                "name": {"$starts": "name", "$ends": "5"},
+                "count": {"$gt": "2", "$lt": "4"},
+                "oid": {"$in": ["1", "3"]},
+            },
+        },
+    )
+    assert res.status_code == 200
+    assert {item["name"] for item in await res.json()} == {"test2", "test3", "name5"}
+    assert res.headers["x-total"] == "3"
+
+    for values in (
+        {"count": {"$gt": "cheap"}, "oid": "1"},
+        [{"name": "test2"}],
+        {"$or": {"name": "test2"}},
+    ):
+        res = await apiclient.get(
+            "/api/resource",
+            filters={"count": {"$gt": "1"}, "$or": values},
+        )
+        assert res.status_code == 200
+        assert {item["name"] for item in await res.json()} == {"test2", "test3", "name5", "name6"}
+        assert res.headers["x-total"] == "4"
+
 
 async def test_paginate(apiclient, endpoint_cls, db):
     for n in range(12):

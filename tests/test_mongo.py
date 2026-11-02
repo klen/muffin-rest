@@ -226,6 +226,10 @@ async def test_filters(apiclient, ResourceEndpoint, resources):
     json = await res.json()
     assert len(json) == 1
 
+    res = await apiclient.get("/api/resources", filters={"name": "test3", "$or": {"name": "test4"}})
+    assert res.status_code == 200
+    assert {item["name"] for item in await res.json()} == {"test3"}
+
 
 async def test_paginate(apiclient, ResourceEndpoint, resources):
     await resources.insert_many([{"name": "test%d" % n} for n in range(12)])

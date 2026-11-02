@@ -271,6 +271,20 @@ async def test_filters_logic(apiclient, ResourceEndpoint, db, Resource):
     assert res.status_code == 200
     assert {d["name"] for d in await res.json()} == {"test3", "test4"}
 
+    res = await apiclient.get(
+        "/api/resource",
+        filters={
+            "oid": {"$gt": 1},
+            "$or": {
+                "name": {"$in": ["test2", "test4"], "$ne": "test4"},
+                "oid": 2,
+            },
+        },
+    )
+    assert res.status_code == 200
+    assert {item["name"] for item in await res.json()} == {"test3"}
+    assert res.headers["x-total"] == "1"
+
 
 async def test_paginate(client, ResourceEndpoint, db, Resource):
     await db.execute_many(Resource.insert(), [{"name": "test%d" % n} for n in range(12)])
