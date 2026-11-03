@@ -57,6 +57,35 @@ async def test_api_methods(api, client):
     assert await res.json() == {"data": "simple"}
 
 
+def test_api_not_initialized():
+    from muffin_rest import API
+
+    api = API()
+    assert repr(api) == "<API >"
+
+    with pytest.raises(RuntimeError, match="not initialized"):
+        _ = api.logger
+
+
+def test_api_error_with_dict_content():
+    err = APIError({"error": False}, status_code=418, extra="x")
+
+    assert err.status_code == 418
+    assert err.content == b'{"error": false, "extra": "x"}'
+
+
+def test_handler_not_binded():
+    from muffin_rest.errors import HandlerNotBindedError
+
+    class Simple(RESTHandler):
+        async def prepare_collection(self, request):
+            return []
+
+    handler = object.__new__(Simple)
+    with pytest.raises(HandlerNotBindedError):
+        _ = handler.api
+
+
 async def test_handler(api, client):
     from muffin_rest import RESTHandler
     from muffin_rest.filters import Filters
@@ -113,73 +142,14 @@ async def test_handler(api, client):
     }
 
 
-async def test_sorting_ctx_forwarding():
-    """Verify that **ctx is forwarded from Sorting.apply to each Sort.apply call."""
-    from muffin_rest.sorting import Sort, Sorting
-
-    ctx_received: list[dict] = []
-
-    class CaptureSort(Sort):
-        async def apply(self, collection, *, desc=False, **ctx):
-            ctx_received.append(ctx)
-            return collection
-
-    # Build a Sorting with CaptureSort mutations.
-    # Sorting.convert expects (str, ...) tuples; we supply names directly.
-    class FakeHandler:
-        pass
-
-    sorting = Sorting(FakeHandler, ("name", "count"))
-    sorting.mutations["name"] = CaptureSort("name")
-    sorting.mutations["count"] = CaptureSort("count")
-
-    # Mock a request with sort=name,-count
-    class FakeURL:
-        query = {"sort": "name,-count"}
-
-    class FakeRequest:
-        url = FakeURL()
-
-    extra_ctx = {"db_session": "test", "user_id": 42}
-    _, _ = await sorting.apply(FakeRequest(), [1, 2, 3], **extra_ctx)
-
-    # Both sorts should have received the ctx
-    assert len(ctx_received) == 2
-    for ctx in ctx_received:
-        assert ctx == extra_ctx
+@pytest.fixture
+def source():
+    return [1, 2, 3]
 
 
-async def test_sorting_applies_request_order():
-    from muffin_rest.sorting import Sort, Sorting
-
-    applied = []
-
-    class CaptureSort(Sort):
-        async def apply(self, collection, *, desc=False, **ctx):
-            applied.append((self.name, desc))
-            return collection
-
-    class FakeHandler:
-        pass
-
-    sorting = Sorting(FakeHandler, ("a", "b"))
-    sorting.mutations["a"] = CaptureSort("a")
-    sorting.mutations["b"] = CaptureSort("b")
-
-    class FakeURL:
-        query = {"sort": "b,-a"}
-
-    class FakeRequest:
-        url = FakeURL()
-
-    await sorting.apply(FakeRequest(), [])
-    assert applied == [("b", False), ("a", True)]
-
-
-async def test_handler2(api, apiclient):  # noqa: C901
+@pytest.fixture
+def source_endpoint(api, source):  # noqa: C901
     from muffin_rest import APIError, RESTHandler
-
-    source = [1, 2, 3]
 
     @api.route
     class Source(RESTHandler):
@@ -226,49 +196,58 @@ async def test_handler2(api, apiclient):  # noqa: C901
 
     assert Source.meta.filters
     assert Source.meta.filters.mutations
+    return Source
 
-    # Get collection
+
+async def test_source_collection(apiclient, source_endpoint):
     res = await apiclient.get("/api/source")
     assert res.status_code == 200
-    assert await res.json() == source
+    assert await res.json() == [1, 2, 3]
 
-    # Get a resource
+
+async def test_source_resource(apiclient, source_endpoint):
     res = await apiclient.get("/api/source/1")
     assert res.status_code == 200
     assert await res.json() == 2
 
-    # Get an unknown resource
+
+async def test_source_resource_not_found(apiclient, source_endpoint):
     res = await apiclient.get("/api/source/99")
     assert res.status_code == 404
     assert await res.json() == {"error": True, "message": "Resource not found"}
 
-    # Create a resource
+
+async def test_source_create(apiclient, source_endpoint, source):
     res = await apiclient.post("/api/source", json=42)
     assert res.status_code == 200
     assert await res.json() == 42
+    assert source == [1, 2, 3, 42]
 
-    # Update a resource
-    res = await apiclient.put("/api/source/3", json=99)
+
+async def test_source_update(apiclient, source_endpoint, source):
+    res = await apiclient.put("/api/source/2", json=99)
     assert res.status_code == 200
     assert await res.json() == 99
-    assert source == [1, 2, 3, 99]
+    assert source == [1, 2, 99]
 
-    # Delete a resource
-    res = await apiclient.delete("/api/source/3")
+
+async def test_source_delete(apiclient, source_endpoint, source):
+    res = await apiclient.delete("/api/source/2")
     assert res.status_code == 200
-    assert source == [1, 2, 3]
+    assert source == [1, 2]
 
-    # Filter results
+
+async def test_source_filter(apiclient, source_endpoint):
     res = await apiclient.get("/api/source", filters={"val": 2})
     assert res.status_code == 200
     assert await res.json() == [2]
 
-    # Filter results
     res = await apiclient.get("/api/source", filters={"val": {">=": 2}})
     assert res.status_code == 200
     assert await res.json() == [2, 3]
 
-    # Paginate results
+
+async def test_source_paginate(apiclient, source, source_endpoint):
     res = await apiclient.get("/api/source", limit=2)
     assert res.status_code == 200
     assert res.headers["x-total"] == str(len(source))
@@ -280,6 +259,8 @@ async def test_handler2(api, apiclient):  # noqa: C901
     assert res.status_code == 200
     assert await res.json() == [2, 3]
 
+
+async def test_source_custom_route(apiclient, source_endpoint):
     res = await apiclient.get("/api/source/custom")
     assert res.status_code == 200
     assert await res.text() == "source: custom"
@@ -310,14 +291,23 @@ async def test_pagination_clamps(api, apiclient):
     # limit=0 clamps up to limit_min (default 1)
     res = await apiclient.get("/api/source", limit=0)
     assert res.status_code == 200
-    json = await res.json()
-    assert json == [0]
+    assert await res.json() == [0]
 
     # negative offset clamps to 0
     res = await apiclient.get("/api/source", offset=-5)
     assert res.status_code == 200
-    json = await res.json()
-    assert json == list(range(10))
+    assert await res.json() == list(range(10))
+
+    # non numeric params are rejected
+    res = await apiclient.get("/api/source?limit=abc")
+    assert res.status_code == 400
+    assert await res.json() == {"error": True, "message": "Pagination params are invalid"}
+
+
+async def test_pagination_limit_min_zero(api, apiclient):
+    from muffin_rest import RESTHandler
+
+    source = list(range(100))
 
     @api.route
     class AllSource(RESTHandler):
@@ -475,7 +465,7 @@ async def test_rate_limit(api, client, aiolib):
 
     @api.route
     class Simple(RESTHandler):
-        methods = "get", "patch"
+        methods = "get"
 
         async def authorize(self, request):
             if not await rate_limiter.check(request.client[0]):

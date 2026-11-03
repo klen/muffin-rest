@@ -42,10 +42,10 @@ async def test_limit_memory_resets_after_period(monkeypatch):
 
     assert await limiter.check("user") is True
     assert await limiter.check("user") is True
-    assert await limiter.check("user") is False  # упёрлись в лимит
+    assert await limiter.check("user") is False  # limit reached
 
     ft.advance(5.0)
-    assert await limiter.check("user") is False  # всё ещё то же окно
+    assert await limiter.check("user") is False  # same window, not expired yet
 
     ft.advance(0.0001)
     assert await limiter.check("user") is True
@@ -60,7 +60,7 @@ async def test_limit_memory_isolated_keys(monkeypatch):
 
     limiter = limits.MemoryRateLimiter(limit=1, period=60)
 
-    # ключи считаются независимо
+    # keys are independent
     assert await limiter.check("A") is True
     assert await limiter.check("A") is False
 

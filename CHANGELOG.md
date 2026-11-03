@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Dependency bumps: `marshmallow>=4,<5` (marshmallow 3 is no longer supported), `marshmallow-peewee` 6, `muffin` 3.2, `apispec>=6.8.1` (first release with marshmallow 4 support).
+- `schema_meta = {"additional": ...}` raises `ValueError`: marshmallow 4 dropped the option, and it would otherwise be ignored silently. Declare the fields in `schema_fields`.
+- `methods` is validated when the handler class is created (Muffin 3.2): a method declared in `methods` without an implementation raises `TypeError` on import instead of returning 500 at runtime. Declare only the methods you implement.
 - `Filters.apply` calls every filter; each filter checks whether its own keys are present in `where`. This prepares multi-field filters.
 - SQLAlchemy delete and batch operation tests are enabled again.
 

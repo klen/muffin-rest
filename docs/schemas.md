@@ -92,6 +92,8 @@ them or `RAISE` to reject them.
 `schema_meta` is merged into the generated `Meta`. For Peewee and SQLAlchemy it
 can override generated settings such as `model`, `table`, `include_fk`, or
 `dump_only`. For Mongo it only carries options understood by `MongoSchema`.
+The `additional` option was removed in marshmallow 4 and is rejected: declare
+such fields in `schema_fields` instead.
 
 ## Validation
 

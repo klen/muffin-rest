@@ -80,6 +80,12 @@ class RESTOptions:
 
     def setup_schema_meta(self, _):
         """Generate meta for schemas."""
+        if "additional" in self.schema_meta:
+            raise ValueError(
+                "`schema_meta['additional']` is removed in marshmallow 4;"
+                " declare the fields in `schema_fields` instead",
+            )
+
         return type(
             "Meta",
             (object,),
