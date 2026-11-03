@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 import sqlalchemy as sa
 from sqlalchemy import Column
 
-from muffin_rest.filters import Filter, Filters
+from muffin_rest.filters import Filter, Filters, MultiFilter
 
 if TYPE_CHECKING:
     from muffin_rest.types import TFilterValue
@@ -44,15 +44,18 @@ class SAFilter(Filter):
 
     async def filter(self, collection: TVCollection, *ops: TFilterValue, **ctx) -> TVCollection:
         """Apply the filters to SQLAlchemy Select."""
-        column = self.field
-        if ops and column is not None:
-            return self.query(collection, column, *ops)
+        condition = self.condition(*ops)
+        if condition is not None:
+            return collection.where(condition)
 
         return collection
 
-    def query(self, select: TVCollection, column: Column, *ops: TFilterValue) -> TVCollection:
-        """Filter a select."""
-        return select.where(*[op(column, val) for op, val in ops])
+    def condition(self, *ops: TFilterValue) -> Any:
+        """Build an expression from the given ops."""
+        column = self.field
+        if not ops or column is None:
+            return None
+        return sa.and_(*[op(column, val) for op, val in ops])
 
 
 class SAFilters(Filters):
@@ -62,6 +65,8 @@ class SAFilters(Filters):
 
     def convert(self, obj: str | Column | SAFilter, **meta):
         """Convert params to filters."""
+        if isinstance(obj, MultiFilter):
+            return self.convert_multi(obj)
 
         handler = cast("SARESTHandler", self.handler)
 

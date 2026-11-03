@@ -127,6 +127,44 @@ The base class parses values with `self.schema_field`, which is taken from the
 generated schema field with the same name. Set `schema_field` explicitly when
 the filter name does not match a schema field.
 
+### Multi-field filters
+
+`MultiFilter` reads a nested object under its own name and passes a mapping of
+child name to parsed ops to `filter`. The default combines the child filters
+with `AND`; override `filter` to combine them differently, for example with
+`OR`:
+
+```python
+from muffin_rest import PWRESTHandler
+from muffin_rest.filters import MultiFilter
+
+class OrFilter(MultiFilter):
+    """Match any of the fields."""
+
+    async def filter(self, collection, ops, **ctx):
+        conditions = [
+            self.filters[name].condition(*flt_ops)  # Peewee expression
+            for name, flt_ops in ops.items()
+        ]
+        condition = conditions[0]
+        for other in conditions[1:]:
+            condition |= other
+        return collection.where(condition)
+
+class Users(PWRESTHandler):
+    class Meta:
+        filters = (OrFilter("q", filters=("name", "email")),)
+```
+
+On Peewee the child `condition()` returns an expression, so the conditions are
+combined with `|`.
+
+`q` is the filter's name. The request nests the child filters under it:
+`?where={"q": {"name": "muff", "email": "muff"}}`. `filters` accepts the same
+entries as `Meta.filters`: names, `(name, options)` tuples, filter instances,
+or backend fields/columns. Child filters are built by the backend factory, so
+their fields and schema fields resolve the same way as for ordinary filters.
+
 ## Sorting
 
 `sort` is a comma-separated list. A leading `-` means descending:

@@ -27,9 +27,13 @@ class MongoFilter(Filter):
         super().__init__(name, **kwargs)
         self.field = field if field is not None else (getattr(self, "field", None) or name)
 
+    def condition(self, *ops: TFilterValue):
+        """Build a query filter from the given ops."""
+        return {self.field: dict(op(self.name, v) for op, v in ops)}
+
     async def filter(self, collection, *ops: TFilterValue, **ctx):
         """Apply the filter."""
-        return collection.find({self.field: dict(op(self.name, v) for op, v in ops)})
+        return collection.find(self.condition(*ops))
 
 
 class MongoFilters(Filters):

@@ -171,6 +171,7 @@ FILTERS_PARAM = "where"
 
 Filter(name, *, schema_field=None, operator=None, **meta)
 Filters(handler, params)
+MultiFilter(name, *, filters=(), **meta)
 ```
 
 | Member | Meaning |
@@ -182,9 +183,11 @@ Filters(handler, params)
 | `apply(collection, data=None, **ctx)` | parse and apply; returns `(ops, collection)` |
 | `filter(collection, *ops, **ctx)` | apply parsed operators |
 | `parse(data)` | return a tuple of `(operator, value)` |
-| `get_simple_value(ops)` | value of a scalar filter |
 | `Filters.apply(request, collection, **ctx)` | read `where` and apply all filters |
 | `Filters.convert(obj, **meta)` | build a filter from a config entry |
+| `MultiFilter.params` | raw `filters` entries from the constructor |
+| `MultiFilter.filters` | converted child filters by name |
+| `MultiFilter.filter(collection, ops, **ctx)` | combine parsed ops; `AND` by default |
 | `Filters.openapi` | query parameter description |
 
 ## Sorting

@@ -2,6 +2,8 @@ import pytest
 import sqlalchemy as sa
 from muffin_databases import Plugin as DB
 
+from muffin_rest.filters import MultiFilter
+
 
 @pytest.fixture(scope="module")
 def aiolib():
@@ -101,6 +103,10 @@ def test_base(ResourceEndpoint, api):
 
     name_column = ResourceEndpoint.meta.table.c.name
     assert ResourceEndpoint.meta.filters.mutations["name"].field is name_column
+
+    multi = ResourceEndpoint.meta.filters.convert(MultiFilter("q", filters=("name", "count")))
+    assert multi.filters["name"].field is name_column
+    assert multi.filters["count"].field is ResourceEndpoint.meta.table.c.count
 
     expr = sa.func.lower(name_column)
     flt = SAFilter("lower", field=expr)

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, ClassVar, cast
 
 from peewee import ColumnBase, Field
 
-from muffin_rest.filters import Filter, Filters
+from muffin_rest.filters import Filter, Filters, MultiFilter
 
 from .utils import get_model_field_by_name
 
@@ -50,12 +50,17 @@ class PWFilter(Filter):
         super().__init__(name, **meta)
         self.field = field if field is not None else (getattr(self, "field", None) or name)
 
+    def condition(self, *ops: TFilterValue):
+        """Build an expression from the given ops."""
+        column = self.field
+        if not isinstance(column, ColumnBase):
+            return None
+        return reduce(operator.and_, [op(column, val) for op, val in ops])
+
     async def filter(self, collection, *ops: TFilterValue, **ctx):
         """Apply the filters to Peewee QuerySet.."""
-        column = self.field
-
-        if isinstance(column, ColumnBase):
-            collection = collection.where(*[op(column, val) for op, val in ops])
+        if (condition := self.condition(*ops)) is not None:
+            collection = collection.where(condition)
 
         return collection
 
@@ -67,6 +72,8 @@ class PWFilters(Filters):
 
     def convert(self, obj: str | Field | PWFilter, **meta):
         """Convert params to filters."""
+        if isinstance(obj, MultiFilter):
+            return self.convert_multi(obj)
 
         handler = cast("PWRESTHandler", self.handler)
         if isinstance(obj, PWFilter):

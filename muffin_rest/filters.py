@@ -73,7 +73,7 @@ class Filter(Mutate):
         self.schema_field = schema_field or self.schema_field
         self.default_operator = operator or self.default_operator
 
-    async def apply(self, collection: Any, data: Mapping | None = None, **ctx):
+    async def apply(self, collection: Any, data: Mapping | None = None, **ctx) -> tuple[Any, Any]:
         """Filter given collection."""
         if not data:
             return None, collection
@@ -88,23 +88,14 @@ class Filter(Mutate):
 
         return ops, collection
 
+    def condition(self, *ops: TFilterValue) -> Any:
+        """Build a predicate from the given ops."""
+        return lambda obj: all(op(get_value(obj, self.name), val) for op, val in ops)
+
     async def filter(self, collection: TVCollection, *ops: TFilterValue, **ctx) -> TVCollection:
         """Apply the filter to collection."""
-
-        def validator(obj):
-            return all(op(get_value(obj, self.name), val) for op, val in ops)
-
-        return cast("TVCollection", [item for item in collection if validator(item)])
-
-    def get_simple_value(self, ops: TFilterOps) -> Any:
-        """Get simple value from filter's data.
-
-        In case of simple filter, return the value.
-        """
-        if not ops:
-            return None
-
-        return ops[0][1]
+        condition = self.condition(*ops)
+        return cast("TVCollection", [item for item in collection if condition(item)])
 
     def parse(self, data: Mapping) -> TFilterOps:
         """Parse operator and value from filter's data."""
@@ -130,6 +121,49 @@ class Filter(Mutate):
 
         else:
             yield (self.operators[self.default_operator], deserialize(value))
+
+
+class MultiFilter(Filter):
+    """Apply one filter to several names."""
+
+    params: tuple[Any, ...]
+    filters: dict[str, Filter]
+
+    def __init__(self, name: str, *, filters: Iterable = (), **meta):
+        """Initialize the filter."""
+        super().__init__(name, **meta)
+        self.params = tuple(filters)
+        self.filters = {}
+
+    async def apply(self, collection: Any, data: Mapping | None = None, **ctx):
+        """Filter given collection."""
+        values = data.get(self.name) if data else None
+        if not isinstance(values, dict):
+            return None, collection
+
+        ops = {}
+        for name, flt in self.filters.items():
+            if name not in values:
+                continue
+            try:
+                flt_ops = flt.parse(values)
+            except ma.ValidationError:
+                continue
+            if flt_ops:
+                ops[name] = flt_ops
+
+        if not ops:
+            return None, collection
+
+        return ops, await self.filter(collection, ops, **ctx)
+
+    async def filter(  # type: ignore[bad-override]
+        self, collection: TVCollection, ops: Mapping[str, TFilterOps], **ctx
+    ) -> TVCollection:
+        """Apply child filters (AND by default)."""
+        for name, flt_ops in ops.items():
+            collection = await self.filters[name].filter(collection, *flt_ops, **ctx)
+        return collection
 
 
 class Filters(Mutator[Filter]):
@@ -164,6 +198,9 @@ class Filters(Mutator[Filter]):
 
     def convert(self, obj, **meta):
         """Convert params to filters."""
+        if isinstance(obj, MultiFilter):
+            return self.convert_multi(obj)
+
         if isinstance(obj, self.MUTATE_CLASS):
             return obj
 
@@ -172,6 +209,15 @@ class Filters(Mutator[Filter]):
         if schema_field is None and field:
             schema_field = self.handler.meta.Schema._declared_fields.get(field)
         return self.MUTATE_CLASS(obj, field=field, schema_field=schema_field, **meta)
+
+    def convert_multi(self, multi: MultiFilter) -> MultiFilter:
+        """Bind a single filter for each config entry."""
+        for param in multi.params:
+            obj, meta = param if isinstance(param, tuple) else (param, {})
+            flt = self.convert(obj, **meta)
+            if flt:
+                multi.filters[flt.name] = flt
+        return multi
 
     @property
     def openapi(self) -> dict:

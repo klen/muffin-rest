@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `MultiFilter` for filters that parse a nested object and combine child filters; `filters` accepts the same entries as `Meta.filters`.
 - Python 3.15 support.
 - `limit_min` pagination option (default `1`). Set it to `0` to allow `limit=0` to return all rows.
 - Documentation guides in `docs/`: tutorial, handler lifecycle, backends, custom backend, querying, schemas, OpenAPI, errors, cookbook, API reference, and development.
@@ -31,7 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `Filters.apply` calls every filter; each filter checks whether its own keys are present in `where`. This prepares multi-field filters.
 - SQLAlchemy delete and batch operation tests are enabled again.
+
+### Removed
+
+- `Filter.get_simple_value`.
 
 ## [13.5.0] - 2026-04-10
 

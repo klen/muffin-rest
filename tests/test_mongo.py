@@ -3,6 +3,8 @@ import pytest
 from bson import ObjectId
 from muffin_mongo import Plugin as Mongo
 
+from muffin_rest.filters import MultiFilter
+
 
 @pytest.fixture(scope="module")
 def aiolib():
@@ -91,6 +93,10 @@ async def test_base(api, ResourceEndpoint):
 
     assert api.router.plain["/resources"]
     assert api.router.dynamic[0].pattern.pattern == "^/resources/(?P<id>[^/]+)$"
+
+    multi = ResourceEndpoint.meta.filters.convert(MultiFilter("q", filters=("name", "active")))
+    assert multi.filters["name"].field == "name"
+    assert multi.filters["active"].field == "active"
 
 
 async def test_get(client, ResourceEndpoint, resource):

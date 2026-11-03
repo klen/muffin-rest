@@ -46,3 +46,4 @@
   and `/openapi.json` under API prefix (for example `/api/openapi.json`).
 - Async test behavior is intentional: base tests use an autouse asyncio/trio/curio matrix,
   while backend-specific suites pin to asyncio via local `aiolib` fixtures.
+- Test imports go at the module top. Do not add imports inside test functions or fixtures.

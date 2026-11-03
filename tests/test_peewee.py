@@ -8,6 +8,9 @@ from muffin_peewee import JSONLikeField
 from muffin_peewee import Plugin as Peewee
 from muffin_peewee.fields import StrEnumField
 
+from muffin_rest.filters import MultiFilter
+from muffin_rest.peewee import PWRESTHandler
+
 
 @pytest.fixture(scope="module")
 def aiolib():
@@ -270,6 +273,35 @@ async def test_filters(apiclient, endpoint_cls, db):
     assert res.status_code == 200
     json = await res.json()
     assert {data["name"] for data in json} == {"name6"}
+
+
+async def test_multi_filter(api, apiclient, db):
+    class OrFilter(MultiFilter):
+        async def filter(self, collection, ops, **ctx):  # type: ignore[bad-override]
+            conditions = [self.filters[name].condition(*flt_ops) for name, flt_ops in ops.items()]
+            condition = conditions[0]
+            for other in conditions[1:]:
+                condition |= other
+            return collection.where(condition)
+
+    @api.route
+    class MultiEndpoint(PWRESTHandler[Resource]):
+        class Meta:
+            name = "multi"
+            model = Resource
+            filters = (OrFilter("q", filters=("name", "count")),)
+
+    await db.manager.create(Resource, name="test2", count=1)
+    await db.manager.create(Resource, name="test3", count=2)
+    await db.manager.create(Resource, name="test4", count=3)
+
+    res = await apiclient.get("/api/multi", filters={"q": {"name": "test2", "count": 3}})
+    assert res.status_code == 200
+    assert {data["name"] for data in await res.json()} == {"test2", "test4"}
+
+    res = await apiclient.get("/api/multi", filters={"q": {"count": 2}})
+    assert res.status_code == 200
+    assert {data["name"] for data in await res.json()} == {"test3"}
 
 
 async def test_paginate(apiclient, endpoint_cls, db):
