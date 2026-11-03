@@ -819,7 +819,7 @@ wheels = [
 
 [[package]]
 name = "muffin-rest"
-version = "15.3.0"
+version = "16.0.0"
 source = { editable = "." }
 default-groups = ["dev", "example"]
 dependencies = [
