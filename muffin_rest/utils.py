@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Generic, Iterable, Mapping, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Iterable, Iterator, Mapping, TypeVar
 
 if TYPE_CHECKING:
     from muffin import Request
 
-    from muffin_rest.types import TVCollection
+    from .handler import RESTBase
 
 
 class Mutate(abc.ABC):
@@ -16,20 +16,20 @@ class Mutate(abc.ABC):
 
     field: Any
 
-    def __init__(self, name: str, **meta):
+    def __init__(self, name: str, **meta: Any) -> None:
         """Initialize a name."""
         self.name = name
         self.meta = meta
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} '{self.name}'>"
 
     @abc.abstractmethod
-    async def apply(self, collection: TVCollection, **ctx) -> tuple[Any, TVCollection]:
-        """Apply the mutation."""
+    async def apply(self, collection: Any, **ctx: Any) -> Any:
+        """Apply the mutation to the collection (subclasses narrow the collection type)."""
         ...
 
 
@@ -42,7 +42,7 @@ class Mutator(abc.ABC, Generic[M]):
     MUTATE_CLASS: type[M]
     mutations: Mapping[str, M]
 
-    def __init__(self, handler, params: Iterable):
+    def __init__(self, handler: type[RESTBase], params: Iterable[Any]) -> None:
         """Initialize the mutations."""
         self.handler = handler
         self.mutations = {}
@@ -52,7 +52,7 @@ class Mutator(abc.ABC, Generic[M]):
             if mut:
                 self.mutations[mut.name] = mut
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         """Iterate through self filters."""
         return iter(self.mutations)
 
@@ -60,13 +60,13 @@ class Mutator(abc.ABC, Generic[M]):
         """Describe the filters."""
         return ",".join(self.mutations)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} '{self}'>"
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.mutations)
 
-    def convert(self, obj, **meta) -> M | None:
+    def convert(self, obj: Any, **meta: Any) -> M | None:
         """Convert params to mutations."""
         factory = self.MUTATE_CLASS
         if not isinstance(obj, factory):
@@ -76,7 +76,7 @@ class Mutator(abc.ABC, Generic[M]):
 
     @abc.abstractmethod
     async def apply(
-        self, request: Request, collection: TVCollection
-    ) -> tuple[TVCollection, dict[str, Any]]:
-        """Mutate a collection."""
+        self, request: Request, collection: Any, **ctx: Any
+    ) -> tuple[Any, dict[str, Any]]:
+        """Mutate a collection (subclasses narrow the collection type)."""
         ...

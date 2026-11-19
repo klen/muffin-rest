@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from muffin import Request
     from muffin_databases import Plugin as Database
 
+    from muffin_rest.handler import RESTBase
+
 
 from .types import TVCollection, TVResource
 
@@ -28,7 +30,7 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
     """Allow partial updates for tables."""
 
     @ma.pre_load
-    def fill_defaults(self, data, *, partial=False, **_):
+    def fill_defaults(self, data: Any, *, partial: bool = False, **_: Any) -> Any:
         """Insert default params for SQLAlchemy because databases don't.
 
         https://github.com/encode/databases/issues/72
@@ -56,7 +58,7 @@ class SQLAlchemyAutoSchema(BaseSQLAlchemyAutoSchema):
         return data
 
     @ma.post_load
-    def make_instance(self, data, **kwargs):
+    def make_instance(self, data: Any, **kwargs: Any) -> Any:
         """Update a table instance."""
         if self.instance is not None:
             instance = dict(self.instance)
@@ -80,7 +82,7 @@ class SARESTOptions(RESTOptions):
 
     base_property = "table"
 
-    def setup(self, cls):
+    def setup(self, cls: type[RESTBase]) -> None:
         """Prepare meta options."""
         if self.database is None:
             raise ValueError("'SARESTHandler.Meta.database' is required")
@@ -90,7 +92,7 @@ class SARESTOptions(RESTOptions):
 
         super().setup(cls)
 
-    def setup_schema_meta(self, _):
+    def setup_schema_meta(self, _: type[RESTBase]) -> type[Any]:
         """Prepare a schema."""
         return type(
             "Meta",
@@ -132,7 +134,7 @@ class SARESTHandler(RESTHandler[TVResource, TVCollection]):
             total = await self.meta.database.fetch_val(qs)
         return self.collection.offset(offset).limit(limit), total
 
-    async def get(self, request, *, resource: TVResource | None = None) -> Any:
+    async def get(self, request: Request, *, resource: TVResource | None = None) -> Any:
         """Get resource or collection of resources."""
         if resource:
             return await self.dump(request, resource)
@@ -153,12 +155,14 @@ class SARESTHandler(RESTHandler[TVResource, TVCollection]):
         return cast("TVResource", dict(resource))
 
     def get_schema(
-        self, request: Request, *, resource: TVResource | None = None, **schema_options
+        self, request: Request, *, resource: TVResource | None = None, **schema_options: Any
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)
 
-    async def save(self, request: Request, resource: TVResource, *, update=False):
+    async def save(
+        self, request: Request, resource: TVResource, *, update: bool = False
+    ) -> TVResource:
         """Save the given resource."""
         meta = self.meta
         insert_query = meta.table.insert()
@@ -172,7 +176,7 @@ class SARESTHandler(RESTHandler[TVResource, TVCollection]):
 
         return resource
 
-    async def remove(self, request: Request, resource: TVResource | None = None):
+    async def remove(self, request: Request, resource: TVResource | None = None) -> Any:
         """Remove the given resource."""
         table_pk = self.meta.table_pk
         keys = [resource[table_pk.name]] if resource else await request.data()

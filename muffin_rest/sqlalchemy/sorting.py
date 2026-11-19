@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from sqlalchemy import Column
 
@@ -16,18 +16,18 @@ if TYPE_CHECKING:
 class SASort(Sort):
     """Sorter for Peewee."""
 
-    def __init__(self, name: str, *, field: Column | str | None = None, **meta):
+    def __init__(self, name: str, *, field: Column | str | None = None, **meta: Any) -> None:
         """Initialize the sorter."""
         super().__init__(name, **meta)
         self.field = field if field is not None else (getattr(self, "field", None) or name)
 
     async def apply(
         self,
-        collection: TVCollection,
+        collection: Any,
         *,
         desc: bool = False,
-        **ctx,
-    ) -> TVCollection:
+        **ctx: Any,
+    ) -> Any:
         """Sort the collection."""
         field = self.field
         if desc and isinstance(field, Column):
@@ -41,7 +41,7 @@ class SASorting(Sorting):
 
     MUTATE_CLASS = SASort
 
-    def convert(self, obj: str | Column | SASort, **meta):
+    def convert(self, obj: Any, **meta: Any) -> Sort | None:
         """Prepare sorters."""
 
         if isinstance(obj, SASort):

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping, cast
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
 
 import marshmallow as ma
 from asgi_tools._compat import json_loads
@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
     from muffin_rest.types import TFilterOps, TFilterValue
 
-    from .types import TVCollection
 
 FILTERS_PARAM = "where"
 
@@ -60,8 +59,8 @@ class Filter(Mutate):
         *,
         schema_field: ma.fields.Field | None = None,
         operator: str | None = None,
-        **meta,
-    ):
+        **meta: Any,
+    ) -> None:
         """Initialize filter.
 
         :param name: The filter's name
@@ -73,7 +72,9 @@ class Filter(Mutate):
         self.schema_field = schema_field or self.schema_field
         self.default_operator = operator or self.default_operator
 
-    async def apply(self, collection: Any, data: Mapping | None = None, **ctx) -> tuple[Any, Any]:
+    async def apply(
+        self, collection: Any, data: Mapping[str, Any] | None = None, **ctx: Any
+    ) -> tuple[TFilterOps | None, Any]:
         """Filter given collection."""
         if not data:
             return None, collection
@@ -92,17 +93,17 @@ class Filter(Mutate):
         """Build a predicate from the given ops."""
         return lambda obj: all(op(get_value(obj, self.name), val) for op, val in ops)
 
-    async def filter(self, collection: TVCollection, *ops: TFilterValue, **ctx) -> TVCollection:
-        """Apply the filter to collection."""
+    async def filter(self, collection: Any, *ops: TFilterValue, **ctx: Any) -> Any:
+        """Apply the filter to collection (subclasses narrow the collection type)."""
         condition = self.condition(*ops)
-        return cast("TVCollection", [item for item in collection if condition(item)])
+        return [item for item in collection if condition(item)]
 
-    def parse(self, data: Mapping) -> TFilterOps:
+    def parse(self, data: Mapping[str, Any]) -> TFilterOps:
         """Parse operator and value from filter's data."""
         value = data.get(self.name, ma.missing)
         return tuple(self._parse(value))
 
-    def _parse(self, value) -> Iterable[TFilterValue]:
+    def _parse(self, value: Any) -> Iterable[TFilterValue]:
         deserialize = self.schema_field.deserialize
         if isinstance(value, dict):
             for op, val in value.items():
@@ -129,13 +130,15 @@ class MultiFilter(Filter):
     params: tuple[Any, ...]
     filters: dict[str, Filter]
 
-    def __init__(self, name: str, *, filters: Iterable = (), **meta):
+    def __init__(self, name: str, *, filters: Iterable[Any] = (), **meta: Any) -> None:
         """Initialize the filter."""
         super().__init__(name, **meta)
         self.params = tuple(filters)
         self.filters = {}
 
-    async def apply(self, collection: Any, data: Mapping | None = None, **ctx):
+    async def apply(  # type: ignore[bad-override]
+        self, collection: Any, data: Mapping[str, Any] | None = None, **ctx: Any
+    ) -> tuple[dict[str, TFilterOps] | None, Any]:
         """Filter given collection."""
         values = data.get(self.name) if data else None
         if not isinstance(values, dict):
@@ -158,8 +161,8 @@ class MultiFilter(Filter):
         return ops, await self.filter(collection, ops, **ctx)
 
     async def filter(  # type: ignore[bad-override]
-        self, collection: TVCollection, ops: Mapping[str, TFilterOps], **ctx
-    ) -> TVCollection:
+        self, collection: Any, ops: Mapping[str, TFilterOps], **ctx: Any
+    ) -> Any:
         """Apply child filters (AND by default)."""
         for name, flt_ops in ops.items():
             collection = await self.filters[name].filter(collection, *flt_ops, **ctx)
@@ -173,8 +176,8 @@ class Filters(Mutator[Filter]):
     mutations: Mapping[str, Filter]
 
     async def apply(
-        self, request: Request, collection: TVCollection, **ctx
-    ) -> tuple[TVCollection, dict[str, Any]]:
+        self, request: Request, collection: Any, **ctx: Any
+    ) -> tuple[Any, dict[str, Any]]:
         """Filter the given collection."""
         raw_data = request.url.query.get(FILTERS_PARAM)
         filters = {}
@@ -192,11 +195,12 @@ class Filters(Mutator[Filter]):
 
             except (ValueError, TypeError, AssertionError):
                 api = self.handler._api
+                assert api is not None
                 api.logger.warning("Invalid filters data: %s", request.url)
 
         return collection, filters
 
-    def convert(self, obj, **meta):
+    def convert(self, obj: Any, **meta: Any) -> Filter | None:
         """Convert params to filters."""
         if isinstance(obj, MultiFilter):
             return self.convert_multi(obj)
@@ -230,7 +234,7 @@ class Filters(Mutator[Filter]):
         }
 
 
-def get_value(obj, name: str):
+def get_value(obj: Any, name: str) -> Any:
     """Get value from object by name."""
     if isinstance(obj, dict):
         return obj.get(name)

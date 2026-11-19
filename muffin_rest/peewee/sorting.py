@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any
 
 from peewee import Field
 
@@ -11,19 +11,18 @@ from muffin_rest.sorting import Sort, Sorting
 from .utils import get_model_field_by_name
 
 if TYPE_CHECKING:
-    from . import PWRESTHandler
     from .types import TVCollection
 
 
 class PWSort(Sort):
     """Sorter for Peewee."""
 
-    def __init__(self, name: str, *, field: Field | str | None = None, **meta):
+    def __init__(self, name: str, *, field: Field | str | None = None, **meta: Any) -> None:
         """Initialize the sorter."""
         super().__init__(name, **meta)
         self.field = field if field is not None else (getattr(self, "field", None) or name)
 
-    async def apply(self, collection: TVCollection, *, desc: bool = False, **ctx) -> TVCollection:
+    async def apply(self, collection: Any, *, desc: bool = False, **ctx: Any) -> Any:
         """Sort the collection."""
         params = {"nulls": "LAST"} if isinstance(self.field, Field) and self.field.null else {}
         return collection.order_by_extend(
@@ -36,17 +35,17 @@ class PWSorting(Sorting):
 
     MUTATE_CLASS = PWSort
 
-    def prepare(self, collection: TVCollection) -> TVCollection:
+    def prepare(self, collection: Any) -> Any:
         """Prepare collection for sorting."""
         return collection.order_by()
 
-    def convert(self, obj: str | Field | PWSort, **meta):
+    def convert(self, obj: Any, **meta: Any) -> Sort | None:
         """Prepare sorters."""
 
         if isinstance(obj, PWSort):
             return obj
 
-        handler = cast("PWRESTHandler", self.handler)
+        handler = self.handler
 
         if isinstance(obj, Field):
             name, field = obj.name, obj

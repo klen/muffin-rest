@@ -73,6 +73,7 @@ them to `methods`.
 ```python
 from muffin_rest.sqlalchemy import SARESTHandler
 
+
 @api.route
 class Pets(SARESTHandler):
     class Meta:
@@ -82,6 +83,7 @@ class Pets(SARESTHandler):
 
 ```python
 from muffin_rest.mongo import MongoRESTHandler
+
 
 @api.route
 class Pets(MongoRESTHandler):

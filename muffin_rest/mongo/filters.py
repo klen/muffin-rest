@@ -1,7 +1,7 @@
 """Support filters for Mongo."""
 
 import re
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from muffin_rest.filters import Filter, Filters
 from muffin_rest.types import TFilterValue
@@ -23,15 +23,15 @@ class MongoFilter(Filter):
         "$ends": lambda _, v: ("$regex", re.escape(v) + "$"),
     }
 
-    def __init__(self, name: str, *, field: str | None = None, **kwargs):
+    def __init__(self, name: str, *, field: str | None = None, **kwargs: Any) -> None:
         super().__init__(name, **kwargs)
         self.field = field if field is not None else (getattr(self, "field", None) or name)
 
-    def condition(self, *ops: TFilterValue):
+    def condition(self, *ops: TFilterValue) -> dict[str, Any]:
         """Build a query filter from the given ops."""
         return {self.field: dict(op(self.name, v) for op, v in ops)}
 
-    async def filter(self, collection, *ops: TFilterValue, **ctx):
+    async def filter(self, collection: Any, *ops: TFilterValue, **ctx: Any) -> Any:
         """Apply the filter."""
         return collection.find(self.condition(*ops))
 

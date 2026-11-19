@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import bson
 from bson.errors import InvalidId
@@ -21,6 +21,8 @@ if TYPE_CHECKING:
     from motor import motor_asyncio as motor
     from muffin import Request
 
+    from muffin_rest.handler import RESTBase
+
 
 class MongoRESTOptions(RESTOptions):
     """Support Mongo DB."""
@@ -37,7 +39,7 @@ class MongoRESTOptions(RESTOptions):
 
     Schema: type[MongoSchema]  # type: ignore[override]
 
-    def setup(self, cls):
+    def setup(self, cls: type[RESTBase]) -> None:
         """Prepare meta options."""
         if self.collection is None:
             raise RuntimeError("MongoResthandler.Meta.collection is required")
@@ -56,7 +58,9 @@ class MongoRESTHandler(RESTHandler[TVResource, TVCollection]):
         """Initialize Peeewee QuerySet for a binded to the resource model."""
         return MongoChain(self.meta.collection)
 
-    async def paginate(self, request: Request, *, limit: int = 0, offset: int = 0):  # type: ignore[override]
+    async def paginate(  # type: ignore[override]
+        self, request: Request, *, limit: int = 0, offset: int = 0
+    ) -> tuple[Any, Any]:
         """Paginate collection."""
         if self.meta.aggregate:
             pipeline_all = [*map(dict, self.meta.aggregate), {"$skip": offset}, {"$limit": limit}]
@@ -74,7 +78,7 @@ class MongoRESTHandler(RESTHandler[TVResource, TVCollection]):
             total = await self.collection.count()
         return self.collection.skip(offset).limit(limit), total
 
-    async def get(self, request, *, resource: TVResource | None = None):
+    async def get(self, request: Request, *, resource: TVResource | None = None) -> Any:
         """Get resource or collection of resources."""
         if resource:
             return await self.dump(request, resource)
@@ -96,12 +100,14 @@ class MongoRESTHandler(RESTHandler[TVResource, TVCollection]):
             raise APIError.NOT_FOUND() from exc
 
     def get_schema(
-        self, request: Request, resource: TVResource | None = None, **schema_options
+        self, request: Request, resource: TVResource | None = None, **schema_options: Any
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)
 
-    async def save(self, request: Request, resource: TVResource, *, update=False) -> TVResource:
+    async def save(
+        self, request: Request, resource: TVResource, *, update: bool = False
+    ) -> TVResource:
         """Save the given resource."""
         meta = self.meta
         collection_id = meta.collection_id
@@ -114,7 +120,7 @@ class MongoRESTHandler(RESTHandler[TVResource, TVCollection]):
 
         return resource
 
-    async def delete(self, request: Request, resource: TVResource | None = None):
+    async def delete(self, request: Request, resource: TVResource | None = None) -> Any:
         """Remove the given resource(s)."""
         meta = self.meta
         oids = (

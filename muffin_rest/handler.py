@@ -26,9 +26,14 @@ from .types import TVCollection, TVResource
 class RESTHandlerMeta(HandlerMeta):
     """Create class options."""
 
-    def __new__(mcs, name, bases, params):
+    def __new__(
+        mcs: type["RESTHandlerMeta"], name: str, bases: tuple[type, ...], params: dict[str, Any]
+    ) -> Any:
         """Prepare options for the handler."""
-        kls = cast("type[RESTBase]", super().__new__(mcs, name, bases, params))
+        kls = cast(
+            "type[RESTBase]",
+            super().__new__(mcs, name, bases, params),  # type: ignore[bad-argument-type]
+        )
         kls.meta = kls.meta_class(kls)
 
         if getattr(kls.meta, kls.meta_class.base_property, None) is not None:
@@ -69,12 +74,12 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
     @classmethod
     def __route__(
         cls,
-        router,
-        *paths,
-        methods=None,
-        hosts=None,
-        **params,
-    ):
+        router: Any,
+        *paths: str,
+        methods: TMethodsArg | None = None,
+        hosts: Any = None,
+        **params: Any,
+    ) -> Any:
         """Bind the class to the given router."""
         methods = methods or cls.methods
         if paths:
@@ -90,7 +95,7 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
 
         return cls
 
-    async def __call__(self, request: Request, *, method_name: str | None = None, **_) -> Any:
+    async def __call__(self, request: Request, *, method_name: str | None = None, **_: Any) -> Any:
         """Dispatch the given request by HTTP method."""
         self.auth = await self.authorize(request)
 
@@ -166,7 +171,9 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
 
     # Paginate
     # --------
-    def paginate_prepare_headers(self, limit, offset, total=None):
+    def paginate_prepare_headers(
+        self, limit: int, offset: int, total: int | None = None
+    ) -> dict[str, int]:
         """Prepare pagination headers."""
         headers = {"x-limit": limit, "x-offset": offset}
         if total is not None:
@@ -195,12 +202,14 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
     # Manage data
     # -----------
     @abc.abstractmethod
-    async def save(self, request: Request, resource: TVResource, *, update=False) -> TVResource:
+    async def save(
+        self, request: Request, resource: TVResource, *, update: bool = False
+    ) -> TVResource:
         """Save the given resource."""
         return resource
 
     async def save_many(
-        self, request: Request, data: list[TVResource], *, update=False
+        self, request: Request, data: list[TVResource], *, update: bool = False
     ) -> list[TVResource]:
         """Save many resources."""
         return [await self.save(request, item, update=update) for item in data]
@@ -213,7 +222,7 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
     # Parse data
     # -----------
     def get_schema(
-        self, request: Request, *, resource: TVResource | None = None, **schema_options
+        self, request: Request, *, resource: TVResource | None = None, **schema_options: Any
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         query = request.url.query
@@ -226,7 +235,7 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
                 )
         return self.meta.Schema(**schema_options)
 
-    async def load_data(self, request: Request):
+    async def load_data(self, request: Request) -> Any:
         """Load data from request and create/update a resource."""
         try:
             data = await request.data(raise_errors=True)
@@ -235,7 +244,9 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
 
         return data
 
-    async def load(self, request: Request, resource: TVResource | None = None, **schema_options):
+    async def load(
+        self, request: Request, resource: TVResource | None = None, **schema_options: Any
+    ) -> TVResource | list[TVResource] | None:
         """Load data from request and create/update a resource."""
         schema = self.get_schema(request, resource=resource, **schema_options)
         data = cast("Mapping | list", await self.load_data(request))
@@ -246,12 +257,12 @@ class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandler
 
     @overload
     async def dump(  # type: ignore[misc]
-        self, request, data: TVResource | Iterable[TVResource], *, many: Literal[True]
+        self, request: Request, data: TVResource | Iterable[TVResource], *, many: Literal[True]
     ) -> list[TSchemaRes]: ...
 
     @overload
     async def dump(
-        self, request, data: TVResource | Iterable[TVResource], *, many: bool = False
+        self, request: Request, data: TVResource | Iterable[TVResource], *, many: bool = False
     ) -> TSchemaRes: ...
 
     async def dump(

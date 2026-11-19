@@ -1,11 +1,16 @@
 """REST Options."""
 
-from typing import ClassVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import marshmallow as ma
 
 from .filters import Filters
 from .sorting import Sorting
+
+if TYPE_CHECKING:
+    from .handler import RESTBase
 
 
 class RESTOptions:
@@ -53,7 +58,7 @@ class RESTOptions:
     schema_meta: ClassVar[dict] = {}
     schema_unknown: str = ma.EXCLUDE
 
-    def __init__(self, cls):
+    def __init__(self, cls: type[RESTBase]) -> None:
         """Inherit meta options."""
         for base in reversed(cls.mro()):
             if hasattr(base, "Meta"):
@@ -64,7 +69,7 @@ class RESTOptions:
         if getattr(self, self.base_property, None) is not None:
             self.setup(cls)
 
-    def setup(self, cls):
+    def setup(self, cls: type[RESTBase]) -> None:
         """Setup the options."""
         self.name = self.name or cls.__name__.lower()
         if not self.Schema:
@@ -78,7 +83,7 @@ class RESTOptions:
         if not self.limit_max:
             self.limit_max = self.limit
 
-    def setup_schema_meta(self, _):
+    def setup_schema_meta(self, _: type[RESTBase]) -> type[Any]:
         """Generate meta for schemas."""
         if "additional" in self.schema_meta:
             raise ValueError(
@@ -92,6 +97,6 @@ class RESTOptions:
             dict({"unknown": self.schema_unknown}, **self.schema_meta),
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Represent self as a string."""
         return f"<Options {self.name}>"

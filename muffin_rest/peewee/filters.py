@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import operator
 from functools import reduce
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from peewee import ColumnBase, Field
 
@@ -14,8 +14,6 @@ from .utils import get_model_field_by_name
 
 if TYPE_CHECKING:
     from muffin_rest.types import TFilterValue
-
-    from . import PWRESTHandler
 
 
 class PWFilter(Filter):
@@ -45,19 +43,19 @@ class PWFilter(Filter):
 
     list_ops = (*Filter.list_ops, "$between")
 
-    def __init__(self, name: str, *, field: Field | str | None = None, **meta):
+    def __init__(self, name: str, *, field: Field | str | None = None, **meta: Any) -> None:
         """Initialize the filter."""
         super().__init__(name, **meta)
         self.field = field if field is not None else (getattr(self, "field", None) or name)
 
-    def condition(self, *ops: TFilterValue):
+    def condition(self, *ops: TFilterValue) -> Any:
         """Build an expression from the given ops."""
         column = self.field
         if not isinstance(column, ColumnBase):
             return None
         return reduce(operator.and_, [op(column, val) for op, val in ops])
 
-    async def filter(self, collection, *ops: TFilterValue, **ctx):
+    async def filter(self, collection: Any, *ops: TFilterValue, **ctx: Any) -> Any:
         """Apply the filters to Peewee QuerySet.."""
         if (condition := self.condition(*ops)) is not None:
             collection = collection.where(condition)
@@ -70,12 +68,12 @@ class PWFilters(Filters):
 
     MUTATE_CLASS = PWFilter
 
-    def convert(self, obj: str | Field | PWFilter, **meta):
+    def convert(self, obj: Any, **meta: Any) -> Filter | None:
         """Convert params to filters."""
         if isinstance(obj, MultiFilter):
             return self.convert_multi(obj)
 
-        handler = cast("PWRESTHandler", self.handler)
+        handler = self.handler
         if isinstance(obj, PWFilter):
             if isinstance(obj.field, str):
                 obj.field = get_model_field_by_name(handler, obj.field)

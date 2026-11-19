@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from muffin_rest.types import TFilterValue
 
     from . import SARESTHandler
-    from .types import TVCollection
 
 
 class SAFilter(Filter):
@@ -37,12 +36,12 @@ class SAFilter(Filter):
 
     list_ops = (*Filter.list_ops, "$between")
 
-    def __init__(self, name: str, *, field: Column | str | None = None, **meta):
+    def __init__(self, name: str, *, field: Column | str | None = None, **meta: Any) -> None:
         """Initialize the filter."""
         super().__init__(name, **meta)
         self.field = field if field is not None else (getattr(self, "field", None) or name)
 
-    async def filter(self, collection: TVCollection, *ops: TFilterValue, **ctx) -> TVCollection:
+    async def filter(self, collection: Any, *ops: TFilterValue, **ctx: Any) -> Any:
         """Apply the filters to SQLAlchemy Select."""
         condition = self.condition(*ops)
         if condition is not None:
@@ -63,7 +62,7 @@ class SAFilters(Filters):
 
     MUTATE_CLASS = SAFilter
 
-    def convert(self, obj: str | Column | SAFilter, **meta):
+    def convert(self, obj: Any, **meta: Any) -> Filter | None:
         """Convert params to filters."""
         if isinstance(obj, MultiFilter):
             return self.convert_multi(obj)

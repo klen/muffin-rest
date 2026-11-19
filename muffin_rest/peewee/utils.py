@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 from warnings import warn
 
 if TYPE_CHECKING:
     from peewee import CompositeKey, Field
 
+    from muffin_rest.handler import RESTBase
 
-def get_model_field_by_name(handler, name: str, *, stacklevel=5) -> Field | None:
+    from .options import PWRESTOptions
+
+
+def get_model_field_by_name(
+    handler: type[RESTBase], name: str, *, stacklevel: int = 5
+) -> Field | None:
     """Get model field by name."""
-    fields = handler.meta.model._meta.fields
+    fields = cast("PWRESTOptions", handler.meta).model._meta.fields
     candidate = fields.get(name)
     if candidate:
         return candidate
@@ -21,7 +27,7 @@ def get_model_field_by_name(handler, name: str, *, stacklevel=5) -> Field | None
             return field
 
     warn(
-        f"{handler.__qualname__} {handler.meta.model} has no field {name}",
+        f"{handler.__qualname__} {cast('PWRESTOptions', handler.meta).model} has no field {name}",
         category=RuntimeWarning,
         stacklevel=stacklevel,
     )
@@ -31,7 +37,7 @@ def get_model_field_by_name(handler, name: str, *, stacklevel=5) -> Field | None
 SEPARATOR = "::"
 
 
-def composite_key_to_id(fields: list[Field], instance, _) -> str:
+def composite_key_to_id(fields: list[Field], instance: Any, _: Any) -> str:
     """Convert composite key to string id."""
     return SEPARATOR.join(str(field.db_value(getattr(instance, field.name))) for field in fields)
 

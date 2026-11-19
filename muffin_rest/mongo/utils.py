@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Awaitable
+from typing import TYPE_CHECKING, Any, Awaitable
 
 if TYPE_CHECKING:
     from motor import motor_asyncio as motor
@@ -49,7 +49,7 @@ class MongoChain:
         "__getitem__",
     )
 
-    def __init__(self, collection: motor.AsyncIOMotorCollection):
+    def __init__(self, collection: motor.AsyncIOMotorCollection) -> None:
         """Initialize the resource."""
         self.collection = collection
         self.query: list = []
@@ -59,7 +59,7 @@ class MongoChain:
     def find(
         self,
         query: list | dict | None = None,
-        projection=None,
+        projection: dict | None = None,
     ) -> MongoChain:
         """Store filters in self."""
         self.query = self.__update__(query)
@@ -69,7 +69,7 @@ class MongoChain:
     def find_one(
         self,
         query: list | dict | None = None,
-        projection=None,
+        projection: dict | None = None,
     ) -> Awaitable:
         """Apply filters and return cursor."""
         query = self.__update__(query)
@@ -81,7 +81,7 @@ class MongoChain:
         query = (self.query and {"$and": self.query}) or {}
         return self.collection.count_documents(query)  # type: ignore[]
 
-    def aggregate(self, pipeline, **kwargs):
+    def aggregate(self, pipeline: list, **kwargs: Any) -> Any:
         """Aggregate collection."""
         if self.query:
             for params in pipeline:
@@ -98,7 +98,7 @@ class MongoChain:
 
         return self.collection.aggregate(pipeline, **kwargs)
 
-    def sort(self, key, direction=1):
+    def sort(self, key: str | list, direction: int = 1) -> MongoChain:
         """Save ordering properties."""
         if isinstance(key, str):
             self.sorting.append((key, direction))
@@ -108,18 +108,18 @@ class MongoChain:
 
         return self
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """String representation."""
         return "<MongoChain (%s) %r>" % (self.collection.name, self.query)
 
-    def __update__(self, query):
+    def __update__(self, query: Any) -> list:
         """Update stored query."""
         if query:
             self.query.append(query)
 
         return self.query
 
-    def _cursor(self):
+    def _cursor(self) -> Any:
         """Build a motor cursor from the stored query and sorting."""
         query = (self.query and {"$and": self.query}) or {}
         cursor = self.collection.find(query, self.projection)
@@ -127,15 +127,15 @@ class MongoChain:
             cursor = cursor.sort(self.sorting)
         return cursor
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         """Iterate by self collection."""
         return self._cursor()
 
-    async def to_list(self, length=None):
+    async def to_list(self, length: int | None = None) -> list:
         """Fetch documents as a list."""
         return await self._cursor().to_list(length)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         """Proxy any attributes except find to self.collection."""
         if name in self.CURSOR_METHODS:
             return getattr(self._cursor(), name)

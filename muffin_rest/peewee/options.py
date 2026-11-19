@@ -1,11 +1,17 @@
-from typing import Generic
+from __future__ import annotations
 
-import peewee as pw
+from typing import TYPE_CHECKING, Any, Generic
+
 from marshmallow_peewee import ModelSchema
 from marshmallow_peewee.types import TVModel
-from peewee_aio import Manager
 
 from muffin_rest.options import RESTOptions
+
+if TYPE_CHECKING:
+    import peewee as pw
+    from peewee_aio import Manager
+
+    from muffin_rest.handler import RESTBase
 
 from .filters import PWFilters
 from .sorting import PWSorting
@@ -35,7 +41,7 @@ class PWRESTOptions(RESTOptions, Generic[TVModel]):
     # Recursive delete
     delete_recursive = False
 
-    def setup(self, cls):
+    def setup(self, cls: type[RESTBase]) -> None:
         """Prepare meta options."""
         meta = self.model._meta  # type: ignore[]
         self.name = self.name or meta.table_name.lower()
@@ -48,7 +54,7 @@ class PWRESTOptions(RESTOptions, Generic[TVModel]):
 
         super().setup(cls)
 
-    def setup_schema_meta(self, _):
+    def setup_schema_meta(self, _: type[RESTBase]) -> type[Any]:
         """Prepare a schema."""
         return type(
             "Meta",

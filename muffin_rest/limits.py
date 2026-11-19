@@ -7,7 +7,7 @@ from typing import Any
 class RateLimiter(abc.ABC):
     """Rate limiter."""
 
-    def __init__(self, limit: int, *, period: int = 60, **opts):
+    def __init__(self, limit: int, *, period: int = 60, **opts: Any) -> None:
         """Initialize the rate limiter.
 
         Args:
@@ -32,7 +32,7 @@ class RateLimiter(abc.ABC):
 class MemoryRateLimiter(RateLimiter):
     """Memory rate limiter. Do not use in production."""
 
-    def __init__(self, limit: int, **opts):
+    def __init__(self, limit: int, **opts: Any) -> None:
         super().__init__(limit, **opts)
         self.storage: dict[Any, tuple[float, int]] = {}
         self._sweep_at = 0.0
@@ -73,7 +73,7 @@ class MemoryRateLimiter(RateLimiter):
 class RedisRateLimiter(RateLimiter):
     """Redis rate limiter."""
 
-    def __init__(self, limit: int, *, redis, **opts):
+    def __init__(self, limit: int, *, redis: Any, **opts: Any) -> None:
         """Initialize the rate limiter.
 
         Args:

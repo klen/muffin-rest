@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generator, Iterable, Sequence, cast
+from typing import TYPE_CHECKING, Any, Generator, Iterable, Sequence
 
 from .utils import Mutate, Mutator
 
@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from muffin import Request
 
     from .handler import RESTBase
-    from .types import TVCollection
 
 SORT_PARAM = "sort"
 
@@ -18,8 +17,8 @@ SORT_PARAM = "sort"
 class Sort(Mutate):
     """Sort a collection."""
 
-    async def apply(self, collection, *, desc: bool = False, **ctx) -> Any:
-        """Sort the collection."""
+    async def apply(self, collection: Any, *, desc: bool = False, **ctx: Any) -> Any:
+        """Sort the collection (subclasses narrow the collection type)."""
         return sorted(collection, key=lambda obj: getattr(obj, self.name), reverse=desc)
 
 
@@ -28,14 +27,14 @@ class Sorting(Mutator[Sort]):
 
     MUTATE_CLASS = Sort
 
-    def __init__(self, handler: type[RESTBase], params: Iterable):
+    def __init__(self, handler: type[RESTBase], params: Iterable[Any]) -> None:
         """Initialize the sorting."""
         self.default: list[Sort] = []
         super(Sorting, self).__init__(handler, params)
 
     async def apply(
-        self, request: Request, collection: TVCollection, **ctx
-    ) -> tuple[TVCollection, dict[str, Any]]:
+        self, request: Request, collection: Any, **ctx: Any
+    ) -> tuple[Any, dict[str, Any]]:
         """Sort the given collection."""
         data = request.url.query.get(SORT_PARAM)
         sorting = {}
@@ -52,11 +51,11 @@ class Sorting(Mutator[Sort]):
 
         return collection, sorting
 
-    def prepare(self, collection: TVCollection) -> TVCollection:
+    def prepare(self, collection: Any) -> Any:
         """Prepare the collection."""
         return collection
 
-    def convert(self, obj, **meta):
+    def convert(self, obj: Any, **meta: Any) -> Sort | None:
         """Prepare sorters."""
         sort = super(Sorting, self).convert(obj, **meta)
 
@@ -65,12 +64,12 @@ class Sorting(Mutator[Sort]):
 
         return sort
 
-    def sort_default(self, collection: TVCollection) -> TVCollection:
+    def sort_default(self, collection: Any) -> Any:
         """Sort by default."""
-        return cast("TVCollection", sorted(collection))
+        return sorted(collection)
 
     @property
-    def openapi(self):
+    def openapi(self) -> dict[str, Any]:
         """Prepare OpenAPI params."""
         sorting = [s for name in self.mutations for s in (name, f"-{name}")]
         return {

@@ -18,6 +18,9 @@ from muffin import Response
 from . import LIMIT_PARAM, OFFSET_PARAM
 
 if TYPE_CHECKING:
+    from muffin import Request
+
+    from .api import API
     from .options import RESTOptions
 
 with suppress(ImportError):
@@ -41,7 +44,7 @@ HTTP_METHODS = [
 SKIP_PATH = {"/openapi.json", "/swagger", "/redoc"}
 
 
-def render_openapi(api, request=None):
+def render_openapi(api: API, request: Request | None = None) -> dict[str, Any]:
     """Prepare openapi specs."""
     spec = _cached_spec(api)
     result = spec.to_dict()
@@ -50,7 +53,7 @@ def render_openapi(api, request=None):
     return result
 
 
-def _cached_spec(api) -> APISpec:
+def _cached_spec(api: API) -> APISpec:
     """Build the spec once per route set.
 
     shortcut: routes are keyed by path+methods, so editing a handler without
@@ -68,12 +71,13 @@ def _cached_spec(api) -> APISpec:
     return spec
 
 
-def _build_spec(api, routes) -> APISpec:
+def _build_spec(api: API, routes: list[Route]) -> APISpec:
     """Build the APISpec from the API options and routes."""
     options = dict(api.openapi_options)
     info = dict(options["info"])
     title = info.pop("title", None)
     if title is None:
+        assert api.app is not None
         title = f"{api.app.cfg.name.title()} API"
     version = info.pop("version", None)
     if version is None:

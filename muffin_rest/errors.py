@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from muffin import ResponseError
 
@@ -20,8 +20,8 @@ class APIError(ResponseError):
         content: TJSON | None = None,
         *,
         status_code: int = HTTPStatus.BAD_REQUEST.value,
-        **json_data,
-    ):
+        **json_data: Any,
+    ) -> None:
         """Create JSON with errors information."""
         response = {"error": True, "message": HTTPStatus(status_code).description}
 

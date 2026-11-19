@@ -13,7 +13,10 @@ from .errors import InvalidEnpointError
 from .openapi import render_openapi
 
 if TYPE_CHECKING:
+    import logging
+
     import muffin
+    from muffin import Request
 
     from muffin_rest.types import TAuth, TVAuth, TVHandler
 
@@ -25,15 +28,18 @@ SWAGGER_TEMPLATE = Path(__file__).parent.joinpath("swagger.html").read_text()
 class API:
     """Initialize an API."""
 
+    _openapi_spec: Any = None
+    _openapi_spec_key: tuple | None = None
+
     def __init__(
         self,
         app: muffin.Application | None = None,
         prefix: str = "",
         *,
         openapi: bool = True,
-        servers: list | None = None,
-        **openapi_info,
-    ):
+        servers: list[dict[str, Any]] | None = None,
+        **openapi_info: Any,
+    ) -> None:
         """Post initialize the API if we have an application already."""
         self.app = app
         self.prefix = prefix
@@ -49,12 +55,12 @@ class API:
         if app:
             self.setup(app, prefix=prefix)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Stringify the API."""
-        return f"<API { self.prefix }>"
+        return f"<API {self.prefix}>"
 
     @property
-    def logger(self):
+    def logger(self) -> logging.Logger:
         """Proxy the application's logger."""
         if self.app is None:
             raise RuntimeError("API is not initialized yet")
@@ -67,9 +73,9 @@ class API:
         *,
         prefix: str = "",
         openapi: bool | None = None,
-        servers: list | None = None,
-        **openapi_info,
-    ):
+        servers: list[dict[str, Any]] | None = None,
+        **openapi_info: Any,
+    ) -> None:
         """Initialize the API."""
         self.app = app
         self.prefix = (prefix or self.prefix).rstrip("/")
@@ -92,7 +98,7 @@ class API:
         if not self.openapi:
             return
 
-        async def openapi_json(request):
+        async def openapi_json(request: Request) -> Any:
             return render_openapi(self, request=request)
 
         self.router.route("/swagger")(swagger)
@@ -100,16 +106,18 @@ class API:
         self.router.route("/openapi.json")(openapi_json)
 
     @overload
-    def route(self, obj: str, *paths: str, **params) -> Callable[[TV], TV]: ...
+    def route(self, obj: str, *paths: str, **params: Any) -> Callable[[TV], TV]: ...
 
     @overload
-    def route(self, obj: TVHandler, *paths: str, **params) -> TVHandler: ...
+    def route(self, obj: TVHandler, *paths: str, **params: Any) -> TVHandler: ...
 
-    def route(self, obj: str | TVHandler, *paths: str, **params) -> Callable[[TV], TV] | TVHandler:
+    def route(
+        self, obj: str | TVHandler, *paths: str, **params: Any
+    ) -> Callable[[TV], TV] | TVHandler:
         """Route an endpoint by the API."""
         from .handler import RESTBase
 
-        def wrapper(cb):
+        def wrapper(cb: Any) -> Any:
             cb._api = self
             return self.router.route(*paths, **params)(cb)
 

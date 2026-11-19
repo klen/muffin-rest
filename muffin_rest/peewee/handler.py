@@ -76,7 +76,9 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
 
         return resource
 
-    async def paginate(self, request: Request, *, limit: int = 0, offset: int = 0):
+    async def paginate(
+        self, request: Request, *, limit: int = 0, offset: int = 0
+    ) -> tuple[Any, int | None]:
         """Paginate the collection."""
         if self.meta.limit_total:
             cqs = self.collection.order_by()
@@ -91,7 +93,7 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
 
         return self.collection.offset(offset).limit(limit), count
 
-    async def get(self, request, *, resource: TVResource | None = None) -> Any:
+    async def get(self, request: Request, *, resource: TVResource | None = None) -> Any:
         """Get resource or collection of resources."""
         if resource:
             return await self.dump(request, resource)
@@ -99,7 +101,9 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
         resources = await self.meta.manager.fetchall(self.collection)
         return await self.dump(request, resources, many=True)
 
-    async def save(self, request: Request, resource: TVResource, *, update=False):
+    async def save(
+        self, request: Request, resource: TVResource, *, update: bool = False
+    ) -> TVResource:
         """Save the given resource."""
         meta = self.meta
         manager = meta.manager
@@ -110,7 +114,7 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
 
         return resource
 
-    async def remove(self, request: Request, resource: TVResource | None = None):
+    async def remove(self, request: Request, resource: TVResource | None = None) -> Any:
         """Remove the given resource."""
         meta = self.meta
         if resource:
@@ -136,11 +140,11 @@ class PWRESTHandler(PeeweeOpenAPIMixin, RESTBase[TVResource, TVCollection]):
 
         return resource.get_id() if resource else [r.get_id() for r in resources]
 
-    async def delete(self, request: Request, resource: TVResource | None = None):  # type: ignore[override]
+    async def delete(self, request: Request, resource: TVResource | None = None) -> Any:
         return await self.remove(request, resource)
 
     def get_schema(
-        self, request: Request, *, resource: TVResource | None = None, **schema_options
+        self, request: Request, *, resource: TVResource | None = None, **schema_options: Any
     ) -> ma.Schema:
         """Initialize marshmallow schema for serialization/deserialization."""
         return super().get_schema(request, instance=resource, **schema_options)
