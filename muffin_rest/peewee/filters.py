@@ -76,7 +76,9 @@ class PWFilters(Filters):
         handler = self.handler
         if isinstance(obj, PWFilter):
             if isinstance(obj.field, str):
-                obj.field = get_model_field_by_name(handler, obj.field)
+                # A custom filter builds its own query, its name is not a model field
+                warn_missing = type(obj).filter is PWFilter.filter
+                obj.field = get_model_field_by_name(handler, obj.field, warn_missing=warn_missing)
             return obj
 
         if isinstance(obj, Field):

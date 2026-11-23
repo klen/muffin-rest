@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def get_model_field_by_name(
-    handler: type[RESTBase], name: str, *, stacklevel: int = 5
+    handler: type[RESTBase], name: str, *, stacklevel: int = 5, warn_missing: bool = True
 ) -> Field | None:
     """Get model field by name."""
     fields = cast("PWRESTOptions", handler.meta).model._meta.fields
@@ -26,11 +26,13 @@ def get_model_field_by_name(
         if field.column_name == name:
             return field
 
-    warn(
-        f"{handler.__qualname__} {cast('PWRESTOptions', handler.meta).model} has no field {name}",
-        category=RuntimeWarning,
-        stacklevel=stacklevel,
-    )
+    if warn_missing:
+        warn(
+            f"{handler.__qualname__} "
+            f"{cast('PWRESTOptions', handler.meta).model} has no field {name}",
+            category=RuntimeWarning,
+            stacklevel=stacklevel,
+        )
     return None
 
 

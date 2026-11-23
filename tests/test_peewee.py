@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Any, cast
+from warnings import catch_warnings, simplefilter
 
 import marshmallow as ma
 import peewee as pw
@@ -404,6 +405,23 @@ async def test_custom_filter(endpoint_cls):
     expr = JsonModel.data["is_organizer"]
     json_flt = PWFilter("is_organizer", field=expr)
     assert PWFilters(endpoint_cls, []).convert(json_flt).field is expr
+
+
+async def test_custom_filter_without_model_field(endpoint_cls):
+    from muffin_rest.peewee.filters import PWFilter, PWFilters
+
+    class VirtualFilter(PWFilter):
+        async def filter(self, collection, *ops, **ctx):
+            return collection
+
+    with catch_warnings():
+        simplefilter("error")
+        flt = PWFilters(endpoint_cls, [VirtualFilter("mode")]).mutations["mode"]
+
+    assert flt.field is None
+
+    with pytest.warns(RuntimeWarning, match="has no field unknown"):
+        PWFilters(endpoint_cls, ["unknown"])
 
 
 async def test_aiomodels(client, db, api):
