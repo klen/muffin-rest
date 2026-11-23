@@ -2,7 +2,7 @@
 
 import abc
 import inspect
-from typing import Any, Generic, Iterable, Literal, Mapping, Sequence, cast, overload
+from typing import Any, ClassVar, Generic, Iterable, Literal, Mapping, Sequence, cast, overload
 
 import marshmallow as ma
 from asgi_tools.response import ResponseJSON, parse_response
@@ -46,7 +46,13 @@ class RESTHandlerMeta(HandlerMeta):
 class RESTBase(Handler, Generic[TVResource, TVCollection], metaclass=RESTHandlerMeta):
     """Load/save resources."""
 
-    methods: TMethodsArg | None = ("get", "post", "put", "delete")
+    # Handlers configure it per class (see `__route__`), while asgi-tools only annotates it.
+    methods: ClassVar[TMethodsArg | None] = (  # pyrefly: ignore[bad-override]
+        "get",
+        "post",
+        "put",
+        "delete",
+    )
 
     auth: Any
     resource: TVResource
